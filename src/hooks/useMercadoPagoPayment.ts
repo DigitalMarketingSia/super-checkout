@@ -114,11 +114,12 @@ export const useMercadoPagoPayment = ({
       totalAmount: orderCalculation.totalFinal,
       accessTokenPresent: !!accessToken,
       mpInitialized: isInitialized,
-      mpLoading
+      mpLoading,
+      contextIsReady: isInitialized && !!accessToken && !mpLoading
     });
 
-    // Garantir que o contexto está inicializado - mas ser mais flexível
-    if (!isInitialized && !mpLoading) {
+    // Ser mais flexível com a inicialização - PIX não precisa necessariamente do mpInstance
+    if (!isInitialized && !mpLoading && !accessToken) {
       console.log('🔄 Contexto não inicializado, tentando inicializar...');
       try {
         await initializeMercadoPago();
@@ -126,23 +127,18 @@ export const useMercadoPagoPayment = ({
         await new Promise(resolve => setTimeout(resolve, 1000));
       } catch (error) {
         console.error('❌ Falha na inicialização do contexto:', error);
-        // Não falhar aqui se tivermos credenciais diretas
-        console.log('⚠️ Continuando sem inicialização devido a credenciais diretas...');
+        // Para PIX, podemos continuar sem o SDK se tivermos credenciais diretas
+        console.log('⚠️ Continuando sem inicialização completa para PIX...');
       }
     }
 
-    // Verificar credenciais - ser mais flexível
-    if (!accessToken) {
-      console.warn('⚠️ Access token não disponível via contexto, verificando credenciais diretas...');
-      
-      // Buscar gateway manualmente se necessário
-      if (!checkout.gatewayId) {
-        console.error('❌ Nem access token nem gateway ID disponível');
-        throw new Error('Sistema de pagamento não configurado');
-      }
-      
-      console.log('📤 Continuando com credenciais diretas via Edge Function...');
+    // Para PIX, verificar se temos pelo menos as credenciais básicas
+    if (!accessToken && !checkout.gatewayId) {
+      console.error('❌ Nem access token nem gateway ID disponível');
+      throw new Error('Sistema de pagamento não configurado adequadamente');
     }
+
+    console.log('📤 PIX pode continuar com credenciais disponíveis...');
 
     // Obter dados dos produtos
     const mainProduct = getProductById(checkout.mainProductId);
@@ -395,16 +391,31 @@ export const useMercadoPagoPayment = ({
     }
   }, [checkout, orderCalculation, isInitialized, accessToken, environment, createCardToken, getProductById, navigate, initializeMercadoPago, mpLoading, mpInstance]);
 
-  const isReady = isInitialized && !!accessToken && !!mpInstance && !mpLoading;
-  
-  console.log('🔍 useMercadoPagoPayment - Status isReady:', {
-    isReady,
-    isInitialized,
-    hasAccessToken: !!accessToken,
-    hasMpInstance: !!mpInstance,
-    notLoading: !mpLoading,
-    accessTokenPreview: accessToken ? accessToken.substring(0, 15) + '...' : 'N/A'
-  });
+  // Lógica de isReady mais flexível - para PIX apenas precisamos de credenciais básicas
+  const isReady = (() => {
+    console.log('🔍 useMercadoPagoPayment - Calculando isReady:', {
+      isInitialized,
+      hasAccessToken: !!accessToken,
+      notLoading: !mpLoading,
+      hasCheckout: !!checkout,
+      hasGatewayId: !!checkout?.gatewayId
+    });
+    
+    // Para PIX, ser mais flexível - só precisamos das credenciais básicas
+    const basicReady = isInitialized && !!accessToken && !mpLoading;
+    const fallbackReady = !!checkout?.gatewayId && !mpLoading; // Fallback se temos gateway
+    
+    const finalReady = basicReady || fallbackReady;
+    
+    console.log('🔍 useMercadoPagoPayment - Status isReady final:', {
+      basicReady,
+      fallbackReady,
+      finalReady,
+      accessTokenPreview: accessToken ? accessToken.substring(0, 15) + '...' : 'N/A'
+    });
+    
+    return finalReady;
+  })();
 
   return {
     processPixPayment,
