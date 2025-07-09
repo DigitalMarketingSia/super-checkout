@@ -1,0 +1,118 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Super Checkout Design System - Dark Mode Profissional */
+@layer base {
+  :root {
+    /* Light Mode Colors */
+    --background: 210 20% 98%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: 262.1 83.3% 57.8%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 84% 4.9%;
+
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 210 40% 96%;
+    --accent-foreground: 222.2 84% 4.9%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 262.1 83.3% 57.8%;
+
+    --radius: 0.75rem;
+
+    /* Sidebar Variables */
+    --sidebar-background: 210 20% 98%;
+    --sidebar-foreground: 222.2 84% 4.9%;
+    --sidebar-primary: 262.1 83.3% 57.8%;
+    --sidebar-primary-foreground: 210 40% 98%;
+    --sidebar-accent: 210 40% 96%;
+    --sidebar-accent-foreground: 222.2 84% 4.9%;
+    --sidebar-border: 214.3 31.8% 91.4%;
+    --sidebar-ring: 262.1 83.3% 57.8%;
+
+    /* Super Checkout Custom Colors */
+    --sc-dark-bg: 222.2 84% 4.9%;          /* #111827 - Fundo principal */
+    --sc-card-bg: 217.2 32.6% 17.5%;       /* #1F2937 - Cards */
+    --sc-purple: 262.1 83.3% 57.8%;        /* #7C3AED - Destaque */
+    --sc-text-primary: 210 40% 98%;        /* #F9FAFB */
+    --sc-text-secondary: 215.4 16.3% 46.9%; /* #6B7280 */
+    --sc-success: 142.1 76.2% 36.3%;       /* #10B981 */
+    --sc-warning: 45.4 93.4% 47.5%;        /* #F59E0B */
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 217.2 32.6% 17.5%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 262.1 83.3% 57.8%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 262.1 83.3% 57.8%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 262.1 83.3% 57.8%;
+
+    /* Sidebar Variables - Dark Mode */
+    --sidebar-background: 222.2 84% 4.9%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 262.1 83.3% 57.8%;
+    --sidebar-primary-foreground: 210 40% 98%;
+    --sidebar-accent: 262.1 83.3% 57.8%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217.2 32.6% 17.5%;
+    --sidebar-ring: 262.1 83.3% 57.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-slate-50 dark:bg-gray-900 text-gray-900 dark:text-gray-200;
+  }
+
+  /* Super Checkout Custom Classes */
+  .sc-card {
+    @apply bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-lg;
+  }
+
+  .sc-button-primary {
+    @apply bg-violet-600 hover:bg-violet-700 text-white font-medium rounded-lg transition-colors;
+  }
+
+  .sc-button-secondary {
+    @apply bg-slate-100 dark:bg-gray-700 hover:bg-slate-200 dark:hover:bg-gray-600 text-gray-900 dark:text-gray-200 font-medium rounded-lg border border-slate-200 dark:border-gray-600 transition-colors;
+  }
+
+  .sc-input {
+    @apply bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 text-gray-900 dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-400 rounded-lg focus:ring-2 focus:ring-violet-600 focus:border-transparent;
+  }
+}

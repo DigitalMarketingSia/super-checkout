@@ -1,0 +1,908 @@
+/* ... keep existing code (all previous CSS rules) */
+
+/* Checkout Padrão - Layout tradicional com foco na conversão e usabilidade */
+
+.checkout-padrao-container {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: #f9fafb;
+  color: #374151;
+  min-height: 100vh;
+}
+
+.checkout-padrao-timer {
+  background-color: #fff7ed;
+  color: #a16207;
+  text-align: center;
+  padding: 0.75rem;
+  font-size: 0.875rem;
+}
+
+.checkout-padrao-hero {
+  width: 100%;
+  overflow: hidden;
+}
+
+.checkout-padrao-hero-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.checkout-padrao-content {
+  padding: 2rem 1rem;
+}
+
+.checkout-padrao-main-layout {
+  max-width: 768px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.checkout-padrao-product-card {
+  background-color: #fff;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  padding: 1.5rem;
+}
+
+.checkout-padrao-product-info {
+  display: flex;
+  gap: 1rem;
+}
+
+.checkout-padrao-product-image {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 0.5rem;
+  flex-shrink: 0;
+}
+
+.checkout-padrao-product-details {
+  flex: 1;
+  min-width: 0;
+}
+
+.checkout-padrao-product-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 0.5rem;
+  word-wrap: break-word;
+}
+
+.checkout-padrao-product-pricing {
+  margin-top: 0.75rem;
+}
+
+.checkout-padrao-installment {
+  font-size: 0.875rem;
+  color: #4b5563;
+}
+
+.checkout-padrao-cash {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #10b981;
+}
+
+.checkout-padrao-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  background-color: #fff;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  padding: 1.5rem;
+}
+
+.checkout-padrao-form-row {
+  display: flex;
+  gap: 1rem;
+}
+
+.checkout-padrao-input {
+  flex: 1;
+  padding: 0.75rem;
+  border-radius: 0.375rem;
+  border: 1px solid #d1d5db;
+  font-size: 1rem;
+  color: #374151;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.checkout-padrao-input:focus {
+  border-color: #3b82f6;
+  outline: none;
+}
+
+.checkout-padrao-payment-methods {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+  margin-bottom: 2rem;
+}
+
+.checkout-padrao-payment-button {
+  flex: 1;
+  padding: 0.75rem;
+  border-radius: 0.375rem;
+  border: 2px solid transparent;
+  background-color: #f9fafb;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 80px;
+}
+
+.checkout-padrao-payment-button:hover {
+  border-color: #9ca3af;
+}
+
+.checkout-padrao-payment-image {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+}
+
+.checkout-padrao-payment-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  text-align: center;
+  word-wrap: break-word;
+  line-height: 1.2;
+}
+
+/* Estilo específico para os ícones personalizados de métodos de pagamento */
+.payment-method-icon {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.checkout-padrao-credit-card-section {
+  margin-top: 1rem;
+  margin-bottom: 2rem;
+  border: 1px dashed #cccccc;
+  padding: 1rem;
+  border-radius: 0.5rem;
+}
+
+.checkout-padrao-credit-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.checkout-padrao-credit-card-header h3 {
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: #111827;
+}
+
+.checkout-padrao-credit-card-image {
+  width: 80px;
+  height: 50px;
+}
+
+.checkout-padrao-card-illustration-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.checkout-padrao-credit-card-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.checkout-padrao-card-row {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.checkout-padrao-half-input {
+  width: 50%;
+}
+
+.checkout-padrao-installments {
+  margin-top: 1rem;
+}
+
+.checkout-padrao-installments h4 {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #111827;
+  margin-bottom: 0.5rem;
+}
+
+.checkout-padrao-installment-select {
+  width: 100%;
+  padding: 0.75rem;
+  border-radius: 0.375rem;
+  border: 1px solid #d1d5db;
+  font-size: 1rem;
+  color: #374151;
+}
+
+.checkout-padrao-pix-section {
+  margin-top: 1rem;
+  margin-bottom: 2rem;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  background-color: #f0fdf4;
+  border: 1px solid #bbf7d0;
+}
+
+.checkout-padrao-pix-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.checkout-padrao-pix-header h3 {
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: #16a34a;
+}
+
+.checkout-padrao-pix-step {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.checkout-padrao-pix-step-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 9999px;
+  background-color: #16a34a;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.checkout-padrao-pix-step-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.checkout-padrao-pix-step-title {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #111827;
+  margin-bottom: 0.25rem;
+}
+
+.checkout-padrao-pix-step-description {
+  font-size: 0.875rem;
+  color: #4b5563;
+  word-wrap: break-word;
+}
+
+.checkout-padrao-boleto-section {
+  margin-top: 1rem;
+  margin-bottom: 2rem;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  background-color: #f0fdf4;
+  border: 1px solid #bbf7d0;
+}
+
+.checkout-padrao-boleto-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.checkout-padrao-boleto-header h3 {
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: #16a34a;
+}
+
+.checkout-padrao-boleto-instructions {
+  font-size: 0.875rem;
+  color: #374151;
+}
+
+.checkout-padrao-boleto-instructions h4 {
+  font-size: 1rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.checkout-padrao-boleto-instructions ul {
+  list-style-type: disc;
+  margin-left: 1.25rem;
+}
+
+.checkout-padrao-order-bumps {
+  margin-top: 1rem;
+  margin-bottom: 2rem;
+  border: none;
+  padding: 0;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  background-color: #fff;
+}
+
+.checkout-padrao-order-bumps-header {
+  background-color: rgba(255, 193, 7, 0.5);
+  color: #333;
+  padding: 1rem;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.checkout-padrao-order-bumps-header h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.checkout-padrao-order-bumps-content {
+  padding: 1rem;
+}
+
+.checkout-padrao-order-bumps-description {
+  font-size: 0.875rem;
+  color: #4b5563;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.checkout-padrao-order-bump-item {
+  margin-bottom: 0.75rem;
+}
+
+.checkout-padrao-order-bump-content {
+  border: 2px dashed #e53935;
+  border-radius: 0.5rem;
+  background-color: #f9fafb;
+  cursor: pointer;
+  transition: all 0.2s;
+  overflow: hidden;
+}
+
+.checkout-padrao-order-bump-content:hover {
+  border-color: #16a34a;
+  background-color: #fef7f0;
+}
+
+.checkout-padrao-order-bump-content.selected {
+  border-color: #4caf50;
+  background-color: #f0fdf4;
+}
+
+.checkout-padrao-order-bump-title-top {
+  background-color: #E74C8C;
+  color: white;
+  padding: 12px 16px;
+  text-align: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  transition: background-color 0.2s;
+}
+
+.checkout-padrao-order-bump-content.selected .checkout-padrao-order-bump-title-top {
+  background-color: #4caf50;
+}
+
+.checkout-padrao-order-bump-title-main {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: white;
+  line-height: 1.3;
+}
+
+.checkout-padrao-order-bump-checkbox {
+  margin-top: 0.25rem;
+  flex-shrink: 0;
+}
+
+.checkout-padrao-order-bump-image {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 0.375rem;
+  flex-shrink: 0;
+}
+
+.checkout-padrao-order-bump-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.checkout-padrao-order-bump-title {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #111827;
+  margin-bottom: 0.25rem;
+  word-wrap: break-word;
+}
+
+.checkout-padrao-order-bump-description {
+  font-size: 0.875rem;
+  color: #4b5563;
+  word-wrap: break-word;
+  margin-bottom: 0.5rem;
+}
+
+.checkout-padrao-order-bump-price {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #E74C8C;
+  margin-top: 0.5rem;
+}
+
+.checkout-padrao-order-bump-body {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+}
+
+.checkout-padrao-order-bump-selection-text {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 12px;
+  cursor: pointer;
+}
+
+.checkout-padrao-order-bump-checkbox-input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.checkout-padrao-order-bump-selection-label {
+  font-size: 14px;
+  color: #333;
+  cursor: pointer;
+  line-height: 1.4;
+  user-select: none;
+}
+
+.checkout-padrao-submit {
+  background-color: #009D68;
+  color: #fff;
+  font-size: 1.125rem;
+  font-weight: 600;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  margin-top: 1rem;
+}
+
+.checkout-padrao-submit:hover {
+  background-color: #007a52;
+}
+
+.checkout-padrao-order-summary {
+  margin-top: 1rem;
+  margin-bottom: 16px;
+  padding: 1rem;
+  background-color: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.checkout-padrao-summary-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.checkout-padrao-summary-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #111827;
+  flex-shrink: 0;
+}
+
+.checkout-padrao-summary-values {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+}
+
+.checkout-padrao-summary-total {
+  font-size: 1rem;
+  color: #111827;
+  font-weight: 400;
+}
+
+.checkout-padrao-value-amount {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #16a34a;
+  margin-left: 0.25rem;
+}
+
+.checkout-padrao-summary-installments {
+  font-size: 0.875rem;
+  color: #111827;
+}
+
+.checkout-padrao-installment-amount {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #16a34a;
+}
+
+.checkout-padrao-discount-display {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.checkout-padrao-original-price {
+  font-size: 0.875rem;
+  color: #6b7280;
+  text-decoration: line-through;
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+.checkout-padrao-current-price {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #059669;
+  line-height: 1.2;
+}
+
+.checkout-padrao-payment-info {
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 400;
+  margin-top: 0.25rem;
+}
+
+.checkout-padrao-payment-button.selected-cartao {
+  border-color: #3b82f6;
+  background-color: #eff6ff;
+}
+
+.checkout-padrao-payment-button.selected-pix {
+  border-color: #16a34a;
+  background-color: #f0fdf4;
+}
+
+.checkout-padrao-payment-button.selected-boleto {
+  border-color: #ca8a04;
+  background-color: #fefce8;
+}
+
+.checkout-padrao-footer {
+  text-align: center;
+  margin-top: 2rem;
+  padding: 1rem;
+  font-size: 0.75rem;
+  color: #4b5563;
+}
+
+.checkout-padrao-footer-brands {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.checkout-padrao-footer-brands span {
+  font-weight: 500;
+  color: #111827;
+}
+
+/* Interactive Credit Card Styles */
+.credit-card-container {
+  perspective: 1000px;
+  width: 100%;
+  max-width: 400px;
+  height: 250px;
+  margin: 0 auto;
+}
+
+.credit-card {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.6s ease;
+  cursor: pointer;
+}
+
+.credit-card.is-flipped {
+  transform: rotateY(180deg);
+}
+
+.credit-card-front,
+.credit-card-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  border-radius: 15px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+  background: #B0BEC5; /* Cor de fallback para navegadores antigos */
+  background: linear-gradient(to bottom right, #B0BEC5, #78909C);
+  color: #FFFFFF;
+  overflow: hidden;
+}
+
+.credit-card-back {
+  transform: rotateY(180deg);
+  background: #B0BEC5; /* Cor de fallback para navegadores antigos */
+  background: linear-gradient(to bottom right, #B0BEC5, #78909C);
+}
+
+.credit-card-front {
+  padding: 25px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.card-brand {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  height: 40px;
+}
+
+.brand-logo {
+  font-size: 18px;
+  font-weight: bold;
+  padding: 8px 15px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.brand-logo.visa {
+  background: linear-gradient(135deg, #1a1f71 0%, #0f3460 100%);
+}
+
+.brand-logo.mastercard {
+  background: linear-gradient(135deg, #eb001b 0%, #f79e1b 100%);
+}
+
+.brand-logo.amex {
+  background: linear-gradient(135deg, #006fcf 0%, #00a9e0 100%);
+}
+
+.brand-logo.elo {
+  background: linear-gradient(135deg, #ffcb05 0%, #ff6900 100%);
+  color: #000;
+}
+
+.brand-logo.hipercard {
+  background: linear-gradient(135deg, #c41e3a 0%, #8b0000 100%);
+}
+
+.brand-logo.diners {
+  background: linear-gradient(135deg, #0079be 0%, #00447c 100%);
+}
+
+.brand-logo.cabal {
+  background: linear-gradient(135deg, #662d91 0%, #4a1a68 100%);
+}
+
+.card-chip {
+  position: absolute;
+  top: 70px;
+  left: 25px;
+}
+
+/* Mobile chip positioning adjustment */
+@media (max-width: 768px) {
+  .card-chip {
+    top: 50px;
+  }
+}
+
+.chip {
+  width: 45px;
+  height: 35px;
+  background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+  border-radius: 8px;
+  position: relative;
+  border: 2px solid #e6c200;
+}
+
+.chip::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 30px;
+  height: 20px;
+  background: linear-gradient(135deg, #e6c200 0%, #b8950a 100%);
+  border-radius: 4px;
+}
+
+.card-number {
+  font-size: 24px;
+  font-weight: 500;
+  letter-spacing: 4px;
+  text-align: center;
+  margin: 20px 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  font-family: 'Courier New', monospace;
+}
+
+.card-details {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.card-name,
+.card-expiry {
+  display: flex;
+  flex-direction: column;
+}
+
+.card-name {
+  flex: 1;
+  max-width: 60%;
+}
+
+.label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  opacity: 0.8;
+  margin-bottom: 5px;
+}
+
+.value {
+  font-size: 16px;
+  font-weight: 500;
+  text-transform: uppercase;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card-expiry .value {
+  font-family: 'Courier New', monospace;
+}
+
+/* Verso do cartão */
+.credit-card-back {
+  padding: 0;
+}
+
+.magnetic-stripe {
+  width: 100%;
+  height: 50px;
+  background: linear-gradient(135deg, #2c2c2c 0%, #1a1a1a 100%);
+  margin-top: 30px;
+  border-top: 2px solid #555;
+  border-bottom: 2px solid #555;
+}
+
+.signature-strip {
+  background: rgba(255, 255, 255, 0.9);
+  margin: 40px 25px 0;
+  padding: 15px;
+  border-radius: 8px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  min-height: 40px;
+}
+
+.cvv-area {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: white;
+  padding: 8px 15px;
+  border-radius: 5px;
+  border: 1px solid #ddd;
+}
+
+.cvv-label {
+  font-size: 12px;
+  color: #666;
+  font-weight: bold;
+}
+
+.cvv-value {
+  font-size: 16px;
+  color: #333;
+  font-weight: bold;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 2px;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .checkout-padrao-content {
+    padding: 1rem 0.75rem;
+  }
+  
+  .checkout-padrao-main-layout {
+    gap: 1rem;
+  }
+  
+  .checkout-padrao-product-card {
+    padding: 1rem;
+  }
+  
+  .checkout-padrao-form-row {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .checkout-padrao-payment-methods {
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .checkout-padrao-card-row {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .checkout-padrao-half-input {
+    width: 100%;
+  }
+
+  .credit-card-container {
+    max-width: 320px;
+    height: 200px;
+  }
+  
+  .card-number {
+    font-size: 20px;
+    letter-spacing: 2px;
+  }
+  
+  .value {
+    font-size: 14px;
+  }
+}
