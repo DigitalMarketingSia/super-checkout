@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { CustomerFormData, CreditCardData } from '@/types/checkout';
 import { CheckoutConfig } from '@/api/mockDatabase';
 import { OrderCalculationResult } from '@/core/checkoutEngine';
+import { removeCPFMask, removePhoneMask } from '@/utils/formValidation';
 
 interface UseMercadoPagoPaymentProps {
   checkout: CheckoutConfig | null;
@@ -170,11 +171,26 @@ export const useMercadoPagoPayment = ({
       // Criar external_reference único para correlacionar com webhook
       const externalReference = `checkout_${checkout.id}_${Date.now()}`;
       
+      // Limpar dados do cliente removendo máscaras para envio ao Mercado Pago
+      const cleanCustomerData = {
+        nome: formData.nome.trim(),
+        email: formData.email.trim().toLowerCase(),
+        telefone: formData.telefone ? removePhoneMask(formData.telefone) : '',
+        cpf: formData.cpf ? removeCPFMask(formData.cpf) : ''
+      };
+
+      console.log('🧹 Dados do cliente limpos para Mercado Pago:', {
+        nome: cleanCustomerData.nome,
+        email: cleanCustomerData.email,
+        telefone: cleanCustomerData.telefone,
+        cpf: cleanCustomerData.cpf ? `${cleanCustomerData.cpf.substring(0, 3)}***` : 'vazio'
+      });
+
       // Dados que serão enviados para a Edge Function
       const payloadData = {
         checkoutId: checkout.id,
         gatewayId: checkout.gatewayId || 'fallback',
-        customerData: formData,
+        customerData: cleanCustomerData,
         items,
         totalAmount: orderCalculation.totalFinal,
         paymentMethod: 'pix',
@@ -339,12 +355,27 @@ export const useMercadoPagoPayment = ({
       // Criar external_reference único para correlacionar com webhook
       const externalReference = `checkout_${checkout.id}_${Date.now()}`;
       
+      // Limpar dados do cliente para cartão de crédito
+      const cleanCustomerData = {
+        nome: formData.nome.trim(),
+        email: formData.email.trim().toLowerCase(),
+        telefone: formData.telefone ? removePhoneMask(formData.telefone) : '',
+        cpf: formData.cpf ? removeCPFMask(formData.cpf) : ''
+      };
+
+      console.log('🧹 Dados do cliente limpos para cartão:', {
+        nome: cleanCustomerData.nome,
+        email: cleanCustomerData.email,
+        telefone: cleanCustomerData.telefone,
+        cpf: cleanCustomerData.cpf ? `${cleanCustomerData.cpf.substring(0, 3)}***` : 'vazio'
+      });
+
       const response = await supabase.functions.invoke('processar-pagamento', {
         body: {
           checkoutId: checkout.id,
           gatewayId: checkout.gatewayId || 'fallback',
           token: cardToken.id,
-          customerData: formData,
+          customerData: cleanCustomerData,
           items,
           totalAmount: orderCalculation.totalFinal,
           paymentMethod: 'credit_card',

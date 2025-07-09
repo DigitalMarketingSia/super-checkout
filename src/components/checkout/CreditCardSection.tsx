@@ -1,5 +1,6 @@
 import { OrderCalculationResult } from '@/core/checkoutEngine';
 import { InteractiveCreditCard } from './InteractiveCreditCard';
+import { formatCPF, validateCPF } from '@/utils/formValidation';
 
 interface CreditCardSectionProps {
   creditCardData: {
@@ -83,12 +84,19 @@ export const CreditCardSection = ({
               placeholder="CPF do titular"
               value={creditCardData.cpf}
               onChange={(e) => {
-                // Formatação automática do CPF
-                let value = e.target.value.replace(/\D/g, ''); // Remove não-dígitos
-                value = value.replace(/(\d{3})(\d)/, '$1.$2');
-                value = value.replace(/(\d{3})(\d)/, '$1.$2');
-                value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
-                onCreditCardDataChange('cpf', value);
+                const formattedCPF = formatCPF(e.target.value);
+                onCreditCardDataChange('cpf', formattedCPF);
+              }}
+              onBlur={(e) => {
+                // Validar CPF quando sair do campo
+                const cpf = e.target.value;
+                if (cpf && !validateCPF(cpf)) {
+                  e.target.style.borderColor = '#ef4444';
+                  e.target.style.backgroundColor = '#fef2f2';
+                } else {
+                  e.target.style.borderColor = '';
+                  e.target.style.backgroundColor = '';
+                }
               }}
               className="checkout-padrao-input"
               maxLength={14}

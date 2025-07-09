@@ -9,6 +9,7 @@ import { PixSection } from './checkout/PixSection';
 import { BoletoSection } from './checkout/BoletoSection';
 import { OrderBumpsSection } from './checkout/OrderBumpsSection';
 import { OrderSummarySection } from './checkout/OrderSummarySection';
+import { ValidatedInput } from './form/ValidatedInput';
 import { FooterConfig } from '@/types/checkout';
 import '../styles/CheckoutPadrao.css';
 
@@ -204,21 +205,21 @@ export const CheckoutPadraoUI = ({
             {/* Campos do formulário - Renderização condicional baseada em requiredFormFields */}
             <div className="checkout-padrao-form-row">
               {requiredFormFields.includes('name') && (
-                <input
+                <ValidatedInput
                   type="text"
                   placeholder="Seu nome completo"
                   value={formData.nome}
-                  onChange={(e) => onFormDataChange('nome', e.target.value)}
+                  onChange={(value) => onFormDataChange('nome', value)}
                   className="checkout-padrao-input"
                   required
                 />
               )}
               {requiredFormFields.includes('email') && (
-                <input
+                <ValidatedInput
                   type="email"
                   placeholder="Seu melhor e-mail"
                   value={formData.email}
-                  onChange={(e) => onFormDataChange('email', e.target.value)}
+                  onChange={(value) => onFormDataChange('email', value)}
                   className="checkout-padrao-input"
                   required
                 />
@@ -228,21 +229,21 @@ export const CheckoutPadraoUI = ({
             {(requiredFormFields.includes('phone') || requiredFormFields.includes('cpf')) && (
               <div className="checkout-padrao-form-row">
                 {requiredFormFields.includes('phone') && (
-                  <input
+                  <ValidatedInput
                     type="tel"
                     placeholder="DDD + Celular"
                     value={formData.telefone}
-                    onChange={(e) => onFormDataChange('telefone', e.target.value)}
+                    onChange={(value) => onFormDataChange('telefone', value)}
                     className="checkout-padrao-input"
                     required
                   />
                 )}
                 {requiredFormFields.includes('cpf') && (
-                  <input
-                    type="text"
+                  <ValidatedInput
+                    type="cpf"
                     placeholder="CPF/CNPJ"
                     value={formData.cpf}
-                    onChange={(e) => onFormDataChange('cpf', e.target.value)}
+                    onChange={(value) => onFormDataChange('cpf', value)}
                     className="checkout-padrao-input"
                     required
                   />

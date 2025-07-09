@@ -4,6 +4,16 @@ import { FORM_FIELDS } from '@/constants';
 
 export const useFormValidation = () => {
   const validateFormData = useCallback((formData: CustomerFormData, requiredFields: string[]) => {
+    console.log('🔍 useFormValidation - Validando dados do formulário:', {
+      formData: {
+        nome: formData.nome ? 'PRESENTE' : 'AUSENTE',
+        email: formData.email ? 'PRESENTE' : 'AUSENTE', 
+        telefone: formData.telefone ? 'PRESENTE' : 'AUSENTE',
+        cpf: formData.cpf ? 'PRESENTE' : 'AUSENTE'
+      },
+      requiredFields
+    });
+
     const missingFields = requiredFields.filter(field => {
       const fieldMap: Record<string, keyof CustomerFormData> = {
         [FORM_FIELDS.NAME]: 'nome',
@@ -11,12 +21,27 @@ export const useFormValidation = () => {
         [FORM_FIELDS.PHONE]: 'telefone',
         [FORM_FIELDS.CPF]: 'cpf'
       };
-      return !formData[fieldMap[field]];
+      
+      const fieldValue = formData[fieldMap[field]];
+      const isEmpty = !fieldValue || fieldValue.trim() === '';
+      
+      console.log(`🔍 Campo ${field} (${fieldMap[field]}):`, {
+        valor: fieldValue ? `"${fieldValue}"` : 'VAZIO',
+        isEmpty
+      });
+      
+      return isEmpty;
     });
     
+    console.log('🔍 Campos faltando:', missingFields);
+    
     if (missingFields.length > 0) {
-      throw new Error(`Preencha os seguintes campos obrigatórios: ${missingFields.join(', ')}`);
+      const errorMessage = `Preencha os seguintes campos obrigatórios: ${missingFields.join(', ')}`;
+      console.error('❌ Erro de validação:', errorMessage);
+      throw new Error(errorMessage);
     }
+    
+    console.log('✅ Validação do formulário passou!');
   }, []);
 
   const validateCreditCardData = useCallback((creditCardData: CreditCardData) => {
