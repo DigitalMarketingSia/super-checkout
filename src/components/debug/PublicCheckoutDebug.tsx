@@ -1,6 +1,6 @@
 
 import { CheckoutSystemDebug } from './CheckoutSystemDebug';
-import { MercadoPagoDebug } from './MercadoPagoDebug';
+import { MercadoPagoDebugAdvanced } from './MercadoPagoDebugAdvanced';
 import { GatewayDebug } from './GatewayDebug';
 import { PixPaymentDebug } from './PixPaymentDebug';
 import { useParams } from 'react-router-dom';
@@ -55,6 +55,9 @@ export const PublicCheckoutDebug = ({
           selectedPaymentMethod={selectedPaymentMethod}
         />
 
+        {/* Debug Avançado do MercadoPago */}
+        <MercadoPagoDebugAdvanced gatewayId={checkoutGatewayId} />
+
         {/* Debug de Gateway */}
         <GatewayDebug selectedGatewayId={checkoutGatewayId} />
         
@@ -66,9 +69,6 @@ export const PublicCheckoutDebug = ({
             onRetryPayment={onRetryPayment}
           />
         )}
-        
-        {/* Debug do MercadoPago */}
-        <MercadoPagoDebug />
         
       </div>
     </div>

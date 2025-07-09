@@ -44,20 +44,13 @@ export const MercadoPagoProvider: React.FC<MercadoPagoProviderProps> = ({
   const [isInitialized, setIsInitialized] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [initializationAttempts, setInitializationAttempts] = useState(0);
-  const [lastGatewayId, setLastGatewayId] = useState<string | null | undefined>(gatewayId);
-  const maxInitializationAttempts = 3;
 
-  console.log('🏦 MercadoPagoProvider - Inicializando com gatewayId:', gatewayId);
-  console.log('🏦 MercadoPagoProvider - Status:', {
-    gatewayId: gatewayId || 'null/undefined',
+  console.log('🏦 MercadoPagoProvider:', {
+    gatewayId,
     hasGateway: !!gateway,
-    gatewayName: gateway?.name || 'N/A',
-    gatewayLoading,
-    gatewayError: gatewayError || 'sem erro',
-    isInitialized,
-    loading,
-    attempts: initializationAttempts
+    gatewayName: gateway?.name,
+    environment: gateway?.environment,
+    isActive: gateway?.is_active
   });
 
   const {
@@ -65,124 +58,63 @@ export const MercadoPagoProvider: React.FC<MercadoPagoProviderProps> = ({
     getAccessToken,
     getPublicKey,
     isConfigured,
-    isSDKLoaded,
     mpInstance
   } = useMercadoPagoReact({
     credentials: gateway?.credentials || {},
     environment: (gateway?.environment as 'sandbox' | 'production') || 'sandbox'
   });
 
-  // Reset quando gateway ID muda (incluindo mudança de undefined para string)
-  useEffect(() => {
-    const gatewayIdChanged = gatewayId !== lastGatewayId;
-    
-    if (gatewayIdChanged) {
-      console.log('🔄 Gateway ID mudou, resetando:', {
-        from: lastGatewayId || 'undefined',
-        to: gatewayId || 'undefined'
-      });
-      setIsInitialized(false);
-      setError(null);
-      setInitializationAttempts(0);
-      setLastGatewayId(gatewayId);
-    }
-  }, [gatewayId, lastGatewayId]);
+  // Validar credenciais com verificação de formato
+  const validateCredentials = useCallback(() => {
+    if (!gateway) return false;
 
-  const validateGateway = useCallback(() => {
-    console.log('🔍 Validando gateway...', {
-      hasGateway: !!gateway,
-      gatewayType: gateway?.type,
-      gatewayActive: gateway?.is_active,
-      environment: gateway?.environment,
-      isConfigured: isConfigured()
+    const credentials = gateway.credentials;
+    const environment = gateway.environment || 'sandbox';
+
+    console.log('🔍 Validando credenciais:', {
+      environment,
+      hasCredentials: !!credentials,
+      credentialKeys: credentials ? Object.keys(credentials) : []
     });
 
-    if (!gateway) {
-      // Se não há gateway, não podemos validar, mas não é necessariamente um erro
-      console.warn('⚠️ Nenhum gateway carregado para validação');
-      return false;
-    }
-
-    if (gateway.type !== 'mercado_pago') {
-      console.error(`❌ Gateway inválido. Esperado: mercado_pago, Recebido: ${gateway.type}`);
-      throw new Error(`Gateway inválido. Esperado: mercado_pago, Recebido: ${gateway.type}`);
-    }
-
-    if (!gateway.is_active) {
-      console.error('❌ Gateway MercadoPago está inativo');
-      throw new Error('Gateway MercadoPago está inativo');
-    }
-
-    if (!isConfigured()) {
-      console.warn('⚠️ Gateway não configurado adequadamente, verificando credenciais diretas...');
+    if (environment === 'production') {
+      const hasValidProd = credentials.publicKeyProd?.startsWith('APP_USR-') && 
+                          credentials.accessTokenProd?.startsWith('APP_USR-');
       
-      // Verificar se pelo menos temos credenciais no gateway
-      const credentials = gateway.credentials;
-      if (!credentials) {
-        console.error('❌ Nenhuma credencial encontrada no gateway');
+      if (!hasValidProd) {
+        console.error('❌ Credenciais de produção inválidas ou ausentes');
         return false;
       }
       
-      const hasProductionCreds = credentials.accessTokenProd && credentials.publicKeyProd;
-      const hasSandboxCreds = credentials.accessTokenSandbox && credentials.publicKeySandbox;
+      console.log('✅ Credenciais de produção válidas');
+      return true;
+    } else {
+      const hasValidSandbox = credentials.publicKeySandbox?.startsWith('TEST-') && 
+                             credentials.accessTokenSandbox?.startsWith('TEST-');
       
-      if (!hasProductionCreds && !hasSandboxCreds) {
-        console.error('❌ Credenciais incompletas em ambos os ambientes');
+      // Fallback para credenciais legacy
+      const hasLegacyValid = credentials.publicKey?.startsWith('TEST-') && 
+                            credentials.accessToken?.startsWith('TEST-');
+      
+      if (!hasValidSandbox && !hasLegacyValid) {
+        console.error('❌ Credenciais de sandbox inválidas ou ausentes');
         return false;
       }
       
-      console.log('✅ Credenciais diretas encontradas, continuando...');
+      console.log('✅ Credenciais de sandbox válidas');
       return true;
     }
-
-    const publicKey = getPublicKey();
-    const accessToken = getAccessToken();
-
-    if (!publicKey || !accessToken) {
-      console.warn('⚠️ Credenciais via hook incompletas, verificando credenciais diretas:', {
-        hasPublicKey: !!publicKey,
-        hasAccessToken: !!accessToken,
-        environment: gateway.environment,
-        availableCredentials: gateway.credentials ? Object.keys(gateway.credentials) : []
-      });
-      
-      // Fallback para credenciais diretas
-      const credentials = gateway.credentials;
-      if (credentials) {
-        const envCredentialsExist = gateway.environment === 'production' 
-          ? credentials.accessTokenProd && credentials.publicKeyProd
-          : credentials.accessTokenSandbox && credentials.publicKeySandbox;
-          
-        if (envCredentialsExist) {
-          console.log('✅ Credenciais diretas válidas encontradas');
-          return true;
-        }
-      }
-      
-      console.error('❌ Nenhuma credencial válida encontrada');
-      return false;
-    }
-
-    console.log('✅ Gateway validado com sucesso via hooks');
-    return true;
-  }, [gateway, isConfigured, getPublicKey, getAccessToken]);
+  }, [gateway]);
 
   const initializeMercadoPago = useCallback(async () => {
-    if (loading) {
+    if (loading || gatewayLoading) {
       console.log('⏳ Inicialização já em andamento...');
       return;
     }
 
-    if (gatewayLoading) {
-      console.log('⏳ Aguardando carregamento do gateway...');
-      return;
-    }
-
-    // Se não há gateway, não podemos inicializar
     if (!gateway) {
-      console.log('ℹ️ Nenhum gateway disponível para inicialização');
-      setError('Sistema de pagamento não configurado. Verifique se existe um gateway MercadoPago ativo.');
-      setLoading(false);
+      console.log('⚠️ Nenhum gateway disponível');
+      setError('Gateway não configurado');
       return;
     }
 
@@ -190,59 +122,35 @@ export const MercadoPagoProvider: React.FC<MercadoPagoProviderProps> = ({
     setError(null);
     
     try {
-      console.log(`🔄 Tentativa ${initializationAttempts + 1}/${maxInitializationAttempts}`);
+      console.log('🔄 Iniciando validação e inicialização...');
       
-      if (!validateGateway()) {
-        throw new Error('Gateway não passou na validação');
+      if (!validateCredentials()) {
+        throw new Error('Credenciais inválidas para o ambiente configurado');
       }
-      
-      console.log('✅ Inicializando SDK...');
+
+      console.log('✅ Credenciais validadas, inicializando SDK...');
       await initSDK();
       
       // Aguardar estabilização
       await new Promise(resolve => setTimeout(resolve, 500));
       
       setIsInitialized(true);
-      setInitializationAttempts(0);
-      console.log('✅ MercadoPago inicializado!');
+      console.log('✅ MercadoPago inicializado com sucesso!');
       
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido';
       console.error('❌ Erro na inicialização:', errorMessage);
-      
-      setInitializationAttempts(prev => prev + 1);
-      
-      if (initializationAttempts < maxInitializationAttempts - 1) {
-        const delay = (initializationAttempts + 1) * 1000;
-        console.log(`⏳ Tentando novamente em ${delay}ms...`);
-        
-        setTimeout(() => {
-          initializeMercadoPago();
-        }, delay);
-        return;
-      }
-      
-      console.error('❌ Todas as tentativas falharam');
       setError(errorMessage);
       setIsInitialized(false);
     } finally {
       setLoading(false);
     }
-  }, [
-    loading, 
-    gatewayLoading, 
-    gateway, 
-    validateGateway,
-    initSDK, 
-    initializationAttempts,
-    maxInitializationAttempts
-  ]);
+  }, [loading, gatewayLoading, gateway, validateCredentials, initSDK]);
 
   const retryInitialization = useCallback(async () => {
     console.log('🔄 Retry manual da inicialização...');
     setIsInitialized(false);
     setError(null);
-    setInitializationAttempts(0);
     
     if (gatewayError) {
       console.log('🔄 Tentando recarregar gateway...');
@@ -255,35 +163,13 @@ export const MercadoPagoProvider: React.FC<MercadoPagoProviderProps> = ({
     }
   }, [gatewayError, retryGateway, initializeMercadoPago]);
 
-  // Auto-inicializar quando condições estão prontas
+  // Auto-inicializar quando gateway estiver pronto
   useEffect(() => {
-    const shouldAutoInit = (
-      gateway && 
-      isConfigured() && 
-      !gatewayLoading && 
-      !isInitialized && 
-      !loading && 
-      !error &&
-      initializationAttempts < maxInitializationAttempts
-    );
-    
-    if (shouldAutoInit) {
+    if (gateway && !gatewayLoading && !isInitialized && !loading && !error) {
       console.log('🚀 Auto-inicializando MercadoPago...');
       initializeMercadoPago();
     }
-  }, [
-    gateway?.id, 
-    gateway?.credentials, 
-    gateway?.is_active,
-    isConfigured, 
-    gatewayLoading, 
-    isInitialized,
-    loading,
-    error,
-    initializationAttempts,
-    maxInitializationAttempts,
-    initializeMercadoPago
-  ]);
+  }, [gateway?.id, gatewayLoading, isInitialized, loading, error, initializeMercadoPago]);
 
   const value: MercadoPagoContextType = {
     isInitialized,
