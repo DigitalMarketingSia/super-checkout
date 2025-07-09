@@ -24,8 +24,8 @@ export const MercadoPagoDebugAdvanced = ({ gatewayId }: MercadoPagoDebugAdvanced
   };
 
   const getStatusColor = (status: boolean | undefined) => {
-    if (status === undefined) return 'yellow';
-    return status ? 'green' : 'red';
+    if (status === undefined) return 'secondary';
+    return status ? 'default' : 'destructive';
   };
 
   const validateCredentialFormat = (key: string, environment: 'sandbox' | 'production') => {
@@ -196,7 +196,7 @@ export const MercadoPagoDebugAdvanced = ({ gatewayId }: MercadoPagoDebugAdvanced
               <div><strong>ID:</strong> {gateway.id}</div>
               <div><strong>Nome:</strong> {gateway.name}</div>
               <div><strong>Tipo:</strong> {gateway.type}</div>
-              <div><strong>Ambiente:</strong> <Badge variant={gateway.environment === 'production' ? 'green' : 'yellow'}>{gateway.environment}</Badge></div>
+              <div><strong>Ambiente:</strong> <Badge variant={gateway.environment === 'production' ? 'default' : 'secondary'}>{gateway.environment}</Badge></div>
             </div>
           </div>
         )}
@@ -210,7 +210,7 @@ export const MercadoPagoDebugAdvanced = ({ gatewayId }: MercadoPagoDebugAdvanced
           <div className="bg-gray-800 p-3 rounded text-xs space-y-1">
             <div><strong>Public Key:</strong> {mpContext.publicKey ? (showCredentials ? mpContext.publicKey : mpContext.publicKey.substring(0, 20) + '...') : 'Não disponível'}</div>
             <div><strong>Access Token:</strong> {mpContext.accessToken ? (showCredentials ? mpContext.accessToken : mpContext.accessToken.substring(0, 20) + '...') : 'Não disponível'}</div>
-            <div><strong>Ambiente:</strong> <Badge variant={mpContext.environment === 'production' ? 'green' : 'yellow'}>{mpContext.environment}</Badge></div>
+            <div><strong>Ambiente:</strong> <Badge variant={mpContext.environment === 'production' ? 'default' : 'secondary'}>{mpContext.environment}</Badge></div>
           </div>
         </div>
 
