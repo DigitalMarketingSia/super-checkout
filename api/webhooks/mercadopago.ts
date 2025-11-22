@@ -1,5 +1,14 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
+// Helper for UUID generation
+const generateUUID = () => {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+        const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+};
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Enable CORS
     res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -15,97 +24,34 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return;
     }
 
-    // ULTRA SIMPLE TEST - No imports, no dependencies
-    console.log('[Webhook] ULTRA SIMPLE TEST - Function is executing!');
-    console.log('[Webhook] Method:', req.method);
+    // Only accept POST requests
+    if (req.method !== 'POST') {
+        return res.status(405).json({ error: 'Method not allowed' });
+    }
+
+    console.log('[Webhook] POST request received');
     console.log('[Webhook] Headers:', JSON.stringify(req.headers));
     console.log('[Webhook] Body:', JSON.stringify(req.body));
 
-    // FORCE LOG IMMEDIATELY - Before ANY processing
-    if (req.method === 'POST') {
-        try {
-            const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://vixlzrmhqsbzjhpgfwdn.supabase.co';
-            const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
-
-            if (supabaseKey) {
-                // Generate valid UUID
-                const generateUUID = () => {
-                    if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
-                    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-                        const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
-                        return v.toString(16);
-                    });
-                };
-
-                const logEntry = {
-                    id: generateUUID(),
-                    event: 'webhook.force_log_post',
-                    payload: JSON.stringify({
-                        method: req.method,
-                        body: req.body,
-                        timestamp: new Date().toISOString()
-                    }),
-                    processed: false,
-                    created_at: new Date().toISOString()
-                };
-
-                await fetch(`${supabaseUrl}/rest/v1/webhook_logs`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'apikey': supabaseKey,
-                        'Authorization': `Bearer ${supabaseKey}`,
-                        'Prefer': 'return=minimal'
-                    },
-                    body: JSON.stringify(logEntry)
-                });
-
-                console.log('[Webhook] Force log written');
-            }
-        } catch (logError: any) {
-            console.error('[Webhook] Force log failed:', logError.message);
-        }
-    }
-
+    // FORCE LOG IMMEDIATELY
     try {
-        // Try to connect to Supabase using direct fetch (no imports)
         const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://vixlzrmhqsbzjhpgfwdn.supabase.co';
         const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 
-        console.log('[Webhook] Supabase URL:', supabaseUrl);
-        console.log('[Webhook] Has Service Key:', !!process.env.SUPABASE_SERVICE_ROLE_KEY);
-        console.log('[Webhook] Has Anon Key:', !!process.env.VITE_SUPABASE_ANON_KEY);
-
         if (supabaseKey) {
-            // Generate valid UUID
-            const generateUUID = () => {
-                if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
-                return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-                    const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
-                    return v.toString(16);
-                });
-            };
-
             const logEntry = {
                 id: generateUUID(),
-                event: 'webhook.ultra_simple_test',
+                event: 'webhook.force_log_post',
                 payload: JSON.stringify({
                     method: req.method,
-                    headers: req.headers,
                     body: req.body,
-                    env: {
-                        has_service_key: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-                        has_anon_key: !!process.env.VITE_SUPABASE_ANON_KEY,
-                        node_env: process.env.NODE_ENV
-                    }
+                    timestamp: new Date().toISOString()
                 }),
                 processed: false,
                 created_at: new Date().toISOString()
             };
 
-            console.log('[Webhook] Attempting to write log:', JSON.stringify(logEntry));
-
-            const response = await fetch(`${supabaseUrl}/rest/v1/webhook_logs`, {
+            await fetch(`${supabaseUrl}/rest/v1/webhook_logs`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -116,34 +62,59 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 body: JSON.stringify(logEntry)
             });
 
-            console.log('[Webhook] Supabase response status:', response.status);
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('[Webhook] Supabase error:', errorText);
-            } else {
-                console.log('[Webhook] Log written successfully!');
-            }
-        } else {
-            console.error('[Webhook] No Supabase key available!');
+            console.log('[Webhook] Force log written');
         }
+    } catch (logError: any) {
+        console.error('[Webhook] Force log failed:', logError.message);
+    }
 
-        return res.status(200).json({
-            success: true,
-            message: 'Ultra simple webhook test executed',
-            timestamp: new Date().toISOString(),
-            env_check: {
-                has_service_key: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-                has_anon_key: !!process.env.VITE_SUPABASE_ANON_KEY
-            }
+    try {
+        // Extract signature headers
+        const xSignature = req.headers['x-signature'] as string || null;
+        const xRequestId = req.headers['x-request-id'] as string || null;
+        const payload = req.body;
+
+        console.log('[Webhook] Processing webhook:', {
+            signature: xSignature ? 'present' : 'missing',
+            requestId: xRequestId,
+            action: payload?.action,
+            type: payload?.type
         });
+
+        // DYNAMIC IMPORT: Load paymentService
+        console.log('[Webhook] Loading paymentService...');
+        const { paymentService } = await import('../../services/paymentService');
+        console.log('[Webhook] paymentService loaded successfully');
+
+        // Process webhook through payment service
+        const result = await paymentService.handleMercadoPagoWebhook(
+            payload,
+            xSignature,
+            xRequestId
+        );
+
+        console.log('[Webhook] Processing result:', result);
+
+        if (result.processed) {
+            return res.status(200).json({
+                success: true,
+                message: 'Webhook processed successfully'
+            });
+        } else {
+            return res.status(200).json({
+                success: false,
+                message: result.message || 'Webhook received but not processed'
+            });
+        }
 
     } catch (error: any) {
         console.error('[Webhook] CRITICAL ERROR:', error);
+
+        // Return 200 with error details
         return res.status(200).json({
             success: false,
-            error: 'CRITICAL_ERROR',
-            message: error.message,
+            error: 'CRITICAL_HANDLER_ERROR',
+            details: error.message,
             stack: error.stack
         });
     }
