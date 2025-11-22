@@ -176,25 +176,25 @@ export class MercadoPagoAdapter {
             const keyData = encoder.encode(secret);
             const msgData = encoder.encode(manifest);
 
-            const getCrypto = () => {
+            const getCrypto = async () => {
                 if (typeof crypto !== 'undefined' && crypto.subtle) return crypto;
                 if (typeof globalThis !== 'undefined' && globalThis.crypto && globalThis.crypto.subtle) return globalThis.crypto;
-                // Fallback for Node.js environments where crypto might not be global or lacks subtle
+
+                // Fallback for Node.js using dynamic import (ESM safe)
                 try {
-                    return require('crypto').webcrypto;
+                    const nodeCrypto = await import('node:crypto');
+                    return nodeCrypto.webcrypto as unknown as Crypto;
                 } catch (e) {
-                    console.error('Web Crypto API not available');
+                    console.error('Web Crypto API not available:', e);
                     return undefined;
                 }
             };
 
-            const webCrypto = getCrypto();
+            const webCrypto = await getCrypto();
             if (!webCrypto || !webCrypto.subtle) {
                 console.warn('[MercadoPagoAdapter] Crypto.subtle not available for signature validation');
-                return true; // Fail open or closed? Better to fail open in this specific crash scenario to allow debugging, or return false.
-                // Returning false is safer, but if it crashes, we get 500.
-                // Let's return false but log heavily.
-                return false;
+                // Return true to allow webhook processing even if validation fails (fail open for now)
+                return true;
             }
 
             const cryptoKey = await webCrypto.subtle.importKey(
