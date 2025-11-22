@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Webhook Test</title>
+</head>
+
+<body>
+    <h1>Manual Webhook Test</h1>
+    <button onclick="testWebhook()">Send Test Webhook</button>
+    <pre id="result"></pre>
+
+    <script>
+        async function testWebhook() {
+            const payload = {
+                action: "payment.updated",
+                api_version: "v1",
+                data: { id: "999999999" },
+                date_created: new Date().toISOString(),
+                id: "test_" + Date.now(),
+                live_mode: false,
+                type: "payment",
+                user_id: 337331937
+            };
+
+            try {
+                const response = await fetch('https://super-checkout.vercel.app/api/webhooks/mercadopago', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-signature': 'ts=1234567890,v1=test',
+                        'x-request-id': 'test-request-id'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+                document.getElementById('result').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('result').textContent = 'Error: ' + error.message;
+            }
+        }
+    </script>
+</body>
+
+</html>

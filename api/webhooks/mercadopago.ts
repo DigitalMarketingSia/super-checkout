@@ -28,8 +28,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 
             if (supabaseKey) {
+                // Generate valid UUID
+                const generateUUID = () => {
+                    if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+                    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+                        const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+                        return v.toString(16);
+                    });
+                };
+
                 const logEntry = {
-                    id: `force_${Date.now()}`,
+                    id: generateUUID(),
                     event: 'webhook.force_log_post',
                     payload: JSON.stringify({
                         method: req.method,
@@ -68,8 +77,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         console.log('[Webhook] Has Anon Key:', !!process.env.VITE_SUPABASE_ANON_KEY);
 
         if (supabaseKey) {
+            // Generate valid UUID
+            const generateUUID = () => {
+                if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+                return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+                    const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+                    return v.toString(16);
+                });
+            };
+
             const logEntry = {
-                id: `ultra_simple_${Date.now()}`,
+                id: generateUUID(),
                 event: 'webhook.ultra_simple_test',
                 payload: JSON.stringify({
                     method: req.method,
