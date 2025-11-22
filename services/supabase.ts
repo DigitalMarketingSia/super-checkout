@@ -18,4 +18,21 @@ const getEnv = (key: string) => {
 const SUPABASE_URL = getEnv('VITE_SUPABASE_URL') || DEFAULT_URL;
 const SUPABASE_ANON_KEY = getEnv('VITE_SUPABASE_ANON_KEY') || DEFAULT_KEY;
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Configure client based on environment
+const clientOptions = typeof window === 'undefined'
+  ? {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false
+    }
+  }
+  : {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true
+    }
+  };
+
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, clientOptions);
