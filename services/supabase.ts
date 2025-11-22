@@ -7,25 +7,11 @@ const DEFAULT_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 
 // Helper to get env vars safely in Vite/React AND Node.js (Vercel Functions)
 const getEnv = (key: string) => {
-  // 1. Try Vite (Client-side)
-  try {
-    const meta = import.meta as any;
-    if (typeof meta !== 'undefined' && meta.env && meta.env[key]) {
-      return meta.env[key];
-    }
-  } catch (e) {
-    // Ignore error if import.meta is not available
+  // In Vite, we defined process.env[key] in vite.config.ts
+  // In Node.js/Vercel, process.env is native
+  if (typeof process !== 'undefined' && process.env && process.env[key]) {
+    return process.env[key];
   }
-
-  // 2. Try Node.js (Server-side)
-  try {
-    if (typeof process !== 'undefined' && process.env && process.env[key]) {
-      return process.env[key];
-    }
-  } catch (e) {
-    // Ignore
-  }
-
   return undefined;
 };
 
