@@ -28,12 +28,27 @@ interface WebhookRequest {
 }
 
 interface WebhookResponse {
-    status: (code: number) => {
-        json: (data: any) => void;
-    };
+    status: (code: number) => WebhookResponse;
+    json: (data: any) => void;
+    setHeader: (key: string, value: string | number | readonly string[]) => WebhookResponse;
+    end: () => void;
 }
 
 export default async function handler(req: WebhookRequest, res: WebhookResponse) {
+    // Enable CORS
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+    res.setHeader(
+        'Access-Control-Allow-Headers',
+        'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, x-signature, x-request-id'
+    );
+
+    if (req.method === 'OPTIONS') {
+        res.status(200).end();
+        return;
+    }
+
     // Only accept POST requests
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
@@ -48,8 +63,8 @@ export default async function handler(req: WebhookRequest, res: WebhookResponse)
         console.log('[Webhook] Received notification:', {
             signature: xSignature ? 'present' : 'missing',
             requestId: xRequestId,
-            action: payload.action,
-            type: payload.type
+            action: payload?.action,
+            type: payload?.type
         });
 
         // Process webhook through payment service
@@ -72,13 +87,14 @@ export default async function handler(req: WebhookRequest, res: WebhookResponse)
         }
 
     } catch (error: any) {
-        console.error('[Webhook] Processing error:', error);
+        console.error('[Webhook] CRITICAL ERROR:', error);
 
-        // Return 200 to prevent MP from retrying on our errors
-        // Log the error for investigation
+        // Return 200 with error details so we can see it in MP Dashboard
         return res.status(200).json({
             success: false,
-            error: error.message
+            error: 'CRITICAL_HANDLER_ERROR',
+            details: error.message,
+            stack: error.stack
         });
     }
 }
