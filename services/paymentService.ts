@@ -346,8 +346,8 @@ class PaymentService {
   // --- Helper Methods ---
 
   private async savePayment(payment: Payment) {
-    const payments = await storage.getPayments();
-    await storage.savePayments([payment, ...payments]);
+    // Use createPayment for initial save to avoid RLS issues with upsert
+    await storage.createPayment(payment);
   }
 
   private async updateOrderStatus(orderId: string, status: OrderStatus) {

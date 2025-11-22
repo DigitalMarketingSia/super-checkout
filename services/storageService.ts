@@ -743,6 +743,32 @@ class StorageService {
     return data as Payment[];
   }
 
+  async createPayment(payment: Payment) {
+    // Ensure user_id is set
+    let paymentToSave = { ...payment };
+
+    if (!paymentToSave.user_id) {
+      const user = await this.getUser();
+      if (user) {
+        paymentToSave.user_id = user.id;
+      } else {
+        const { data: order } = await supabase
+          .from('orders')
+          .select('user_id')
+          .eq('id', payment.order_id)
+          .single();
+        paymentToSave.user_id = order?.user_id;
+      }
+    }
+
+    const { error } = await supabase.from('payments').insert(paymentToSave);
+
+    if (error) {
+      console.error('Error creating payment:', error.message);
+      throw error;
+    }
+  }
+
   async getPaymentByTransactionId(transactionId: string): Promise<Payment | null> {
     const { data, error } = await supabase
       .from('payments')
