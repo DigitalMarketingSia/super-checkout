@@ -193,7 +193,7 @@ class PaymentService {
 
       // 3. Record Payment
       const newPayment: Payment = {
-        id: `pay_${Date.now()}`,
+        id: generateUUID(),
         order_id: order.id,
         gateway_id: gateway.id,
         status: mpAdapter.translateStatus(paymentResponse.status),
