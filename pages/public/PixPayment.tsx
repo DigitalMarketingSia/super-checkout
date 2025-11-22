@@ -1,9 +1,11 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Copy, Check, Clock, ShieldCheck, Smartphone, QrCode, AlertCircle, Loader2 } from 'lucide-react';
 import { storage } from '../../services/storageService';
-import { Order } from '../../types';
+import { supabase } from '../../services/supabase';
+import { Order, OrderStatus } from '../../types';
 import { Button } from '../../components/ui/Button';
 
 // Mocks de segurança conforme solicitado
@@ -22,11 +24,12 @@ const MOCK_PIX_DATA = {
 
 export const PixPayment = () => {
   const { orderId } = useParams<{ orderId: string }>();
+  const navigate = useNavigate();
   const location = useLocation();
   const [timeLeft, setTimeLeft] = useState({ minutes: 14, seconds: 59 });
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
-  
+
   // State para dados
   const [orderData, setOrderData] = useState<any>(null);
   const [pixCode, setPixCode] = useState<string>("");
@@ -45,7 +48,7 @@ export const PixPayment = () => {
       if (orderId) {
         const orders = await storage.getOrders();
         const foundOrder = orders.find(o => o.id === orderId);
-        
+
         if (foundOrder) {
           // Adaptar estrutura do storage para o visual da pagina
           const adaptedOrder = {
@@ -67,6 +70,32 @@ export const PixPayment = () => {
     };
     load();
   }, [orderId, location.state]);
+
+  // Polling para verificar status do pagamento
+  useEffect(() => {
+    if (!orderId) return;
+
+    const checkStatus = async () => {
+      try {
+        // Consulta direta ao Supabase para garantir dados frescos
+        const { data, error } = await supabase
+          .from('orders')
+          .select('status')
+          .eq('id', orderId)
+          .single();
+
+        if (data && data.status === OrderStatus.PAID) {
+          navigate(`/thank-you/${orderId}`);
+        }
+      } catch (error) {
+        console.error('Erro ao verificar status:', error);
+      }
+    };
+
+    // Verificar a cada 3 segundos
+    const interval = setInterval(checkStatus, 3000);
+    return () => clearInterval(interval);
+  }, [orderId, navigate]);
 
   // Timer de expiração
   useEffect(() => {
@@ -102,10 +131,10 @@ export const PixPayment = () => {
       <header className="bg-white border-b border-gray-200 py-4">
         <div className="max-w-4xl mx-auto px-4 flex items-center justify-between">
           <div className="flex items-center gap-2 text-primary font-bold text-xl">
-             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white">
-                <ShieldCheck className="w-5 h-5" />
-              </div>
-             <span>Pagamento Seguro</span>
+            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white">
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <span>Pagamento Seguro</span>
           </div>
           <div className="text-xs text-gray-500 hidden sm:block">
             ID do Pedido: <span className="font-mono font-medium text-gray-900">{orderId}</span>
@@ -115,10 +144,10 @@ export const PixPayment = () => {
 
       <main className="max-w-4xl mx-auto px-4 py-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          
+
           {/* Coluna Esquerda: Área do Pix */}
           <div className="md:col-span-2 space-y-6">
-            
+
             {/* Card de Status */}
             <div className="bg-white rounded-xl shadow-sm border border-green-100 overflow-hidden">
               <div className="bg-green-50 p-4 border-b border-green-100 flex items-center gap-3">
@@ -130,17 +159,17 @@ export const PixPayment = () => {
                   <p className="text-xs text-gray-500">Realize o pagamento para liberar seu acesso imediatamente.</p>
                 </div>
               </div>
-              
+
               <div className="p-6 flex flex-col items-center justify-center text-center">
                 <p className="text-sm text-gray-500 mb-4">Escaneie o QR Code abaixo no app do seu banco:</p>
-                
+
                 {/* QR Code Visual */}
                 <div className="bg-white p-2 border-2 border-gray-100 rounded-xl mb-6 shadow-sm">
-                   <img 
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${pixCode}`} 
-                    alt="QR Code Pix" 
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${pixCode}`}
+                    alt="QR Code Pix"
                     className="w-52 h-52 object-contain"
-                   />
+                  />
                 </div>
 
                 <div className="w-full max-w-md space-y-3">
@@ -151,37 +180,36 @@ export const PixPayment = () => {
                       Expira em {timeLeft.minutes}:{timeLeft.seconds.toString().padStart(2, '0')}
                     </span>
                   </div>
-                  
+
                   <div className="relative group">
-                    <input 
-                      type="text" 
-                      readOnly 
+                    <input
+                      type="text"
+                      readOnly
                       value={pixCode}
                       className="w-full bg-gray-50 border border-gray-200 text-gray-500 text-xs rounded-lg pl-4 pr-24 py-3 focus:outline-none focus:ring-2 focus:ring-primary/20 font-mono truncate"
                     />
-                    <button 
+                    <button
                       onClick={handleCopy}
-                      className={`absolute right-1 top-1 bottom-1 px-4 rounded-md text-xs font-bold transition-all flex items-center gap-2 ${
-                        copied 
-                        ? 'bg-green-500 text-white' 
-                        : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 shadow-sm'
-                      }`}
+                      className={`absolute right-1 top-1 bottom-1 px-4 rounded-md text-xs font-bold transition-all flex items-center gap-2 ${copied
+                          ? 'bg-green-500 text-white'
+                          : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 shadow-sm'
+                        }`}
                     >
                       {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
                       {copied ? 'Copiado!' : 'Copiar'}
                     </button>
                   </div>
-                  
+
                   <p className="text-[10px] text-gray-400 mt-4">
                     Após o pagamento, a aprovação ocorre em instantes e você receberá os dados de acesso no e-mail <span className="text-gray-600 font-medium">{orderData?.customer?.email}</span>.
                   </p>
                 </div>
               </div>
-              
+
               {/* Footer Loading */}
               <div className="bg-gray-50 p-4 border-t border-gray-100 flex items-center justify-center gap-3">
-                 <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
-                 <span className="text-sm text-gray-500 font-medium">Aguardando confirmação do banco...</span>
+                <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                <span className="text-sm text-gray-500 font-medium">Aguardando confirmação do banco...</span>
               </div>
             </div>
 
@@ -205,33 +233,33 @@ export const PixPayment = () => {
           {/* Coluna Direita: Resumo do Pedido */}
           <div className="space-y-6">
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-               <h3 className="font-bold text-gray-900 mb-4 pb-4 border-b border-gray-100">Resumo da Compra</h3>
-               
-               <div className="space-y-3">
-                 {orderData?.items?.map((item: any, idx: number) => (
-                   <div key={idx} className="flex justify-between text-sm">
-                      <span className="text-gray-600 w-2/3">{item.name}</span>
-                      <span className="font-medium text-gray-900">R$ {item.price.toFixed(2)}</span>
-                   </div>
-                 ))}
-               </div>
+              <h3 className="font-bold text-gray-900 mb-4 pb-4 border-b border-gray-100">Resumo da Compra</h3>
 
-               <div className="mt-6 pt-4 border-t border-gray-100">
-                 <div className="flex justify-between items-center">
-                   <span className="text-gray-500 text-sm">Total a pagar</span>
-                   <span className="text-2xl font-bold text-[#10B981]">R$ {orderData?.totalAmount?.toFixed(2)}</span>
-                 </div>
-               </div>
+              <div className="space-y-3">
+                {orderData?.items?.map((item: any, idx: number) => (
+                  <div key={idx} className="flex justify-between text-sm">
+                    <span className="text-gray-600 w-2/3">{item.name}</span>
+                    <span className="font-medium text-gray-900">R$ {item.price.toFixed(2)}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-6 pt-4 border-t border-gray-100">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-500 text-sm">Total a pagar</span>
+                  <span className="text-2xl font-bold text-[#10B981]">R$ {orderData?.totalAmount?.toFixed(2)}</span>
+                </div>
+              </div>
             </div>
 
             <div className="text-center space-y-2">
-               <p className="text-xs text-gray-400">Vendido e entregue por</p>
-               <div className="flex items-center justify-center gap-2 opacity-70">
-                  <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center text-[10px] font-bold text-gray-500">
-                    SC
-                  </div>
-                  <span className="text-sm font-medium text-gray-600">Super Checkout Inc.</span>
-               </div>
+              <p className="text-xs text-gray-400">Vendido e entregue por</p>
+              <div className="flex items-center justify-center gap-2 opacity-70">
+                <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center text-[10px] font-bold text-gray-500">
+                  SC
+                </div>
+                <span className="text-sm font-medium text-gray-600">Super Checkout Inc.</span>
+              </div>
             </div>
           </div>
 

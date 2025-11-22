@@ -109,7 +109,7 @@ const App = () => {
               <Route path="/update-password" element={<UpdatePassword />} />
               <Route path="/c/:id" element={<PublicCheckout />} />
               <Route path="/pagamento/pix/:orderId" element={<PixPayment />} />
-              <Route path="/thank-you" element={<ThankYou />} />
+              <Route path="/thank-you/:orderId" element={<ThankYou />} />
 
               {/* Admin Routes (Protected) */}
               <Route path="/admin" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
