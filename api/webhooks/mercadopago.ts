@@ -74,26 +74,53 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const xRequestId = req.headers['x-request-id'] as string || null;
         const payload = req.body;
 
-        console.log('[Webhook] Processing webhook:', {
-            signature: xSignature ? 'present' : 'missing',
-            requestId: xRequestId,
-            action: payload?.action,
-            type: payload?.type
-        });
+        console.log('[Webhook] STEP 1: Extracted headers and payload');
 
         // DYNAMIC IMPORT: Load paymentService
-        console.log('[Webhook] Loading paymentService...');
+        console.log('[Webhook] STEP 2: About to import paymentService...');
         const { paymentService } = await import('../../services/paymentService');
-        console.log('[Webhook] paymentService loaded successfully');
+        console.log('[Webhook] STEP 3: paymentService imported successfully');
 
         // Process webhook through payment service
+        console.log('[Webhook] STEP 4: About to call handleMercadoPagoWebhook...');
         const result = await paymentService.handleMercadoPagoWebhook(
             payload,
             xSignature,
             xRequestId
         );
+        console.log('[Webhook] STEP 5: handleMercadoPagoWebhook completed. Result:', JSON.stringify(result));
 
-        console.log('[Webhook] Processing result:', result);
+        // Log result to database
+        try {
+            const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://vixlzrmhqsbzjhpgfwdn.supabase.co';
+            const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+
+            if (supabaseKey) {
+                await fetch(`${supabaseUrl}/rest/v1/webhook_logs`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': supabaseKey,
+                        'Authorization': `Bearer ${supabaseKey}`,
+                        'Prefer': 'return=minimal'
+                    },
+                    body: JSON.stringify({
+                        id: generateUUID(),
+                        event: 'webhook.processing_result',
+                        payload: JSON.stringify({
+                            result: result,
+                            payment_data: payload?.data,
+                            timestamp: new Date().toISOString()
+                        }),
+                        processed: result.processed,
+                        created_at: new Date().toISOString()
+                    })
+                });
+                console.log('[Webhook] STEP 6: Result logged to database');
+            }
+        } catch (logError: any) {
+            console.error('[Webhook] Failed to log result:', logError.message);
+        }
 
         if (result.processed) {
             return res.status(200).json({
@@ -108,7 +135,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
     } catch (error: any) {
-        console.error('[Webhook] CRITICAL ERROR:', error);
+        console.error('[Webhook] CRITICAL ERROR at some step:', error);
+        console.error('[Webhook] Error stack:', error.stack);
+
+        // Log error to database
+        try {
+            const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://vixlzrmhqsbzjhpgfwdn.supabase.co';
+            const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+
+            if (supabaseKey) {
+                await fetch(`${supabaseUrl}/rest/v1/webhook_logs`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': supabaseKey,
+                        'Authorization': `Bearer ${supabaseKey}`,
+                        'Prefer': 'return=minimal'
+                    },
+                    body: JSON.stringify({
+                        id: generateUUID(),
+                        event: 'webhook.critical_error',
+                        payload: JSON.stringify({
+                            error: error.message,
+                            stack: error.stack,
+                            timestamp: new Date().toISOString()
+                        }),
+                        processed: false,
+                        created_at: new Date().toISOString()
+                    })
+                });
+            }
+        } catch (logError) {
+            console.error('[Webhook] Failed to log error:', logError);
+        }
 
         // Return 200 with error details
         return res.status(200).json({
