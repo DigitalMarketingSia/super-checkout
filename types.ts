@@ -101,17 +101,17 @@ export interface Checkout {
   id: string;
   name: string;
   active: boolean;
-  
+
   // Relations
   product_id: string; // Main product directly linked
   offer_id?: string; // Optional: legacy or specific offer
   gateway_id: string;
   domain_id?: string;
-  
+
   // Sales Strategy
   order_bump_ids: string[]; // List of product IDs
   upsell_product_id?: string; // One click upsell product ID
-  
+
   // URL
   custom_url_slug: string;
 
@@ -158,6 +158,7 @@ export interface Payment {
   transaction_id: string;
   raw_response: string;
   created_at: string;
+  user_id?: string; // Merchant ID for RLS
 }
 
 export interface WebhookHeader {
