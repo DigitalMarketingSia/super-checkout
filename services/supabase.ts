@@ -17,6 +17,12 @@ const getEnv = (key: string) => {
 
 const SUPABASE_URL = getEnv('VITE_SUPABASE_URL') || DEFAULT_URL;
 const SUPABASE_ANON_KEY = getEnv('VITE_SUPABASE_ANON_KEY') || DEFAULT_KEY;
+const SUPABASE_SERVICE_KEY = getEnv('SUPABASE_SERVICE_ROLE_KEY');
+
+// Use Service Key on server if available to bypass RLS, otherwise Anon Key
+const SUPABASE_KEY = (typeof window === 'undefined' && SUPABASE_SERVICE_KEY)
+  ? SUPABASE_SERVICE_KEY
+  : SUPABASE_ANON_KEY;
 
 // Configure client based on environment
 const clientOptions = typeof window === 'undefined'
@@ -35,4 +41,4 @@ const clientOptions = typeof window === 'undefined'
     }
   };
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, clientOptions);
+export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, clientOptions);

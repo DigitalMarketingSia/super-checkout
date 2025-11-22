@@ -297,8 +297,7 @@ class PaymentService {
       const paymentInfo = await mpAdapter.getPaymentInfo(paymentId);
 
       // 5. Find related payment record
-      const payments = await storage.getPayments();
-      const relatedPayment = payments.find(p => p.transaction_id === paymentId.toString());
+      const relatedPayment = await storage.getPaymentByTransactionId(paymentId.toString());
 
       if (!relatedPayment) {
         console.warn('[PaymentService] Payment not found for webhook');

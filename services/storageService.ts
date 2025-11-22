@@ -732,8 +732,60 @@ class StorageService {
   }
 
   // --- PAYMENTS ---
-  async getPayments(): Promise<Payment[]> { return []; }
-  async savePayments(items: Payment[]) { /* No-op for this MVP layer */ }
+  // --- PAYMENTS ---
+
+  async getPayments(): Promise<Payment[]> {
+    const { data, error } = await supabase.from('payments').select('*');
+    if (error) {
+      console.error('Error fetching payments:', error.message);
+      return [];
+    }
+    return data as Payment[];
+  }
+
+  async getPaymentByTransactionId(transactionId: string): Promise<Payment | null> {
+    const { data, error } = await supabase
+      .from('payments')
+      .select('*')
+      .eq('transaction_id', transactionId)
+      .single();
+
+    if (error) {
+      // It's common to not find it if it doesn't exist yet
+      return null;
+    }
+    return data as Payment;
+  }
+
+  async savePayments(items: Payment[]) {
+    if (items.length === 0) return;
+
+    // We need to ensure each payment has a user_id (Merchant ID) for RLS
+    const paymentsWithUser = await Promise.all(items.map(async (p) => {
+      // If we already have a user (logged in), use it
+      const user = await this.getUser();
+      if (user) return { ...p, user_id: user.id };
+
+      // Otherwise, fetch the Order to find the merchant
+      const { data: order } = await supabase
+        .from('orders')
+        .select('user_id')
+        .eq('id', p.order_id)
+        .single();
+
+      return {
+        ...p,
+        user_id: order?.user_id
+      };
+    }));
+
+    const { error } = await supabase.from('payments').upsert(paymentsWithUser);
+
+    if (error) {
+      console.error('Error saving payments:', error.message);
+      throw error;
+    }
+  }
 
   // --- WEBHOOKS ---
 
