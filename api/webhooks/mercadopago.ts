@@ -48,6 +48,24 @@ export default async function handler(req: WebhookRequest, res: WebhookResponse)
         // DYNAMIC IMPORT: Load paymentService here to catch initialization errors
         console.log('[Webhook] Loading paymentService...');
         const { paymentService } = await import('../../services/paymentService');
+        const { supabase } = await import('../../services/supabase'); // Import supabase directly to log
+
+        // DEBUG: Immediate Log to DB to verify connectivity
+        await supabase.from('webhook_logs').insert({
+            id: `debug_${Date.now()}`,
+            event: 'webhook.received_debug',
+            payload: JSON.stringify({
+                headers: req.headers,
+                body: payload,
+                env_check: {
+                    has_service_key: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+                    node_env: process.env.NODE_ENV
+                }
+            }),
+            processed: false,
+            created_at: new Date().toISOString()
+        });
+
         console.log('[Webhook] paymentService loaded successfully');
 
         // Process webhook through payment service
