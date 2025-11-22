@@ -3,6 +3,15 @@ import { Gateway, GatewayProvider, Order, OrderStatus, Payment, WebhookLog, Orde
 import { storage } from './storageService';
 import { MercadoPagoAdapter } from './adapters/MercadoPagoAdapter';
 
+// Helper for UUID generation
+const generateUUID = () => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
+
 export interface ProcessPaymentRequest {
   checkoutId: string;
   offerId: string;
@@ -65,13 +74,7 @@ class PaymentService {
       }
 
       // 2. Create Local Order (Pending)
-      const generateUUID = () => {
-        if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
-        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-          const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
-          return v.toString(16);
-        });
-      };
+
 
       const newOrder: Order = {
         id: generateUUID(),
