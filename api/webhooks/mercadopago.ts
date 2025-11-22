@@ -21,6 +21,43 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.log('[Webhook] Headers:', JSON.stringify(req.headers));
     console.log('[Webhook] Body:', JSON.stringify(req.body));
 
+    // FORCE LOG IMMEDIATELY - Before ANY processing
+    if (req.method === 'POST') {
+        try {
+            const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://vixlzrmhqsbzjhpgfwdn.supabase.co';
+            const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+
+            if (supabaseKey) {
+                const logEntry = {
+                    id: `force_${Date.now()}`,
+                    event: 'webhook.force_log_post',
+                    payload: JSON.stringify({
+                        method: req.method,
+                        body: req.body,
+                        timestamp: new Date().toISOString()
+                    }),
+                    processed: false,
+                    created_at: new Date().toISOString()
+                };
+
+                await fetch(`${supabaseUrl}/rest/v1/webhook_logs`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': supabaseKey,
+                        'Authorization': `Bearer ${supabaseKey}`,
+                        'Prefer': 'return=minimal'
+                    },
+                    body: JSON.stringify(logEntry)
+                });
+
+                console.log('[Webhook] Force log written');
+            }
+        } catch (logError: any) {
+            console.error('[Webhook] Force log failed:', logError.message);
+        }
+    }
+
     try {
         // Try to connect to Supabase using direct fetch (no imports)
         const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://vixlzrmhqsbzjhpgfwdn.supabase.co';
