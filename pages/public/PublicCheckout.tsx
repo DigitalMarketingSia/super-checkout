@@ -619,8 +619,15 @@ export const PublicCheckout = ({ checkoutId: propId }: { checkoutId?: string }) 
                               type="text"
                               className="w-full border border-gray-300 rounded-lg px-4 py-2.5 outline-none focus:border-[#10B981] focus:ring-2 focus:ring-[#10B981]/20 transition-all"
                               placeholder="MM/AA"
+                              maxLength={5}
                               value={customer.expiry}
-                              onChange={e => setCustomer({ ...customer, expiry: e.target.value })}
+                              onChange={e => {
+                                 let value = e.target.value.replace(/\D/g, ''); // Remove non-digits
+                                 if (value.length >= 2) {
+                                    value = value.slice(0, 2) + '/' + value.slice(2, 4);
+                                 }
+                                 setCustomer({ ...customer, expiry: value });
+                              }}
                               onFocus={() => setCardFlipped(false)}
                            />
                            <input
