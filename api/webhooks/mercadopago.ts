@@ -127,7 +127,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (supabaseKey) {
             try {
                 console.log('[Webhook] Fetching gateway credentials');
-                const gatewayRes = await fetch(`${supabaseUrl}/rest/v1/gateways?name=eq.mercadopago&active=eq.true&select=*`, {
+                // FIX: Database name is 'mercado_pago', not 'mercadopago'
+                const gatewayRes = await fetch(`${supabaseUrl}/rest/v1/gateways?name=eq.mercado_pago&active=eq.true&select=*`, {
                     headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
                 });
 
