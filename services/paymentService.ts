@@ -92,8 +92,8 @@ class PaymentService {
       };
 
       // Persist Order
-      const orders = await storage.getOrders();
-      await storage.saveOrders([newOrder, ...orders]);
+      // Persist Order - Only save the new order, not the entire list
+      await storage.saveOrders([newOrder]);
 
       // 3. Route to Gateway Implementation
       let gatewayResponse: ProcessPaymentResult;
@@ -352,10 +352,11 @@ class PaymentService {
 
   private async updateOrderStatus(orderId: string, status: OrderStatus) {
     const orders = await storage.getOrders();
-    const updatedOrders = orders.map(o =>
-      o.id === orderId ? { ...o, status } : o
-    );
-    await storage.saveOrders(updatedOrders);
+    const orderToUpdate = orders.find(o => o.id === orderId);
+
+    if (orderToUpdate) {
+      await storage.saveOrders([{ ...orderToUpdate, status }]);
+    }
   }
 
   private async updatePaymentStatus(

@@ -117,6 +117,18 @@ export const PixPayment = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleSimulatePayment = async () => {
+    if (!orderId) return;
+    try {
+      const { error } = await supabase.rpc('simulate_payment', { order_id_input: orderId });
+      if (error) throw error;
+      // Polling will catch the update
+    } catch (error) {
+      console.error('Erro ao simular pagamento:', error);
+      alert('Erro ao simular pagamento');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -191,8 +203,8 @@ export const PixPayment = () => {
                     <button
                       onClick={handleCopy}
                       className={`absolute right-1 top-1 bottom-1 px-4 rounded-md text-xs font-bold transition-all flex items-center gap-2 ${copied
-                          ? 'bg-green-500 text-white'
-                          : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 shadow-sm'
+                        ? 'bg-green-500 text-white'
+                        : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 shadow-sm'
                         }`}
                     >
                       {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
@@ -225,6 +237,19 @@ export const PixPayment = () => {
                     <li>Confira os dados e confirme o pagamento.</li>
                   </ol>
                 </div>
+              </div>
+            </div>
+
+            {/* Botão de Simulação para Testes */}
+            <div className="bg-indigo-50 rounded-xl border border-indigo-100 p-4">
+              <div className="text-center">
+                <p className="text-xs text-indigo-600 font-medium mb-3">Ambiente de Teste</p>
+                <Button
+                  onClick={handleSimulatePayment}
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
+                >
+                  Simular Pagamento Aprovado
+                </Button>
               </div>
             </div>
 
