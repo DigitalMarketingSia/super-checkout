@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 
 import { Dashboard } from './pages/admin/Dashboard';
@@ -86,11 +86,11 @@ const DomainDispatcher: React.FC<{ children: React.ReactNode }> = ({ children })
   if (customCheckoutId) {
     // Render Checkout directly for custom domain
     return (
-      <HashRouter>
+      <BrowserRouter>
         <Routes>
           <Route path="*" element={<PublicCheckout checkoutId={customCheckoutId} />} />
         </Routes>
-      </HashRouter>
+      </BrowserRouter>
     );
   }
 
@@ -102,12 +102,11 @@ const App = () => {
     <AuthProvider>
       <ThemeProvider>
         <DomainDispatcher>
-          <HashRouter>
+          <BrowserRouter>
             <Routes>
               {/* Public Routes */}
               <Route path="/login" element={<Login />} />
               <Route path="/update-password" element={<UpdatePassword />} />
-              <Route path="/c/:id" element={<PublicCheckout />} />
               <Route path="/pagamento/pix/:orderId" element={<PixPayment />} />
               <Route path="/thank-you/:orderId" element={<ThankYou />} />
 
@@ -125,8 +124,11 @@ const App = () => {
 
               {/* Redirect root to Admin */}
               <Route path="/" element={<Navigate to="/admin" replace />} />
+              
+              {/* Checkout Route - Last as catch-all for checkout IDs */}
+              <Route path="/:id" element={<PublicCheckout />} />
             </Routes>
-          </HashRouter>
+          </BrowserRouter>
         </DomainDispatcher>
       </ThemeProvider>
     </AuthProvider>
