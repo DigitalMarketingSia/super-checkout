@@ -346,7 +346,7 @@ export const PublicCheckout = ({ checkoutId: propId }: { checkoutId?: string }) 
                window.location.href = result.boletoData.url; // Simple redirect for boleto for now
             } else {
                // Credit Card Success -> Thank You Page
-               navigate(`/thank-you?orderId=${result.orderId}`);
+               navigate(`/thank-you/${result.orderId}`);
             }
          } else {
             alert('Erro no pagamento: ' + (result.message || 'Transação recusada'));
