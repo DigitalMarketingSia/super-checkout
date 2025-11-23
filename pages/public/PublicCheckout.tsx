@@ -444,7 +444,7 @@ export const PublicCheckout = ({ checkoutId: propId }: { checkoutId?: string }) 
          {/* TIMER DE ESCASSEZ */}
          {config.timer?.active && (
             <div
-               className="sticky top-0 z-50 py-3 shadow-lg transition-colors"
+               className="py-3 shadow-lg transition-colors"
                style={{ backgroundColor: config.timer.bg_color, color: config.timer.text_color }}
             >
                <div className="max-w-2xl mx-auto px-4 flex items-center justify-between">
