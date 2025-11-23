@@ -72,6 +72,84 @@ export const PublicCheckout = ({ checkoutId: propId }: { checkoutId?: string }) 
    const [touched, setTouched] = useState<Record<string, boolean>>({});
    const [errors, setErrors] = useState<Record<string, string>>({});
 
+   // Card Brand Detection
+   type CardBrand = 'visa' | 'mastercard' | 'elo' | 'amex' | 'hipercard' | 'diners' | 'discover' | 'default';
+   const [cardBrand, setCardBrand] = useState<CardBrand>('default');
+
+   // Detect card brand based on card number
+   const detectCardBrand = (cardNumber: string): CardBrand => {
+      const cleaned = cardNumber.replace(/\D/g, '');
+
+      // Visa: starts with 4
+      if (/^4/.test(cleaned)) return 'visa';
+
+      // Mastercard: 51-55 or 2221-2720
+      if (/^5[1-5]/.test(cleaned) || /^2(22[1-9]|2[3-9][0-9]|[3-6][0-9]{2}|7[0-1][0-9]|720)/.test(cleaned)) return 'mastercard';
+
+      // Elo: Multiple BIN ranges
+      if (/^(636368|438935|504175|451416|636297|5067|4576|4011)/.test(cleaned)) return 'elo';
+
+      // American Express: 34 or 37
+      if (/^3[47]/.test(cleaned)) return 'amex';
+
+      // Hipercard: 606282 or 3841
+      if (/^(606282|3841)/.test(cleaned)) return 'hipercard';
+
+      // Diners: 36, 38, or 300-305
+      if (/^(36|38|30[0-5])/.test(cleaned)) return 'diners';
+
+      // Discover: 6011, 65, or 644-649
+      if (/^(6011|65|64[4-9])/.test(cleaned)) return 'discover';
+
+      return 'default';
+   };
+
+   // Card brand styling configuration
+   const cardBrandConfig = {
+      visa: {
+         gradient: 'from-[#1A1F71] to-[#0D47A1]',
+         logo: 'VISA',
+         textColor: 'text-white'
+      },
+      mastercard: {
+         gradient: 'from-[#EB001B] to-[#F79E1B]',
+         logo: 'MASTERCARD',
+         textColor: 'text-white'
+      },
+      elo: {
+         gradient: 'from-[#FFCB05] to-[#000000]',
+         logo: 'ELO',
+         textColor: 'text-white'
+      },
+      amex: {
+         gradient: 'from-[#006FCF] to-[#003366]',
+         logo: 'AMEX',
+         textColor: 'text-white'
+      },
+      hipercard: {
+         gradient: 'from-[#D32F2F] to-[#B71C1C]',
+         logo: 'HIPERCARD',
+         textColor: 'text-white'
+      },
+      diners: {
+         gradient: 'from-[#0079BE] to-[#00457C]',
+         logo: 'DINERS',
+         textColor: 'text-white'
+      },
+      discover: {
+         gradient: 'from-[#FF6000] to-[#CC4D00]',
+         logo: 'DISCOVER',
+         textColor: 'text-white'
+      },
+      default: {
+         gradient: 'from-gray-900 to-gray-800',
+         logo: 'CARD',
+         textColor: 'text-white'
+      }
+   };
+
+   const currentCardStyle = cardBrandConfig[cardBrand];
+
    // Load Data
    useEffect(() => {
       const load = async () => {
@@ -585,10 +663,10 @@ export const PublicCheckout = ({ checkoutId: propId }: { checkoutId?: string }) 
                         <div className="perspective-1000 w-full h-[176px] relative cursor-pointer group" onClick={() => setCardFlipped(!cardFlipped)}>
                            <div className={`w-full h-full relative preserve-3d transition-transform duration-700 ${cardFlipped ? 'rotate-y-180' : ''}`} style={{ transformStyle: 'preserve-3d', transform: cardFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)' }}>
                               {/* Front */}
-                              <div className="absolute w-full h-full backface-hidden bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl shadow-xl p-4 text-white flex flex-col justify-between z-10" style={{ backfaceVisibility: 'hidden' }}>
+                              <div className={`absolute w-full h-full backface-hidden bg-gradient-to-br ${currentCardStyle.gradient} rounded-xl shadow-xl p-4 text-white flex flex-col justify-between z-10 transition-all duration-500`} style={{ backfaceVisibility: 'hidden' }}>
                                  <div className="flex justify-between items-start">
                                     <div className="w-10 h-7 bg-yellow-500/80 rounded-md"></div>
-                                    <span className="font-mono text-base italic font-bold">VISA</span>
+                                    <span className={`font-mono text-base italic font-bold ${currentCardStyle.textColor}`}>{currentCardStyle.logo}</span>
                                  </div>
                                  <div>
                                     <p className="font-mono text-base tracking-widest shadow-black drop-shadow-md">{customer.cardNumber || '0000 0000 0000 0000'}</p>
@@ -625,7 +703,11 @@ export const PublicCheckout = ({ checkoutId: propId }: { checkoutId?: string }) 
                               className="w-full border border-gray-300 rounded-lg px-4 py-2.5 outline-none focus:border-[#10B981] focus:ring-2 focus:ring-[#10B981]/20 transition-all"
                               placeholder="Número do Cartão"
                               value={customer.cardNumber}
-                              onChange={e => setCustomer({ ...customer, cardNumber: e.target.value })}
+                              onChange={e => {
+                                 const newValue = e.target.value;
+                                 setCustomer({ ...customer, cardNumber: newValue });
+                                 setCardBrand(detectCardBrand(newValue));
+                              }}
                               onFocus={() => setCardFlipped(false)}
                            />
                         </div>
