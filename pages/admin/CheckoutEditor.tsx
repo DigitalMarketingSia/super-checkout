@@ -551,6 +551,7 @@ export const CheckoutEditor = () => {
                            {/* Header Image */}
                            <div>
                               <label className="block text-sm font-medium text-gray-300 mb-2">Imagem de Cabeçalho (Banner)</label>
+                              <p className="text-xs text-gray-400 mb-3">Tamanho recomendado: 1200x300 pixels</p>
                               <div className="flex gap-3">
                                  <input
                                     type="text"
