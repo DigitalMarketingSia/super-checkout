@@ -444,7 +444,7 @@ export const PublicCheckout = ({ checkoutId: propId }: { checkoutId?: string }) 
          {/* TIMER DE ESCASSEZ */}
          {config.timer?.active && (
             <div
-               className="fixed top-0 left-0 right-0 z-50 py-3 shadow-lg transition-colors"
+               className="sticky top-0 z-50 py-3 shadow-lg transition-colors"
                style={{ backgroundColor: config.timer.bg_color, color: config.timer.text_color }}
             >
                <div className="max-w-2xl mx-auto px-4 flex items-center justify-between">
@@ -471,7 +471,7 @@ export const PublicCheckout = ({ checkoutId: propId }: { checkoutId?: string }) 
             </div>
          )}
 
-         <div className={`max-w-2xl mx-auto px-4 space-y-6 ${config.timer?.active ? 'mt-[60px]' : 'mt-6'}`}>
+         <div className="max-w-2xl mx-auto px-4 mt-6 space-y-6">
 
             {/* HEADER IMAGE */}
             {config.header_image && (
