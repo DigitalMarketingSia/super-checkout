@@ -195,7 +195,7 @@ export const Checkouts = () => {
                         <button
                           onClick={() => {
                             const domain = domains.find(d => d.id === chk.domain_id);
-                            const baseUrl = domain ? `https://${domain.domain}` : window.location.origin + '/#/c';
+                            const baseUrl = domain ? `https://${domain.domain}` : window.location.origin + '/c';
                             const url = `${baseUrl}/${chk.custom_url_slug}`;
                             navigator.clipboard.writeText(url);
                             alert('Link copiado: ' + url);

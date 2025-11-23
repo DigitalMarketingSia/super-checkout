@@ -44,14 +44,16 @@ const DomainDispatcher: React.FC<{ children: React.ReactNode }> = ({ children })
   React.useEffect(() => {
     const checkDomain = async () => {
       const hostname = window.location.hostname;
+      console.log('🔍 DomainDispatcher: Checking hostname:', hostname);
 
       // System Domains (Bypass lookup)
-      // Add any other system domains here (e.g. your staging URLs)
       const isSystemDomain =
         hostname === 'localhost' ||
         hostname === '127.0.0.1' ||
         hostname.endsWith('.vercel.app') ||
         hostname.endsWith('.webcontainer.io'); // Stackblitz
+
+      console.log('🔍 DomainDispatcher: Is system domain?', isSystemDomain);
 
       if (isSystemDomain) {
         setLoading(false);
@@ -60,18 +62,34 @@ const DomainDispatcher: React.FC<{ children: React.ReactNode }> = ({ children })
 
       // Custom Domain Lookup
       try {
+        console.log('🔍 DomainDispatcher: Looking up custom domain...');
         const domain = await storage.getDomainByHostname(hostname);
+        console.log('🔍 DomainDispatcher: Domain found:', domain);
+
         if (domain && domain.checkout_id) {
           setCustomCheckoutId(domain.checkout_id);
         }
       } catch (e) {
-        console.error('Domain lookup failed', e);
+        console.error('❌ DomainDispatcher: Domain lookup failed', e);
       } finally {
         setLoading(false);
       }
     };
 
     checkDomain();
+
+    // Safety timeout - force loading to false after 5 seconds
+    const timeoutId = setTimeout(() => {
+      setLoading(prev => {
+        if (prev) {
+          console.warn('⚠️ DomainDispatcher: Safety timeout triggered');
+          return false;
+        }
+        return prev;
+      });
+    }, 5000);
+
+    return () => clearTimeout(timeoutId);
   }, []);
 
   if (loading) {
@@ -124,7 +142,7 @@ const App = () => {
 
               {/* Redirect root to Admin */}
               <Route path="/" element={<Navigate to="/admin" replace />} />
-              
+
               {/* Checkout Route - Last as catch-all for checkout IDs */}
               <Route path="/:id" element={<PublicCheckout />} />
             </Routes>
