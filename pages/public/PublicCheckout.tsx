@@ -827,7 +827,7 @@ export const PublicCheckout = ({ checkoutId: propId }: { checkoutId?: string }) 
                               key={bump.id}
                               className={`p-4 rounded-xl border-2 border-dashed transition-all cursor-pointer relative overflow-hidden ${selectedBumps.includes(bump.id)
                                  ? 'border-[#10B981] bg-green-50/50'
-                                 : 'border-gray-300 bg-white hover:border-gray-400'
+                                 : 'border-[#D71A21] bg-white hover:border-[#B71520]'
                                  }`}
                               onClick={() => toggleBump(bump.id)}
                            >
