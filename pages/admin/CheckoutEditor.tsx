@@ -181,7 +181,7 @@ export const CheckoutEditor = () => {
    const getGatewayLogo = (provider: string) => {
       switch (provider) {
          case GatewayProvider.MERCADO_PAGO:
-            return "https://logospng.org/download/mercado-pago/logo-mercado-pago-icone-1024.png";
+            return "/mercado-pago-logo.png";
          case GatewayProvider.STRIPE:
             return "https://upload.wikimedia.org/wikipedia/commons/thumb/b/ba/Stripe_Logo%2C_revised_2016.svg/2560px-Stripe_Logo%2C_revised_2016.svg.png";
          default:
@@ -376,7 +376,7 @@ export const CheckoutEditor = () => {
                                        }`}
                                  >
                                     <div className="w-12 h-12 mb-3 flex items-center justify-center">
-                                       <img src={getGatewayLogo(g.name)} alt={g.name} className="w-full h-full object-contain brightness-0 invert" />
+                                       <img src={getGatewayLogo(g.name)} alt={g.name} className="w-full h-full object-contain" />
                                     </div>
                                     <span className={`text-xs font-bold uppercase tracking-wide ${gatewayId === g.id ? 'text-green-400' : 'text-gray-400'}`}>
                                        {g.name.replace('_', ' ')}

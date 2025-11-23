@@ -95,28 +95,22 @@ export const Gateways = () => {
     }
   };
 
-  const IntegrationCard = ({ title, description, icon, status, onClick }: any) => (
-    <Card className="relative overflow-hidden group hover:border-primary/50 transition-colors cursor-pointer h-full flex flex-col" >
-      <div onClick={onClick} className="flex-1">
-        <div className="flex justify-between items-start mb-4">
-          <div className="w-12 h-12 rounded-xl bg-gray-100 dark:bg-white/5 flex items-center justify-center p-2">
-            <img src={icon} alt={title} className="w-8 h-8 object-contain" />
+  const IntegrationCard = ({ title, logo, status, onClick }: any) => (
+    <Card
+      className={`relative overflow-hidden group hover:border-primary/50 transition-all cursor-pointer h-40 flex items-center justify-center ${status === 'active' ? 'border-green-500/50 bg-green-500/5' : ''
+        }`}
+      onClick={status !== 'soon' ? onClick : undefined}
+    >
+      {status === 'soon' && (
+        <div className="absolute top-3 right-3 z-10">
+          <div className="px-2 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-wider bg-gray-100 dark:bg-white/5 text-gray-400 border-transparent">
+            Em Breve
           </div>
-          {status === 'active' && <div className="bg-green-500/10 text-green-500 px-2 py-1 rounded text-xs font-medium border border-green-500/20">Conectado</div>}
-          {status === 'soon' && <div className="bg-gray-100 dark:bg-white/5 text-gray-400 px-2 py-1 rounded text-xs font-medium">Em Breve</div>}
         </div>
-        <h3 className="font-bold text-gray-900 dark:text-white text-lg">{title}</h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">{description}</p>
-      </div>
+      )}
 
-      <div className="mt-6 pt-4 border-t border-gray-100 dark:border-dark-border flex justify-between items-center">
-        {status !== 'soon' ? (
-          <Button variant="outline" size="sm" className="w-full" onClick={onClick}>
-            <Settings className="w-3 h-3 mr-2" /> Configurar
-          </Button>
-        ) : (
-          <div className="text-xs text-gray-400 flex items-center"><Lock className="w-3 h-3 mr-1" /> Indisponível</div>
-        )}
+      <div className="w-40 h-20 flex items-center justify-center opacity-70 group-hover:opacity-100 transition-opacity">
+        <img src={logo} alt={title} className="max-w-full max-h-full object-contain brightness-0 invert" />
       </div>
     </Card>
   );
@@ -128,26 +122,45 @@ export const Gateways = () => {
         <p className="text-gray-500 dark:text-dark-text text-sm mt-1">Conecte provedores para receber pagamentos.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <IntegrationCard
-          title="Mercado Pago"
-          description="Aceite Cartão de Crédito, Pix e Boleto com o líder na América Latina."
-          icon="https://logospng.org/download/mercado-pago/logo-mercado-pago-icone-1024.png"
-          status={mpConfig.active ? 'active' : 'inactive'}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card
+          className={`relative overflow-hidden group hover:border-primary/50 transition-all cursor-pointer h-40 flex items-center justify-center ${mpConfig.active ? 'border-green-500/50 bg-green-500/5' : ''
+            }`}
           onClick={() => setIsModalOpen(true)}
-        />
+        >
+          <div className="absolute top-3 right-3 z-10">
+            <div className={`px-2 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-wider ${mpConfig.active
+              ? 'bg-green-500/10 text-green-500 border-green-500/20'
+              : 'bg-gray-100 dark:bg-white/5 text-gray-400 border-transparent'
+              }`}>
+              {mpConfig.active ? 'Conectado' : 'Inativo'}
+            </div>
+          </div>
+
+          <div className="w-40 h-20 flex items-center justify-center opacity-70 group-hover:opacity-100 transition-opacity">
+            <img
+              src="/mercado-pago-logo.png"
+              alt="Mercado Pago"
+              className="max-w-full max-h-full object-contain brightness-0 invert"
+            />
+          </div>
+        </Card>
 
         <IntegrationCard
-          title="Stripe"
-          description="Infraestrutura global de pagamentos para a internet."
-          icon="https://upload.wikimedia.org/wikipedia/commons/thumb/b/ba/Stripe_Logo%2C_revised_2016.svg/2560px-Stripe_Logo%2C_revised_2016.svg.png"
+          title="Lunoxpay"
+          logo="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath fill='%23FFD700' d='M20 20h20v60h-20z'/%3E%3Cpath fill='%23FFD700' d='M50 30l20 15-20 15z'/%3E%3C/svg%3E"
           status="soon"
         />
 
         <IntegrationCard
-          title="Pix Manual"
-          description="Receba Pix diretamente em sua conta sem taxas de gateway."
-          icon="https://upload.wikimedia.org/wikipedia/commons/a/a2/Logo%E2%80%94pix_powered_by_Banco_Central_%28Brazil%2C_2020%29.svg"
+          title="Sync Pay"
+          logo="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='30' cy='50' r='15' fill='%234F46E5'/%3E%3Ccircle cx='70' cy='50' r='15' fill='%234F46E5'/%3E%3Cpath d='M30 35Q50 20 70 35' stroke='%234F46E5' fill='none' stroke-width='4'/%3E%3C/svg%3E"
+          status="soon"
+        />
+
+        <IntegrationCard
+          title="Push-in Pay"
+          logo="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath fill='white' d='M30 30h40v40h-40z'/%3E%3Cpath fill='white' d='M50 20l15 10h-30z'/%3E%3C/svg%3E"
           status="soon"
         />
       </div>
@@ -158,8 +171,8 @@ export const Gateways = () => {
         onClose={() => setIsModalOpen(false)}
         title={
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded bg-[#009EE3] flex items-center justify-center">
-              <img src="https://logospng.org/download/mercado-pago/logo-mercado-pago-icone-1024.png" className="w-5 h-5 brightness-0 invert" alt="MP" />
+            <div className="h-8 flex items-center justify-center">
+              <img src="/mercado-pago-logo.png" className="h-full object-contain" alt="MP" />
             </div>
             <span>Configurações Mercado Pago</span>
           </div>
