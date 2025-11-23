@@ -368,7 +368,7 @@ export const Webhooks = () => {
                                  <div className="flex items-center gap-3 mb-1">
                                     <h3 className="text-lg font-bold text-white truncate">{wh.name}</h3>
                                     <span className={`text-[10px] px-2 py-0.5 rounded font-mono font-bold ${wh.method === 'POST' ? 'bg-blue-500/20 text-blue-400' :
-                                          wh.method === 'GET' ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'
+                                       wh.method === 'GET' ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'
                                        }`}>
                                        {wh.method}
                                     </span>
@@ -454,8 +454,8 @@ export const Webhooks = () => {
                               <tr key={log.id} className="hover:bg-white/5 transition-colors">
                                  <td className="px-4 py-3">
                                     <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-bold border ${log.response_status && log.response_status >= 200 && log.response_status < 300
-                                          ? 'bg-green-500/10 text-green-500 border-green-500/20'
-                                          : 'bg-red-500/10 text-red-500 border-red-500/20'
+                                       ? 'bg-green-500/10 text-green-500 border-green-500/20'
+                                       : 'bg-red-500/10 text-red-500 border-red-500/20'
                                        }`}>
                                        {log.response_status || 'ERR'}
                                     </span>
@@ -597,8 +597,8 @@ export const Webhooks = () => {
                            <label
                               key={evt.id}
                               className={`flex items-center p-3 rounded-lg border cursor-pointer transition-all ${formData.events.includes(evt.id)
-                                    ? 'bg-primary/10 border-primary/50'
-                                    : 'bg-white/5 border-white/5 hover:bg-white/10'
+                                 ? 'bg-primary/10 border-primary/50'
+                                 : 'bg-white/5 border-white/5 hover:bg-white/10'
                                  }`}
                            >
                               <input
@@ -708,7 +708,7 @@ export const Webhooks = () => {
                               <span className={testStatus === 'success' ? 'text-green-400' : 'text-red-400'}>
                                  Status: {testResult.status}
                               </span>
-                              <span className="text-gray-400">{testResult.duration}ms}</span>
+                              <span className="text-gray-400">{testResult.duration}ms</span>
                            </div>
                            <p className="text-gray-300 line-clamp-3 font-mono opacity-80">{testResult.body}</p>
                         </div>
