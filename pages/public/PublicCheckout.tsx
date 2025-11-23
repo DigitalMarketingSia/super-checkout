@@ -667,7 +667,7 @@ export const PublicCheckout = ({ checkoutId: propId }: { checkoutId?: string }) 
                               {/* Front */}
                               <div className={`absolute w-full h-full backface-hidden bg-gradient-to-br ${currentCardStyle.gradient} rounded-xl shadow-xl p-4 text-white flex flex-col justify-between z-10 transition-all duration-500`} style={{ backfaceVisibility: 'hidden' }}>
                                  <div className="flex justify-between items-start">
-                                    <div className="w-10 h-7 bg-yellow-500/80 rounded-md"></div>
+                                    <div className="w-10 h-7 bg-yellow-500/80 rounded-md border-2 border-white"></div>
                                     <span className={`font-mono text-base italic font-bold ${currentCardStyle.textColor}`}>{currentCardStyle.logo}</span>
                                  </div>
                                  <div>
