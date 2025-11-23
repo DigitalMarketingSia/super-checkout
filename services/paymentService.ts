@@ -173,8 +173,13 @@ class PaymentService {
       }
 
       // 2. Create Payment via Core API
+      // Validate amount
+      if (!order.amount || order.amount <= 0) {
+        throw new Error('Invalid payment amount. Amount must be greater than zero.');
+      }
+
       const paymentResponse = await mpAdapter.createPayment({
-        transaction_amount: order.amount,
+        transaction_amount: Number(order.amount),
         token: token,
         description: `Pedido #${order.id}`,
         installments: 1,
