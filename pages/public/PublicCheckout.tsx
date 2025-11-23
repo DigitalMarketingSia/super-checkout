@@ -870,21 +870,21 @@ export const PublicCheckout = ({ checkoutId: propId }: { checkoutId?: string }) 
                <h3 className="font-bold text-gray-900 mb-4">Resumo</h3>
 
                <div className="space-y-3 mb-4 text-sm">
-                  <div className="flex justify-between text-gray-600">
-                     <span>{data.product.name}</span>
+                  <div className="flex justify-between gap-3 text-gray-600">
+                     <span className="flex-1 break-words">{data.product.name}</span>
                      {data.product.price_fake ? (
-                        <span className="line-through text-gray-400">R$ {data.product.price_fake.toFixed(2)}</span>
+                        <span className="line-through text-gray-400 whitespace-nowrap">R$ {data.product.price_fake.toFixed(2)}</span>
                      ) : (
-                        <span className="text-[#10B981]">R$ {data.product.price_real?.toFixed(2)}</span>
+                        <span className="text-[#10B981] whitespace-nowrap">R$ {data.product.price_real?.toFixed(2)}</span>
                      )}
                   </div>
 
                   {selectedBumps.map(bumpId => {
                      const bump = data.bumps.find(b => b.id === bumpId);
                      return bump ? (
-                        <div key={bump.id} className="flex justify-between text-[#10B981]">
-                           <span className="flex items-center gap-1"><Check className="w-3 h-3" /> {bump.name}</span>
-                           <span>+ R$ {bump.price_real?.toFixed(2)}</span>
+                        <div key={bump.id} className="flex justify-between gap-3 text-[#10B981]">
+                           <span className="flex items-center gap-1 flex-1 break-words"><Check className="w-3 h-3 flex-shrink-0" /> {bump.name}</span>
+                           <span className="whitespace-nowrap">+ R$ {bump.price_real?.toFixed(2)}</span>
                         </div>
                      ) : null;
                   })}
