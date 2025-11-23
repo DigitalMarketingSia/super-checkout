@@ -249,6 +249,37 @@ export const PublicCheckout = ({ checkoutId: propId }: { checkoutId?: string }) 
          return;
       }
 
+      // Validate Credit Card Fields if selected
+      if (paymentMethod === 'credit_card') {
+         const cardErrors: Record<string, string> = {};
+
+         const cleanCardNumber = customer.cardNumber.replace(/\D/g, '');
+         if (!cleanCardNumber || cleanCardNumber.length < 13) {
+            cardErrors.cardNumber = 'Número do cartão inválido';
+            alert('Por favor, verifique o número do cartão.');
+            return;
+         }
+
+         if (!customer.expiry || !customer.expiry.includes('/')) {
+            cardErrors.expiry = 'Validade inválida (use MM/AA)';
+            alert('Por favor, preencha a validade do cartão (MM/AA).');
+            return;
+         }
+
+         const [month, year] = customer.expiry.split('/');
+         if (!month || !year || parseInt(month) < 1 || parseInt(month) > 12 || year.length !== 2) {
+            cardErrors.expiry = 'Data de validade inválida';
+            alert('Data de validade inválida.');
+            return;
+         }
+
+         if (!customer.cvc || customer.cvc.length < 3) {
+            cardErrors.cvc = 'CVC inválido';
+            alert('Por favor, verifique o código de segurança (CVC).');
+            return;
+         }
+      }
+
       setIsProcessing(true);
 
       try {
