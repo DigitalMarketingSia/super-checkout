@@ -143,8 +143,8 @@ const App = () => {
               {/* Redirect root to Admin */}
               <Route path="/" element={<Navigate to="/admin" replace />} />
 
-              {/* Checkout Route - Last as catch-all for checkout IDs */}
-              <Route path="/:id" element={<PublicCheckout />} />
+              {/* Checkout Route */}
+              <Route path="/c/:id" element={<PublicCheckout />} />
             </Routes>
           </BrowserRouter>
         </DomainDispatcher>
