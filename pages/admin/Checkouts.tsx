@@ -10,6 +10,8 @@ import {
   Plus, Copy, Eye, Edit2, Trash2, Settings, ShoppingBag
 } from 'lucide-react';
 
+import { ConfirmModal } from '../../components/ui/Modal';
+
 export const Checkouts = () => {
   const navigate = useNavigate();
   const [checkouts, setCheckouts] = useState<Checkout[]>([]);
@@ -18,6 +20,8 @@ export const Checkouts = () => {
   const [domains, setDomains] = useState<Domain[]>([]);
 
   const [loading, setLoading] = useState(true);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -43,18 +47,23 @@ export const Checkouts = () => {
     }
   };
 
-  const handleDeleteCheckout = async (id: string) => {
-    if (window.confirm('Tem certeza que deseja excluir este checkout?')) {
-      try {
-        setLoading(true);
-        await storage.deleteCheckout(id);
-        await loadData();
-      } catch (error) {
-        console.error('Error deleting checkout:', error);
-        alert('Erro ao excluir checkout.');
-      } finally {
-        setLoading(false);
-      }
+  const handleDeleteClick = (id: string) => {
+    setDeleteId(id);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteId) return;
+
+    try {
+      setIsDeleting(true);
+      await storage.deleteCheckout(deleteId);
+      await loadData();
+      setDeleteId(null);
+    } catch (error) {
+      console.error('Error deleting checkout:', error);
+      alert('Erro ao excluir checkout.');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -184,7 +193,7 @@ export const Checkouts = () => {
 
                         {/* Excluir */}
                         <button
-                          onClick={() => handleDeleteCheckout(chk.id)}
+                          onClick={() => handleDeleteClick(chk.id)}
                           className="p-2 bg-red-500/10 hover:bg-red-500/20 rounded-lg text-red-400 border border-red-500/10 transition-colors"
                           title="Excluir"
                         >
@@ -223,6 +232,18 @@ export const Checkouts = () => {
           </div>
         )}
       </Card>
+
+      <ConfirmModal
+        isOpen={!!deleteId}
+        onClose={() => setDeleteId(null)}
+        onConfirm={handleConfirmDelete}
+        title="Excluir Checkout"
+        message="Tem certeza que deseja excluir este checkout? Esta ação não pode ser desfeita e o link de pagamento deixará de funcionar."
+        confirmText="Sim, excluir"
+        cancelText="Cancelar"
+        variant="danger"
+        loading={isDeleting}
+      />
     </Layout>
   );
 };
