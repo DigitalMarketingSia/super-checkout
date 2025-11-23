@@ -5,6 +5,7 @@ import { storage } from '../../services/storageService';
 import { Product } from '../../types';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
+import { ConfirmModal, AlertModal } from '../../components/ui/Modal';
 import {
   Plus, Edit2, Trash2, Image as ImageIcon, Search, Upload, ArrowLeft, Save, Layers, ArrowRight
 } from 'lucide-react';
@@ -33,6 +34,24 @@ export const Products = () => {
   const [formData, setFormData] = useState(initialFormState);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Modal States
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [alertState, setAlertState] = useState<{ isOpen: boolean; title: string; message: string; variant: 'success' | 'error' | 'info' }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    variant: 'info'
+  });
+
+  const showAlert = (title: string, message: string, variant: 'success' | 'error' | 'info' = 'info') => {
+    setAlertState({ isOpen: true, title, message, variant });
+  };
+
+  const closeAlert = () => {
+    setAlertState(prev => ({ ...prev, isOpen: false }));
+  };
 
   // Search and Pagination
   const [searchQuery, setSearchQuery] = useState('');
@@ -85,24 +104,30 @@ export const Products = () => {
       setCurrentProductId(null);
     } catch (error) {
       console.error('Error saving product:', error);
-      alert('Erro ao salvar produto. Verifique o console.');
+      showAlert('Erro', 'Erro ao salvar produto. Verifique o console.', 'error');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm('Tem certeza que deseja excluir este produto?')) {
-      try {
-        setLoading(true);
-        await storage.deleteProduct(id);
-        await loadData();
-      } catch (error) {
-        console.error('Error deleting product:', error);
-        alert('Erro ao excluir produto.');
-      } finally {
-        setLoading(false);
-      }
+  const handleDeleteClick = (id: string) => {
+    setDeleteId(id);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteId) return;
+
+    try {
+      setIsDeleting(true);
+      await storage.deleteProduct(deleteId);
+      await loadData();
+      setDeleteId(null);
+      showAlert('Sucesso', 'Produto excluído com sucesso.', 'success');
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      showAlert('Erro', 'Erro ao excluir produto.', 'error');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -118,7 +143,7 @@ export const Products = () => {
         setFormData({ ...formData, imageUrl: publicUrl });
       } catch (error) {
         console.error('Error uploading image:', error);
-        alert('Erro ao fazer upload da imagem.');
+        showAlert('Erro', 'Erro ao fazer upload da imagem.', 'error');
       } finally {
         setUploading(false);
       }
@@ -241,7 +266,7 @@ export const Products = () => {
                     </div>
                     <div className="flex gap-3">
                       <button onClick={() => openEdit(product)} className="flex-1 bg-white/5 hover:bg-white/10 text-gray-300 py-2.5 rounded-xl text-sm font-medium border border-white/5"><Edit2 className="w-4 h-4 inline mr-2" /> Editar</button>
-                      <button onClick={() => handleDelete(product.id)} className="w-12 bg-red-500/10 text-red-400 rounded-xl flex items-center justify-center border border-red-500/10"><Trash2 className="w-4 h-4" /></button>
+                      <button onClick={() => handleDeleteClick(product.id)} className="w-12 bg-red-500/10 text-red-400 rounded-xl flex items-center justify-center border border-red-500/10"><Trash2 className="w-4 h-4" /></button>
                     </div>
 
                     {/* Order Bump and Upsell Tags */}
@@ -411,5 +436,29 @@ export const Products = () => {
     </div>
   );
 
-  return <Layout>{viewMode === 'grid' ? renderGrid() : renderEdit()}</Layout>;
+  return (
+    <Layout>
+      {viewMode === 'grid' ? renderGrid() : renderEdit()}
+
+      <ConfirmModal
+        isOpen={!!deleteId}
+        onClose={() => setDeleteId(null)}
+        onConfirm={handleConfirmDelete}
+        title="Excluir Produto"
+        message="Tem certeza que deseja excluir este produto? Esta ação não pode ser desfeita."
+        confirmText="Sim, excluir"
+        cancelText="Cancelar"
+        variant="danger"
+        loading={isDeleting}
+      />
+
+      <AlertModal
+        isOpen={alertState.isOpen}
+        onClose={closeAlert}
+        title={alertState.title}
+        message={alertState.message}
+        variant={alertState.variant}
+      />
+    </Layout>
+  );
 };

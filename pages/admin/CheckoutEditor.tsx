@@ -20,6 +20,7 @@ import {
    Upload,
    Wallet
 } from 'lucide-react';
+import { AlertModal } from '../../components/ui/Modal';
 
 const initialConfig: CheckoutConfig = {
    fields: { name: true, email: true, phone: true, cpf: true },
@@ -59,6 +60,21 @@ export const CheckoutEditor = () => {
 
    const [isUploadingBanner, setIsUploadingBanner] = useState(false);
 
+   const [alertState, setAlertState] = useState<{ isOpen: boolean; title: string; message: string; variant: 'success' | 'error' | 'info' }>({
+      isOpen: false,
+      title: '',
+      message: '',
+      variant: 'info'
+   });
+
+   const showAlert = (title: string, message: string, variant: 'success' | 'error' | 'info' = 'info') => {
+      setAlertState({ isOpen: true, title, message, variant });
+   };
+
+   const closeAlert = () => {
+      setAlertState(prev => ({ ...prev, isOpen: false }));
+   };
+
    // Computed lists (Filtered by Active Status)
    const activeProducts = products.filter(p => p.active);
    const availableBumps = activeProducts.filter(p => p.is_order_bump && p.id !== productId);
@@ -97,7 +113,7 @@ export const CheckoutEditor = () => {
       console.log('🔍 Debug - Active gateways:', gateways.filter(g => g.active));
 
       if (!name || !productId || !gatewayId) {
-         alert("Por favor, preencha o nome, selecione um produto e um gateway.");
+         showAlert('Atenção', 'Por favor, preencha o nome, selecione um produto e um gateway.', 'info');
          return;
       }
 
@@ -130,7 +146,7 @@ export const CheckoutEditor = () => {
          navigate('/admin/checkouts');
       } catch (error) {
          console.error('Error saving checkout:', error);
-         alert('Erro ao salvar checkout.');
+         showAlert('Erro', 'Erro ao salvar checkout.', 'error');
       } finally {
          setLoading(false);
       }
@@ -154,7 +170,7 @@ export const CheckoutEditor = () => {
             setConfig({ ...config, header_image: url });
          } catch (error) {
             console.error('Error uploading banner:', error);
-            alert('Erro ao fazer upload da imagem. Tente novamente.');
+            showAlert('Erro', 'Erro ao fazer upload da imagem. Tente novamente.', 'error');
          } finally {
             setIsUploadingBanner(false);
          }
@@ -665,6 +681,13 @@ export const CheckoutEditor = () => {
                </div>
             </>
          )}
+         <AlertModal
+            isOpen={alertState.isOpen}
+            onClose={closeAlert}
+            title={alertState.title}
+            message={alertState.message}
+            variant={alertState.variant}
+         />
       </Layout>
    );
 };

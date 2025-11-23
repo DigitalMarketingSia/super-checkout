@@ -7,6 +7,7 @@ import { storage } from '../../services/storageService';
 import { supabase } from '../../services/supabase';
 import { Order, OrderStatus } from '../../types';
 import { Button } from '../../components/ui/Button';
+import { AlertModal } from '../../components/ui/Modal';
 
 // Mocks de segurança conforme solicitado
 const FALLBACK_MOCK_ORDER = {
@@ -33,6 +34,21 @@ export const PixPayment = () => {
   // State para dados
   const [orderData, setOrderData] = useState<any>(null);
   const [pixCode, setPixCode] = useState<string>("");
+
+  const [alertState, setAlertState] = useState<{ isOpen: boolean; title: string; message: string; variant: 'success' | 'error' | 'info' }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    variant: 'info'
+  });
+
+  const showAlert = (title: string, message: string, variant: 'success' | 'error' | 'info' = 'info') => {
+    setAlertState({ isOpen: true, title, message, variant });
+  };
+
+  const closeAlert = () => {
+    setAlertState(prev => ({ ...prev, isOpen: false }));
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -125,7 +141,7 @@ export const PixPayment = () => {
       // Polling will catch the update
     } catch (error) {
       console.error('Erro ao simular pagamento:', error);
-      alert('Erro ao simular pagamento');
+      showAlert('Erro', 'Erro ao simular pagamento', 'error');
     }
   };
 
@@ -290,6 +306,13 @@ export const PixPayment = () => {
 
         </div>
       </main>
+      <AlertModal
+        isOpen={alertState.isOpen}
+        onClose={closeAlert}
+        title={alertState.title}
+        message={alertState.message}
+        variant={alertState.variant}
+      />
     </div>
   );
 };

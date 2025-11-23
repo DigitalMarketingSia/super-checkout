@@ -1,11 +1,10 @@
 import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
 import { Button } from './Button';
-
 interface ModalProps {
     isOpen: boolean;
     onClose: () => void;
-    title: string;
+    title: React.ReactNode;
     children: React.ReactNode;
     className?: string;
 }
@@ -33,13 +32,13 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, 
             />
 
             {/* Modal Content */}
-            <div className={`relative w-full max-w-md bg-[#0F0F12] border border-white/10 rounded-2xl shadow-2xl transform transition-all animate-in fade-in zoom-in-95 duration-200 ${className}`}>
+            <div className={`relative w-full max-w-md glass-panel rounded-2xl shadow-2xl transform transition-all animate-in fade-in zoom-in-95 duration-200 ${className}`}>
                 {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-white/5">
-                    <h3 className="text-lg font-bold text-white">{title}</h3>
+                <div className="flex items-center justify-between p-6 border-b border-gray-100 dark:border-white/5">
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">{title}</h3>
                     <button
                         onClick={onClose}
-                        className="text-gray-400 hover:text-white transition-colors p-1 hover:bg-white/5 rounded-lg"
+                        className="text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors p-1 hover:bg-gray-100 dark:hover:bg-white/5 rounded-lg"
                     >
                         <X className="w-5 h-5" />
                     </button>
@@ -58,7 +57,7 @@ interface ConfirmModalProps {
     isOpen: boolean;
     onClose: () => void;
     onConfirm: () => void;
-    title: string;
+    title: React.ReactNode;
     message: string;
     confirmText?: string;
     cancelText?: string;
@@ -79,7 +78,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
 }) => {
     return (
         <Modal isOpen={isOpen} onClose={onClose} title={title}>
-            <p className="text-gray-400 mb-8 leading-relaxed">
+            <p className="text-gray-600 dark:text-gray-300 mb-8 leading-relaxed">
                 {message}
             </p>
             <div className="flex justify-end gap-3">
@@ -96,6 +95,49 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
                     disabled={loading}
                 >
                     {loading ? 'Processando...' : confirmText}
+                </Button>
+            </div>
+        </Modal>
+    );
+};
+
+interface AlertModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    title?: React.ReactNode;
+    message: string;
+    buttonText?: string;
+    variant?: 'success' | 'error' | 'info';
+}
+
+export const AlertModal: React.FC<AlertModalProps> = ({
+    isOpen,
+    onClose,
+    title,
+    message,
+    buttonText = 'OK',
+    variant = 'info'
+}) => {
+    const getTitle = () => {
+        if (title) return title;
+        switch (variant) {
+            case 'success': return 'Sucesso';
+            case 'error': return 'Erro';
+            default: return 'Informação';
+        }
+    };
+
+    return (
+        <Modal isOpen={isOpen} onClose={onClose} title={getTitle()}>
+            <p className="text-gray-600 dark:text-gray-300 mb-8 leading-relaxed">
+                {message}
+            </p>
+            <div className="flex justify-end">
+                <Button
+                    variant="primary"
+                    onClick={onClose}
+                >
+                    {buttonText}
                 </Button>
             </div>
         </Modal>

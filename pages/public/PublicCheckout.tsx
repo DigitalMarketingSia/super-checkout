@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { validateName, validateEmail, validatePhone, validateCPF, maskPhone, maskCPF } from '../../utils/validations';
 import { PhoneInput } from '../../components/ui/PhoneInput';
+import { AlertModal } from '../../components/ui/Modal';
 
 type PaymentMethod = 'credit_card' | 'pix' | 'boleto';
 
@@ -40,6 +41,20 @@ export const PublicCheckout = ({ checkoutId: propId }: { checkoutId?: string }) 
    const [cardFlipped, setCardFlipped] = useState(false);
    const [isProcessing, setIsProcessing] = useState(false);
    const [formErrors, setFormErrors] = useState<Record<string, boolean>>({});
+   const [alertState, setAlertState] = useState<{ isOpen: boolean; title: string; message: string; variant: 'success' | 'error' | 'info' }>({
+      isOpen: false,
+      title: '',
+      message: '',
+      variant: 'info'
+   });
+
+   const showAlert = (title: string, message: string, variant: 'success' | 'error' | 'info' = 'info') => {
+      setAlertState({ isOpen: true, title, message, variant });
+   };
+
+   const closeAlert = () => {
+      setAlertState(prev => ({ ...prev, isOpen: false }));
+   };
 
    // Form State
    const [customer, setCustomer] = useState({
@@ -256,26 +271,26 @@ export const PublicCheckout = ({ checkoutId: propId }: { checkoutId?: string }) 
          const cleanCardNumber = customer.cardNumber.replace(/\D/g, '');
          if (!cleanCardNumber || cleanCardNumber.length < 13) {
             cardErrors.cardNumber = 'Número do cartão inválido';
-            alert('Por favor, verifique o número do cartão.');
+            showAlert('Erro', 'Por favor, verifique o número do cartão.', 'error');
             return;
          }
 
          if (!customer.expiry || !customer.expiry.includes('/')) {
             cardErrors.expiry = 'Validade inválida (use MM/AA)';
-            alert('Por favor, preencha a validade do cartão (MM/AA).');
+            showAlert('Erro', 'Por favor, preencha a validade do cartão (MM/AA).', 'error');
             return;
          }
 
          const [month, year] = customer.expiry.split('/');
          if (!month || !year || parseInt(month) < 1 || parseInt(month) > 12 || year.length !== 2) {
             cardErrors.expiry = 'Data de validade inválida';
-            alert('Data de validade inválida.');
+            showAlert('Erro', 'Data de validade inválida.', 'error');
             return;
          }
 
          if (!customer.cvc || customer.cvc.length < 3) {
             cardErrors.cvc = 'CVC inválido';
-            alert('Por favor, verifique o código de segurança (CVC).');
+            showAlert('Erro', 'Por favor, verifique o código de segurança (CVC).', 'error');
             return;
          }
       }
@@ -349,13 +364,13 @@ export const PublicCheckout = ({ checkoutId: propId }: { checkoutId?: string }) 
                navigate(`/thank-you/${result.orderId}`);
             }
          } else {
-            alert('Erro no pagamento: ' + (result.message || 'Transação recusada'));
+            showAlert('Erro no pagamento', result.message || 'Transação recusada', 'error');
             setIsProcessing(false);
          }
 
       } catch (error: any) {
          console.error('Payment error:', error);
-         alert('Erro ao processar pagamento. Verifique os dados e tente novamente.');
+         showAlert('Erro', 'Erro ao processar pagamento. Verifique os dados e tente novamente.', 'error');
          setIsProcessing(false);
       }
    };
@@ -822,6 +837,13 @@ export const PublicCheckout = ({ checkoutId: propId }: { checkoutId?: string }) 
             </div>
 
          </div>
+         <AlertModal
+            isOpen={alertState.isOpen}
+            onClose={closeAlert}
+            title={alertState.title}
+            message={alertState.message}
+            variant={alertState.variant}
+         />
       </div>
    );
 };

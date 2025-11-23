@@ -10,7 +10,7 @@ import {
   Plus, Copy, Eye, Edit2, Trash2, Settings, ShoppingBag
 } from 'lucide-react';
 
-import { ConfirmModal } from '../../components/ui/Modal';
+import { ConfirmModal, AlertModal } from '../../components/ui/Modal';
 
 export const Checkouts = () => {
   const navigate = useNavigate();
@@ -22,6 +22,20 @@ export const Checkouts = () => {
   const [loading, setLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [alertState, setAlertState] = useState<{ isOpen: boolean; title: string; message: string; variant: 'success' | 'error' | 'info' }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    variant: 'info'
+  });
+
+  const showAlert = (title: string, message: string, variant: 'success' | 'error' | 'info' = 'info') => {
+    setAlertState({ isOpen: true, title, message, variant });
+  };
+
+  const closeAlert = () => {
+    setAlertState(prev => ({ ...prev, isOpen: false }));
+  };
 
   useEffect(() => {
     loadData();
@@ -61,7 +75,7 @@ export const Checkouts = () => {
       setDeleteId(null);
     } catch (error) {
       console.error('Error deleting checkout:', error);
-      alert('Erro ao excluir checkout.');
+      showAlert('Erro', 'Erro ao excluir checkout.', 'error');
     } finally {
       setIsDeleting(false);
     }
@@ -207,7 +221,7 @@ export const Checkouts = () => {
                             const baseUrl = domain ? `https://${domain.domain}` : window.location.origin + '/c';
                             const url = `${baseUrl}/${chk.custom_url_slug}`;
                             navigator.clipboard.writeText(url);
-                            alert('Link copiado: ' + url);
+                            showAlert('Sucesso', 'Link copiado: ' + url, 'success');
                           }}
                           className="p-2 bg-gray-500/10 hover:bg-gray-500/20 rounded-lg text-gray-400 border border-gray-500/10 transition-colors"
                           title="Copiar Link"
@@ -243,6 +257,14 @@ export const Checkouts = () => {
         cancelText="Cancelar"
         variant="danger"
         loading={isDeleting}
+      />
+
+      <AlertModal
+        isOpen={alertState.isOpen}
+        onClose={closeAlert}
+        title={alertState.title}
+        message={alertState.message}
+        variant={alertState.variant}
       />
     </Layout>
   );

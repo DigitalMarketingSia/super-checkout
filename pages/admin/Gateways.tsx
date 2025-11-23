@@ -6,6 +6,7 @@ import { Gateway, GatewayProvider } from '../../types';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { CheckCircle, AlertTriangle, Lock, Settings } from 'lucide-react';
+import { Modal, AlertModal } from '../../components/ui/Modal';
 
 export const Gateways = () => {
   const [gateways, setGateways] = useState<Gateway[]>([]);
@@ -16,6 +17,20 @@ export const Gateways = () => {
     active: false
   });
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [alertState, setAlertState] = useState<{ isOpen: boolean; title: string; message: string; variant: 'success' | 'error' | 'info' }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    variant: 'info'
+  });
+
+  const showAlert = (title: string, message: string, variant: 'success' | 'error' | 'info' = 'info') => {
+    setAlertState({ isOpen: true, title, message, variant });
+  };
+
+  const closeAlert = () => {
+    setAlertState(prev => ({ ...prev, isOpen: false }));
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -73,9 +88,10 @@ export const Gateways = () => {
       }
 
       setIsModalOpen(false);
+      showAlert('Sucesso', 'Gateway salvo com sucesso!', 'success');
     } catch (error) {
       console.error('Error saving gateway:', error);
-      alert('Erro ao salvar gateway. Verifique o console.');
+      showAlert('Erro', 'Erro ao salvar gateway. Verifique o console.', 'error');
     }
   };
 
@@ -137,76 +153,85 @@ export const Gateways = () => {
       </div>
 
       {/* MP Config Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-white dark:bg-dark-card w-full max-w-xl rounded-2xl shadow-2xl border border-gray-200 dark:border-dark-border overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="px-6 py-5 border-b border-gray-100 dark:border-dark-border flex items-center gap-3">
-              <div className="w-8 h-8 rounded bg-[#009EE3] flex items-center justify-center">
-                <img src="https://logospng.org/download/mercado-pago/logo-mercado-pago-icone-1024.png" className="w-5 h-5 brightness-0 invert" alt="MP" />
-              </div>
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white">Configurações Mercado Pago</h2>
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title={
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded bg-[#009EE3] flex items-center justify-center">
+              <img src="https://logospng.org/download/mercado-pago/logo-mercado-pago-icone-1024.png" className="w-5 h-5 brightness-0 invert" alt="MP" />
             </div>
-
-            <form onSubmit={handleSave} className="p-6 space-y-5">
-              <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl flex items-start gap-3">
-                <AlertTriangle className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-blue-800 dark:text-blue-200">Use suas <strong>Credenciais de Produção</strong>. Chaves de teste funcionarão para simulação.</p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Chave Pública (Public Key)</label>
-                <input
-                  type="text"
-                  className="w-full bg-gray-50 dark:bg-dark-bg border border-gray-300 dark:border-dark-border rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-primary/50 outline-none font-mono text-xs dark:text-white"
-                  placeholder="APP_USR-..."
-                  value={mpConfig.public_key}
-                  onChange={e => setMpConfig({ ...mpConfig, public_key: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Token de Acesso (Access Token)</label>
-                <input
-                  type="password"
-                  className="w-full bg-gray-50 dark:bg-dark-bg border border-gray-300 dark:border-dark-border rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-primary/50 outline-none font-mono text-xs dark:text-white"
-                  placeholder="APP_USR-..."
-                  value={mpConfig.private_key}
-                  onChange={e => setMpConfig({ ...mpConfig, private_key: e.target.value })}
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Segredo do Webhook</label>
-                <input
-                  type="text"
-                  className="w-full bg-gray-50 dark:bg-dark-bg border border-gray-300 dark:border-dark-border rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-primary/50 outline-none font-mono text-xs dark:text-white"
-                  value={mpConfig.webhook_secret}
-                  onChange={e => setMpConfig({ ...mpConfig, webhook_secret: e.target.value })}
-                />
-              </div>
-
-              <div className="flex items-center justify-between pt-2">
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Habilitar Gateway</span>
-                <button
-                  type="button"
-                  onClick={() => setMpConfig({ ...mpConfig, active: !mpConfig.active })}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-dark-card ${mpConfig.active ? 'bg-green-500' : 'bg-gray-200 dark:bg-gray-700'
-                    }`}
-                >
-                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${mpConfig.active ? 'translate-x-6' : 'translate-x-1'}`} />
-                </button>
-              </div>
-
-              <div className="pt-4 border-t border-gray-100 dark:border-dark-border flex justify-end gap-3">
-                <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>Cancelar</Button>
-                <Button type="submit">Salvar Credenciais</Button>
-              </div>
-            </form>
+            <span>Configurações Mercado Pago</span>
           </div>
-        </div>
-      )}
+        }
+        className="max-w-xl"
+      >
+        <form onSubmit={handleSave} className="space-y-5">
+          <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-blue-800 dark:text-blue-200">Use suas <strong>Credenciais de Produção</strong>. Chaves de teste funcionarão para simulação.</p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Chave Pública (Public Key)</label>
+            <input
+              type="text"
+              className="w-full bg-gray-50 dark:bg-dark-bg border border-gray-300 dark:border-dark-border rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-primary/50 outline-none font-mono text-xs dark:text-white"
+              placeholder="APP_USR-..."
+              value={mpConfig.public_key}
+              onChange={e => setMpConfig({ ...mpConfig, public_key: e.target.value })}
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Token de Acesso (Access Token)</label>
+            <input
+              type="password"
+              className="w-full bg-gray-50 dark:bg-dark-bg border border-gray-300 dark:border-dark-border rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-primary/50 outline-none font-mono text-xs dark:text-white"
+              placeholder="APP_USR-..."
+              value={mpConfig.private_key}
+              onChange={e => setMpConfig({ ...mpConfig, private_key: e.target.value })}
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Segredo do Webhook</label>
+            <input
+              type="text"
+              className="w-full bg-gray-50 dark:bg-dark-bg border border-gray-300 dark:border-dark-border rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-primary/50 outline-none font-mono text-xs dark:text-white"
+              value={mpConfig.webhook_secret}
+              onChange={e => setMpConfig({ ...mpConfig, webhook_secret: e.target.value })}
+            />
+          </div>
+
+          <div className="flex items-center justify-between pt-2">
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Habilitar Gateway</span>
+            <button
+              type="button"
+              onClick={() => setMpConfig({ ...mpConfig, active: !mpConfig.active })}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-dark-card ${mpConfig.active ? 'bg-green-500' : 'bg-gray-200 dark:bg-gray-700'
+                }`}
+            >
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${mpConfig.active ? 'translate-x-6' : 'translate-x-1'}`} />
+            </button>
+          </div>
+
+          <div className="pt-4 flex justify-end gap-3">
+            <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>Cancelar</Button>
+            <Button type="submit">Salvar Credenciais</Button>
+          </div>
+        </form>
+      </Modal>
+
+      <AlertModal
+        isOpen={alertState.isOpen}
+        onClose={closeAlert}
+        title={alertState.title}
+        message={alertState.message}
+        variant={alertState.variant}
+      />
     </Layout>
   );
 };
