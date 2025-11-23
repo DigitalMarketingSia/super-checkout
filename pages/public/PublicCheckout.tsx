@@ -80,26 +80,28 @@ export const PublicCheckout = ({ checkoutId: propId }: { checkoutId?: string }) 
    const detectCardBrand = (cardNumber: string): CardBrand => {
       const cleaned = cardNumber.replace(/\D/g, '');
 
-      // Visa: starts with 4
-      if (/^4/.test(cleaned)) return 'visa';
+      // Check more specific patterns first before generic ones
 
-      // Mastercard: 51-55 or 2221-2720
-      if (/^5[1-5]/.test(cleaned) || /^2(22[1-9]|2[3-9][0-9]|[3-6][0-9]{2}|7[0-1][0-9]|720)/.test(cleaned)) return 'mastercard';
-
-      // Elo: Multiple BIN ranges
+      // Elo: Multiple BIN ranges (check before Visa since some start with 4)
       if (/^(636368|438935|504175|451416|636297|5067|4576|4011)/.test(cleaned)) return 'elo';
 
-      // American Express: 34 or 37
-      if (/^3[47]/.test(cleaned)) return 'amex';
-
-      // Hipercard: 606282 or 3841
+      // Hipercard: 606282 or 3841 (check before Diners/Amex)
       if (/^(606282|3841)/.test(cleaned)) return 'hipercard';
+
+      // American Express: 34 or 37 (check before generic 3x patterns)
+      if (/^3[47]/.test(cleaned)) return 'amex';
 
       // Diners: 36, 38, or 300-305
       if (/^(36|38|30[0-5])/.test(cleaned)) return 'diners';
 
+      // Mastercard: 51-55 or 2221-2720 (check before generic 5x patterns)
+      if (/^5[1-5]/.test(cleaned) || /^2(22[1-9]|2[3-9][0-9]|[3-6][0-9]{2}|7[0-1][0-9]|720)/.test(cleaned)) return 'mastercard';
+
       // Discover: 6011, 65, or 644-649
       if (/^(6011|65|64[4-9])/.test(cleaned)) return 'discover';
+
+      // Visa: starts with 4 (generic pattern, check last)
+      if (/^4/.test(cleaned)) return 'visa';
 
       return 'default';
    };
