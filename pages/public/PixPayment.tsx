@@ -93,15 +93,31 @@ export const PixPayment = () => {
 
     const checkStatus = async () => {
       try {
-        // Consulta direta ao Supabase para garantir dados frescos
-        const { data, error } = await supabase
-          .from('orders')
-          .select('status')
-          .eq('id', orderId)
-          .single();
+        // Call our new API endpoint which actively checks Mercado Pago
+        const response = await fetch(`/api/check-status?orderId=${orderId}`);
 
-        if (data && data.status === OrderStatus.PAID) {
-          navigate(`/thank-you/${orderId}`);
+        const contentType = response.headers.get('content-type');
+        if (response.ok && contentType && contentType.includes('application/json')) {
+          const data = await response.json();
+          if (data.status === OrderStatus.PAID) {
+            navigate(`/thank-you/${orderId}`);
+          }
+        } else {
+          if (!response.ok || !contentType?.includes('application/json')) {
+            console.warn('[PixPayment] API Check Failed. Are you running "vercel dev"? If running "vite" only, /api endpoints are not available.');
+            console.warn('Falling back to Supabase polling...');
+          }
+
+          // Fallback: Check Supabase directly if API fails
+          const { data, error } = await supabase
+            .from('orders')
+            .select('status')
+            .eq('id', orderId)
+            .single();
+
+          if (data && data.status === OrderStatus.PAID) {
+            navigate(`/thank-you/${orderId}`);
+          }
         }
       } catch (error) {
         console.error('Erro ao verificar status:', error);
