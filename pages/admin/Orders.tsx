@@ -376,8 +376,44 @@ export const Orders = () => {
               </div>
             </div>
 
-            <div className="mt-6 flex justify-end">
-              <Button variant="outline" onClick={() => setSelectedOrder(null)}>Fechar</Button>
+            <div className="mt-6 flex justify-between items-center">
+              <div className="text-xs text-gray-500">
+                ID: {selectedOrder.id}
+              </div>
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  onClick={async () => {
+                    if (!confirm('Deseja reenviar o e-mail de aprovação para este cliente?')) return;
+
+                    const btn = document.getElementById('btn-resend-email');
+                    if (btn) {
+                      btn.innerText = 'Enviando...';
+                      (btn as HTMLButtonElement).disabled = true;
+                    }
+
+                    try {
+                      // Import dynamically to avoid circular dependencies if any
+                      const { emailService } = await import('../../services/emailService');
+                      await emailService.sendPaymentApproved(selectedOrder);
+                      alert('E-mail reenviado com sucesso!');
+                    } catch (error) {
+                      console.error(error);
+                      alert('Erro ao enviar e-mail. Verifique o console.');
+                    } finally {
+                      if (btn) {
+                        btn.innerText = 'Reenviar E-mail';
+                        (btn as HTMLButtonElement).disabled = false;
+                      }
+                    }
+                  }}
+                  id="btn-resend-email"
+                  className="border-blue-500/30 text-blue-400 hover:bg-blue-500/10"
+                >
+                  Reenviar E-mail
+                </Button>
+                <Button variant="outline" onClick={() => setSelectedOrder(null)}>Fechar</Button>
+              </div>
             </div>
           </div>
         </div>
