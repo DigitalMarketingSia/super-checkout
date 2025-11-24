@@ -2,6 +2,7 @@
 import { Gateway, GatewayProvider, Order, OrderStatus, Payment, WebhookLog, OrderItem } from '../types';
 import { storage } from './storageService';
 import { MercadoPagoAdapter } from './adapters/MercadoPagoAdapter';
+import { emailService } from './emailService';
 
 // Helper for UUID generation
 const generateUUID = () => {
@@ -110,6 +111,19 @@ class PaymentService {
       }
 
       if (gatewayResponse.success) {
+        // If payment is already approved (e.g. Credit Card), send approval email immediately
+        // This is crucial for local testing where webhooks don't reach localhost
+        const paymentStatus = gatewayResponse.status || (gatewayResponse.message === 'approved' ? 'approved' : undefined);
+
+        // Check if we have a status in the response or if it's implicitly successful
+        // For Mercado Pago adapter, it returns { success: true } for approved payments
+        // We need to check the actual payment record or response details if available
+
+        // Simplified check: If success and not pending (like Pix/Boleto which return specific data), assume approved
+        if (!gatewayResponse.pixData && !gatewayResponse.boletoData) {
+          emailService.sendPaymentApproved(newOrder).catch(console.error);
+        }
+
         return {
           success: true,
           orderId: newOrder.id,
@@ -225,12 +239,16 @@ class PaymentService {
         }
 
         if (request.paymentMethod === 'boleto' && paymentResponse.point_of_interaction?.transaction_data) {
+          const boletoData = {
+            barcode: paymentResponse.point_of_interaction.transaction_data.qr_code || '',
+            url: paymentResponse.point_of_interaction.transaction_data.ticket_url || ''
+          };
+
+          emailService.sendBoletoGenerated(order, boletoData.url, boletoData.barcode).catch(console.error);
+
           return {
             success: true,
-            boletoData: {
-              barcode: paymentResponse.point_of_interaction.transaction_data.qr_code || '',
-              url: paymentResponse.point_of_interaction.transaction_data.ticket_url || ''
-            }
+            boletoData
           };
         }
 
@@ -318,6 +336,14 @@ class PaymentService {
       // 7. Update order and payment
       await this.updateOrderStatus(relatedPayment.order_id, newStatus);
       await this.updatePaymentStatus(relatedPayment.id, newStatus, paymentId);
+
+      if (newStatus === OrderStatus.PAID) {
+        const orders = await storage.getOrders();
+        const order = orders.find(o => o.id === relatedPayment.order_id);
+        if (order) {
+          emailService.sendPaymentApproved(order).catch(console.error);
+        }
+      }
 
       // 8. Log webhook
       await this.logWebhook({

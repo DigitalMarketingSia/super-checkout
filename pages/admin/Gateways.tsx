@@ -124,20 +124,31 @@ export const Gateways = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card
-          className={`relative overflow-hidden group hover:border-primary/50 transition-all cursor-pointer h-40 flex items-center justify-center ${mpConfig.active ? 'border-green-500/50 bg-green-500/5' : ''
+          className={`relative overflow-hidden group hover:border-primary/50 transition-all cursor-pointer h-40 flex items-center justify-center ${mpConfig.active
+              ? 'border-green-500 dark:border-green-400'
+              : ''
             }`}
           onClick={() => setIsModalOpen(true)}
         >
+          {/* Glassmorphism overlay for active state */}
+          {mpConfig.active && (
+            <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 via-transparent to-green-500/5 pointer-events-none" />
+          )}
+
           <div className="absolute top-3 right-3 z-10">
-            <div className={`px-2 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-wider ${mpConfig.active
-              ? 'bg-green-500/10 text-green-500 border-green-500/20'
-              : 'bg-gray-100 dark:bg-white/5 text-gray-400 border-transparent'
-              }`}>
-              {mpConfig.active ? 'Conectado' : 'Inativo'}
-            </div>
+            {mpConfig.active ? (
+              <span className="px-2.5 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs rounded-full font-medium flex items-center gap-1">
+                <CheckCircle className="w-3 h-3" />
+                Ativo
+              </span>
+            ) : (
+              <div className="px-2 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-wider bg-gray-100 dark:bg-white/5 text-gray-400 border-transparent">
+                Inativo
+              </div>
+            )}
           </div>
 
-          <div className="w-40 h-20 flex items-center justify-center opacity-70 group-hover:opacity-100 transition-opacity">
+          <div className="relative z-10 w-40 h-20 flex items-center justify-center opacity-70 group-hover:opacity-100 transition-opacity">
             <img
               src="/mercado-pago-logo.png"
               alt="Mercado Pago"

@@ -1,8 +1,9 @@
 
 import {
-  Product, Offer, Checkout, Gateway, Order, Payment, WebhookLog, Domain, WebhookConfig,
+  Product, Offer, Checkout, Gateway, Order, Payment, WebhookLog, Domain, WebhookConfig, Integration
 } from '../types';
 import { supabase } from './supabase';
+export { supabase };
 
 /**
  * SERVICE LAYER - SUPABASE IMPLEMENTATION
@@ -811,6 +812,52 @@ class StorageService {
       console.error('Error saving payments:', error.message);
       throw error;
     }
+  }
+
+  // --- INTEGRATIONS ---
+
+  async getIntegration(name: string): Promise<Integration | null> {
+    const user = await this.getUser();
+    if (!user) return null;
+
+    const { data, error } = await supabase
+      .from('integrations')
+      .select('*')
+      .eq('name', name)
+      .eq('user_id', user.id)
+      .single();
+
+    if (error) {
+      if (error.code !== 'PGRST116') { // Not found
+        console.error('Error fetching integration:', error.message);
+      }
+      return null;
+    }
+    return data as Integration;
+  }
+
+  async saveIntegration(integration: { name: string; config: any; active: boolean }) {
+    const user = await this.getUser();
+    if (!user) throw new Error('No user logged in');
+
+    const record = {
+      user_id: user.id,
+      name: integration.name,
+      config: integration.config,
+      active: integration.active
+    };
+
+    const { data, error } = await supabase
+      .from('integrations')
+      .upsert(record, { onConflict: 'user_id, name' })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error saving integration:', error.message);
+      throw error;
+    }
+    return data;
   }
 
   // --- WEBHOOKS ---

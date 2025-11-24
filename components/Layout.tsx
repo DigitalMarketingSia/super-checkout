@@ -17,7 +17,10 @@ import {
   ChevronRight,
   ChevronLeft,
   Globe,
-  LogOut
+  LogOut,
+  Mail,
+  Plug,
+  Users
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -32,12 +35,11 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   const navItems = [
     { path: '/admin', icon: LayoutDashboard, label: 'Visão Geral' },
     { path: '/admin/products', icon: ShoppingBag, label: 'Produtos' },
-    // Offers removed as requested
+    { path: '/admin/gateways', icon: CreditCard, label: 'Gateways' },
     { path: '/admin/checkouts', icon: ShoppingCart, label: 'Checkouts' },
-    { path: '/admin/domains', icon: Globe, label: 'Domínios' },
-    { path: '/admin/orders', icon: CreditCard, label: 'Pedidos' },
-    { path: '/admin/gateways', icon: Settings, label: 'Integrações' },
-    { path: '/admin/webhooks', icon: Activity, label: 'Webhooks' },
+    { path: '/admin/orders', icon: Tag, label: 'Pedidos' },
+    { path: '/admin/marketing', icon: Mail, label: 'Marketing & E-mail' },
+    { path: '/admin/integrations', icon: Plug, label: 'Integrações' },
   ];
 
   return (
@@ -134,34 +136,27 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
           })}
         </nav>
 
-        {/* User Profile */}
+        {/* Members Area Card */}
         <div className="p-4 shrink-0 border-t border-gray-200 dark:border-white/5">
-          <div className={`flex items-center gap-3 rounded-2xl p-2 lg:p-3 bg-white/5 border border-white/5 transition-all ${!sidebarOpen && !mobileMenuOpen ? 'justify-center' : ''}`}>
+          <Link to="/admin/members" className={`block rounded-2xl p-4 bg-gradient-to-br from-purple-600 to-indigo-700 text-white shadow-lg shadow-purple-500/20 group relative overflow-hidden transition-all hover:shadow-purple-500/30 ${!sidebarOpen && !mobileMenuOpen ? 'p-2 flex justify-center' : ''}`}>
 
-            <Link to="/admin/settings" className="flex items-center gap-3 flex-1 min-w-0 group">
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white font-bold text-xs shadow-lg ring-2 ring-white/10 shrink-0 group-hover:ring-primary/50 transition-all">
-                {user?.user_metadata?.name ? user.user_metadata.name.substring(0, 2).toUpperCase() : 'AD'}
+            {/* Background Pattern */}
+            <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-10 -mt-10 blur-xl"></div>
+            <div className="absolute bottom-0 left-0 w-16 h-16 bg-black/10 rounded-full -ml-8 -mb-8 blur-xl"></div>
+
+            <div className={`flex items-center gap-3 ${!sidebarOpen && !mobileMenuOpen ? 'justify-center' : ''}`}>
+              <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0 backdrop-blur-sm border border-white/10">
+                <Users className="w-5 h-5 text-white" />
               </div>
+
               {(sidebarOpen || mobileMenuOpen) && (
-                <div className="overflow-hidden text-left">
-                  <p className="text-sm font-medium text-gray-900 dark:text-white truncate group-hover:text-primary transition-colors">
-                    {user?.user_metadata?.name || 'Admin'}
-                  </p>
-                  <p className="text-[10px] text-gray-500 truncate">{user?.email || 'admin@super.com'}</p>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-sm truncate">Área de Membros</p>
+                  <p className="text-[10px] text-white/70 truncate">Gerenciar alunos</p>
                 </div>
               )}
-            </Link>
-
-            {(sidebarOpen || mobileMenuOpen) && (
-              <button
-                onClick={signOut}
-                className="p-2 text-gray-500 hover:text-red-400 hover:bg-white/5 rounded-lg transition-colors"
-                title="Sair"
-              >
-                <LogOut className="w-4 h-4" />
-              </button>
-            )}
-          </div>
+            </div>
+          </Link>
         </div>
       </aside>
 
@@ -179,7 +174,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             </button>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <button
               onClick={toggleTheme}
               className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
@@ -191,6 +186,31 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
               <Bell className="w-5 h-5" />
               <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-primary rounded-full shadow-[0_0_8px_rgba(138,43,226,0.8)]"></span>
             </button>
+
+            {/* User Profile in Header */}
+            <div className="h-8 w-px bg-gray-200 dark:bg-white/10 mx-1 hidden md:block"></div>
+
+            <div className="flex items-center gap-3 pl-1">
+              <Link to="/admin/settings" className="flex items-center gap-3 group">
+                <div className="hidden md:block text-right">
+                  <p className="text-sm font-medium text-gray-900 dark:text-white group-hover:text-primary transition-colors">
+                    {user?.user_metadata?.name || 'Admin'}
+                  </p>
+                  <p className="text-[10px] text-gray-500">{user?.email || 'admin@super.com'}</p>
+                </div>
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white font-bold text-xs shadow-lg ring-2 ring-white/10 group-hover:ring-primary/50 transition-all">
+                  {user?.user_metadata?.name ? user.user_metadata.name.substring(0, 2).toUpperCase() : 'AD'}
+                </div>
+              </Link>
+
+              <button
+                onClick={signOut}
+                className="p-2 text-gray-400 hover:text-red-400 hover:bg-white/5 rounded-full transition-colors"
+                title="Sair"
+              >
+                <LogOut className="w-5 h-5" />
+              </button>
+            </div>
           </div>
         </header>
 

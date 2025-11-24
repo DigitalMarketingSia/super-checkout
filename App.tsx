@@ -13,6 +13,9 @@ import { Domains } from './pages/admin/Domains';
 import { Settings } from './pages/admin/Settings';
 import { Orders } from './pages/admin/Orders';
 import { Webhooks } from './pages/admin/Webhooks';
+import { Marketing } from './pages/Marketing';
+import { IntegrationsHub } from './pages/IntegrationsHub';
+import { MembersArea } from './pages/MembersArea';
 import { PublicCheckout } from './pages/public/PublicCheckout';
 import { PixPayment } from './pages/public/PixPayment';
 import { ThankYou } from './pages/public/ThankYou';
@@ -139,6 +142,9 @@ const App = () => {
               <Route path="/admin/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
               <Route path="/admin/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
               <Route path="/admin/webhooks" element={<ProtectedRoute><Webhooks /></ProtectedRoute>} />
+              <Route path="/admin/marketing" element={<ProtectedRoute><Marketing /></ProtectedRoute>} />
+              <Route path="/admin/integrations" element={<ProtectedRoute><IntegrationsHub /></ProtectedRoute>} />
+              <Route path="/admin/members" element={<ProtectedRoute><MembersArea /></ProtectedRoute>} />
 
               {/* Redirect root to Admin */}
               <Route path="/" element={<Navigate to="/admin" replace />} />

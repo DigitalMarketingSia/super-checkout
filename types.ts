@@ -204,3 +204,11 @@ export interface PaymentResponse {
   qrCode?: string;
   error?: string;
 }
+
+export interface Integration {
+  id: string;
+  name: string;
+  config: any;
+  active: boolean;
+  created_at: string;
+}
