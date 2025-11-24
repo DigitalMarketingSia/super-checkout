@@ -238,23 +238,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // 6. Send Email if Payment is Approved
-    /*
+
     if (orderStatus === 'paid' && paymentRecord && supabaseKey) {
         try {
             console.log(`[Webhook] Attempting to send approval email for Order ${paymentRecord.order_id}`);
-            
+
             // Fetch full order details
             const orderRes = await fetch(`${supabaseUrl}/rest/v1/orders?id=eq.${paymentRecord.order_id}&select=*`, {
                 headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
             });
-            
+
             if (orderRes.ok) {
                 const orders = await orderRes.json();
                 const order = orders[0];
 
                 if (order && order.customer_email) {
                     const productName = order.items?.[0]?.name || 'seu produto';
-                    
+
                     const html = `
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -340,7 +340,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             await logToSupabase('webhook.error_email_flow', { error: emailError.message }, false);
         }
     }
-    */
+
 
     return res.status(200).json({ success: true });
 
