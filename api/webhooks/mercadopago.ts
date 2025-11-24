@@ -226,26 +226,130 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 console.error('[Webhook] Error updating records:', updateError);
                 await logToSupabase('webhook.error_updating_records', { error: updateError.message }, false);
             }
-        } else {
-            // If we don't have a payment record, we can't update the order directly.
-            // But we should log this as a warning. In a more advanced system, we might want to create the record.
-            await logToSupabase('webhook.warning', {
-                message: 'Payment record not found, cannot update order',
-                paymentId,
-                mpStatus: status
-            }, false);
         }
-
-        return res.status(200).json({ success: true });
-
-    } catch (error: any) {
-        console.error('[Webhook] Critical Error:', error);
-        // Try to log the critical error if possible
-        try {
-            // Re-define logToSupabase locally if needed or just use the one in scope if valid
-            // Assuming logToSupabase is available in scope
-        } catch (e) { }
-
-        return res.status(500).json({ error: error.message });
+    } else {
+        // If we don't have a payment record, we can't update the order directly.
+        // But we should log this as a warning. In a more advanced system, we might want to create the record.
+        await logToSupabase('webhook.warning', {
+            message: 'Payment record not found, cannot update order',
+            paymentId,
+            mpStatus: status
+        }, false);
     }
+
+    // 6. Send Email if Payment is Approved
+    if (orderStatus === 'paid' && paymentRecord && supabaseKey) {
+        try {
+            console.log(`[Webhook] Attempting to send approval email for Order ${paymentRecord.order_id}`);
+
+            // Fetch full order details
+            const orderRes = await fetch(`${supabaseUrl}/rest/v1/orders?id=eq.${paymentRecord.order_id}&select=*`, {
+                headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
+            });
+
+            if (orderRes.ok) {
+                const orders = await orderRes.json();
+                const order = orders[0];
+
+                if (order && order.customer_email) {
+                    const productName = order.items?.[0]?.name || 'seu produto';
+
+                    const html = `
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acesso Liberado!</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f6f6f6;">
+    <center style="width: 100%; background-color: #f6f6f6;">
+        <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 20px 0; box-shadow: 0 0 10px rgba(0,0,0,0.05);">
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                    <td style="padding: 20px; font-family: Arial, sans-serif; background-color: #ffffff; text-align: center;">
+                        <p style="font-size: 24px; font-weight: bold; color: #1a1a1a; margin-top: 0; margin-bottom: 20px;">
+                            Olá, ${order.customer_name}!
+                        </p>
+                        <p style="font-size: 16px; line-height: 1.5; color: #555555; margin-bottom: 30px;">
+                            Seu pagamento para o produto <strong>${productName}</strong> foi aprovado com sucesso!
+                            <br>Você já pode acessar seu produto e começar agora mesmo.
+                        </p>
+                        <div style="margin: 0 auto 40px auto; display: block;">
+                            <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin: auto;">
+                                <tr>
+                                    <td style="border-radius: 6px; background: #007bff; text-align: center;">
+                                        <a href="#" target="_blank" 
+                                           style="background: #007bff; border: 1px solid #007bff; padding: 12px 25px; color: #ffffff; display: inline-block; 
+                                                  font-family: Arial, sans-serif; font-size: 17px; font-weight: bold; text-decoration: none; border-radius: 6px;">
+                                            ACESSAR ÁREA DE MEMBROS
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <p style="font-size: 14px; line-height: 1.5; color: #555555; margin-top: 0; margin-bottom: 20px;">
+                            Conte com nosso time de suporte se precisar de qualquer ajuda.<br>
+                            Atenciosamente,<br>
+                            <strong>Super Checkout</strong>
+                        </p>
+                    </td>
+                </tr>
+            </table>
+            <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                    <td style="padding: 20px; font-family: Arial, sans-serif; font-size: 11px; color: #AAAAAA; text-align: center; border-top: 1px solid #eeeeee; margin-top: 30px;">
+                        Este é um e-mail automático transacional e não deve ser respondido.<br>
+                        Seu ${productName} é um lançamento da Super Checkout.
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </center>
+</body>
+</html>
+                        `;
+
+                    // Call Edge Function to send email
+                    const emailRes = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${supabaseKey}`
+                        },
+                        body: JSON.stringify({
+                            to: order.customer_email,
+                            subject: `Pagamento Aprovado - Acesso Liberado!`,
+                            html
+                        })
+                    });
+
+                    if (emailRes.ok) {
+                        console.log(`[Webhook] Email sent successfully to ${order.customer_email}`);
+                        await logToSupabase('webhook.email_sent', { orderId: order.id, email: order.customer_email }, true, paymentRecord.gateway_id);
+                    } else {
+                        const errText = await emailRes.text();
+                        console.error(`[Webhook] Failed to send email: ${errText}`);
+                        await logToSupabase('webhook.error_sending_email', { error: errText }, false);
+                    }
+                }
+            }
+        } catch (emailError: any) {
+            console.error('[Webhook] Error in email sending flow:', emailError);
+            await logToSupabase('webhook.error_email_flow', { error: emailError.message }, false);
+        }
+    }
+
+    return res.status(200).json({ success: true });
+
+} catch (error: any) {
+    console.error('[Webhook] Critical Error:', error);
+    // Try to log the critical error if possible
+    try {
+        // Re-define logToSupabase locally if needed or just use the one in scope if valid
+        // Assuming logToSupabase is available in scope
+    } catch (e) { }
+
+    return res.status(500).json({ error: error.message });
+}
 }
