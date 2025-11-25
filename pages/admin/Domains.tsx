@@ -403,15 +403,6 @@ export const Domains = () => {
                   <p className="text-sm text-gray-300">
                     Registros DNS necessários:
                   </p>
-                  <Button
-                    size="sm"
-                    onClick={refreshDnsData}
-                    disabled={dnsLoading}
-                    className="bg-primary/20 text-primary hover:bg-primary/30 border-primary/20"
-                  >
-                    {dnsLoading ? <Loader2 className="w-3 h-3 animate-spin mr-2" /> : <RotateCw className="w-3 h-3 mr-2" />}
-                    Verificar Novamente
-                  </Button>
                 </div>
 
                 {dnsLoading ? (
@@ -423,26 +414,59 @@ export const Domains = () => {
                     <p className="mb-2 font-medium text-white">Não foi possível obter os registros.</p>
                   </div>
                 ) : (
-                  <div className="space-y-2">
-                    {dnsRecords.map((record: any, idx: number) => (
-                      <div key={idx} className="grid grid-cols-4 gap-2 text-xs">
-                        <div className="bg-white/5 p-2 rounded border border-white/5">
-                          <span className="text-gray-500 block mb-1">Type</span>
-                          <span className="text-white font-mono font-bold">{record.type}</span>
-                        </div>
-                        <div className="bg-white/5 p-2 rounded border border-white/5">
-                          <span className="text-gray-500 block mb-1">Name</span>
-                          <span className="text-white font-mono">{record.domain.startsWith('www.') ? 'www' : (record.domain.split('.').length > 2 ? record.domain.split('.')[0] : '@')}</span>
-                        </div>
-                        <div className="bg-white/5 p-2 rounded border border-white/5 relative group col-span-2">
-                          <span className="text-gray-500 block mb-1">Value</span>
-                          <span className="text-white font-mono break-all">{record.value}</span>
-                          <button onClick={() => handleCopy(record.value, `val-${idx}`)} className="absolute top-2 right-2 text-gray-500 hover:text-white">
-                            {copiedField === `val-${idx}` ? <CheckCircle className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
-                          </button>
-                        </div>
+                  <div className="space-y-6">
+                    {/* CNAME Records */}
+                    {dnsRecords.filter((r: any) => r.type === 'CNAME').length > 0 && (
+                      <div className="space-y-2">
+                        <h3 className="text-xs font-medium text-gray-400 uppercase tracking-wider">Subdomínio</h3>
+                        {dnsRecords.filter((r: any) => r.type === 'CNAME').map((record: any, idx: number) => (
+                          <div key={`cname-${idx}`} className="grid grid-cols-4 gap-2 text-xs">
+                            <div className="bg-white/5 p-2 rounded border border-white/5">
+                              <span className="text-gray-500 block mb-1">Type</span>
+                              <span className="text-white font-mono font-bold">{record.type}</span>
+                            </div>
+                            <div className="bg-white/5 p-2 rounded border border-white/5">
+                              <span className="text-gray-500 block mb-1">Name</span>
+                              <span className="text-white font-mono">{record.domain.startsWith('www.') ? 'www' : (record.domain.split('.').length > 2 ? record.domain.split('.')[0] : '@')}</span>
+                            </div>
+                            <div className="bg-white/5 p-2 rounded border border-white/5 relative group col-span-2">
+                              <span className="text-gray-500 block mb-1">Value</span>
+                              <span className="text-white font-mono break-all">{record.value}</span>
+                              <button onClick={() => handleCopy(record.value, `val-cname-${idx}`)} className="absolute top-2 right-2 text-gray-500 hover:text-white">
+                                {copiedField === `val-cname-${idx}` ? <CheckCircle className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+                              </button>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    )}
+
+                    {/* A Records */}
+                    {dnsRecords.filter((r: any) => r.type === 'A').length > 0 && (
+                      <div className="space-y-2">
+                        <h3 className="text-xs font-medium text-gray-400 uppercase tracking-wider">Domínio</h3>
+                        {dnsRecords.filter((r: any) => r.type === 'A').map((record: any, idx: number) => (
+                          <div key={`a-${idx}`} className="grid grid-cols-4 gap-2 text-xs">
+                            <div className="bg-white/5 p-2 rounded border border-white/5">
+                              <span className="text-gray-500 block mb-1">Type</span>
+                              <span className="text-white font-mono font-bold">{record.type}</span>
+                            </div>
+                            <div className="bg-white/5 p-2 rounded border border-white/5">
+                              <span className="text-gray-500 block mb-1">Name</span>
+                              <span className="text-white font-mono">@</span>
+                            </div>
+                            <div className="bg-white/5 p-2 rounded border border-white/5 relative group col-span-2">
+                              <span className="text-gray-500 block mb-1">Value</span>
+                              <span className="text-white font-mono break-all">{record.value}</span>
+                              <button onClick={() => handleCopy(record.value, `val-a-${idx}`)} className="absolute top-2 right-2 text-gray-500 hover:text-white">
+                                {copiedField === `val-a-${idx}` ? <CheckCircle className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
                     <div className="grid grid-cols-4 gap-2 text-xs mt-2">
                       <div className="col-span-4 bg-white/5 p-2 rounded border border-white/5 flex items-center justify-between">
                         <span className="text-gray-500">Proxy (Cloudflare)</span>
@@ -451,13 +475,6 @@ export const Domains = () => {
                     </div>
                   </div>
                 )}
-                {/* DEBUG SECTION */}
-                <details className="mt-4 border-t border-white/10 pt-4">
-                  <summary className="text-xs text-gray-500 cursor-pointer hover:text-white">Ver Dados de Debug (v1.2)</summary>
-                  <pre className="mt-2 p-2 bg-black/50 rounded text-[10px] text-gray-400 overflow-auto max-h-40">
-                    {JSON.stringify(debugData, null, 2)}
-                  </pre>
-                </details>
               </div>
 
               <div className="flex justify-end">
