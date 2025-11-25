@@ -48,6 +48,17 @@ export const Domains = () => {
     loadData();
   }, []);
 
+  // Auto-verify PENDING domains on load
+  useEffect(() => {
+    if (domains.length > 0) {
+      domains.forEach(domain => {
+        if (domain.status === DomainStatus.PENDING) {
+          verifyDomain(domain.id, domain.domain, true);
+        }
+      });
+    }
+  }, [domains.length]); // Run when domains are loaded/added
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -92,8 +103,8 @@ export const Domains = () => {
       setIsAddModalOpen(false);
       setFormData({ domain: '', type: DomainType.CNAME });
 
-      // We do NOT open the DNS modal automatically anymore.
-      // User must click "Detalhes DNS" to see instructions.
+      // Open DNS modal immediately to show instructions
+      openDnsModal(savedDomain);
 
     } catch (err: any) {
       setError(err.message);
@@ -113,9 +124,10 @@ export const Domains = () => {
       if (data.error) throw new Error(data.error);
 
       // Update Status: STRICTER LOGIC
-      // Only ACTIVE if verified AND configured (not misconfigured)
-      // Check both project config (data.misconfigured) and global config (data.config?.misconfigured)
       const isMisconfigured = data.misconfigured || data.config?.misconfigured;
+
+      // Vercel returns verified=true only if everything is correct.
+      // If it's a new domain, verified is usually false.
 
       let newStatus = DomainStatus.PENDING;
       if (data.verified && !isMisconfigured) {
@@ -139,8 +151,12 @@ export const Domains = () => {
         return data.verification;
       }
 
-      // NO FALLBACK: Return null so the UI shows the "Manual Config" state
-      return null;
+      // FALLBACK: If no verification records, return Standard Vercel Records
+      // This solves the "Manual" issue.
+      return [
+        { type: 'CNAME', domain: domainName, value: 'cname.vercel-dns.com', reason: 'default_cname' },
+        { type: 'A', domain: '@', value: '76.76.21.21', reason: 'default_a' }
+      ];
 
     } catch (err) {
       console.error('Verification failed:', err);
@@ -370,7 +386,7 @@ export const Domains = () => {
               <div className="bg-black/30 border border-white/10 rounded-xl p-4 space-y-4">
                 <div className="flex justify-between items-center">
                   <p className="text-sm text-gray-300">
-                    Registros DNS encontrados:
+                    Registros DNS necessários:
                   </p>
                   <Button
                     size="sm"
@@ -379,7 +395,7 @@ export const Domains = () => {
                     className="bg-primary/20 text-primary hover:bg-primary/30 border-primary/20"
                   >
                     {dnsLoading ? <Loader2 className="w-3 h-3 animate-spin mr-2" /> : <RotateCw className="w-3 h-3 mr-2" />}
-                    Atualizar Dados
+                    Verificar Novamente
                   </Button>
                 </div>
 
@@ -389,17 +405,7 @@ export const Domains = () => {
                   </div>
                 ) : !dnsRecords ? (
                   <div className="text-center py-8 text-gray-400">
-                    <p className="mb-2 font-medium text-white">Não foi possível obter os registros automaticamente.</p>
-                    <p className="text-xs text-gray-500 mb-6 max-w-md mx-auto">
-                      Isso pode acontecer se o domínio já estiver verificado em outra conta ou se houver um conflito.
-                      Acesse o painel da Vercel para ver os valores corretos.
-                    </p>
-                    <Button
-                      onClick={() => window.open('https://vercel.com/dashboard', '_blank')}
-                      className="bg-white text-black hover:bg-gray-200"
-                    >
-                      Ver Configuração na Vercel <ExternalLink className="w-4 h-4 ml-2" />
-                    </Button>
+                    <p className="mb-2 font-medium text-white">Não foi possível obter os registros.</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
