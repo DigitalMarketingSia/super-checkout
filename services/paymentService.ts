@@ -227,9 +227,9 @@ class PaymentService {
           }
         },
         // Only send notification_url if it's a valid public URL (not localhost)
-        notification_url: apiUrl.includes('localhost') || apiUrl.includes('127.0.0.1')
+        notification_url: window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1')
           ? undefined
-          : `${apiUrl}/api/webhooks/mercadopago`
+          : `${window.location.origin}/api/webhooks/mercadopago`
       });
 
       // 3. Record Payment
