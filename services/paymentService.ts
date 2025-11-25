@@ -156,11 +156,19 @@ class PaymentService {
       return { success: false, message: 'Mercado Pago credentials missing in settings' };
     }
 
-    const mpAdapter = new MercadoPagoAdapter(gateway.private_key, false); // false = sandbox (could be dynamic too)
+    // Prioritize explicit API_URL, then Vercel System URL, then fallback to window origin
+    const publicUrl = getBaseUrl();
+
+    // Force the adapter to use the stable Vercel URL for the proxy to avoid custom domain issues
+    const proxyBaseUrl = `${publicUrl}/mp-api`;
+    console.log('[PaymentService] Initializing Adapter with Base URL:', proxyBaseUrl);
+
+    const mpAdapter = new MercadoPagoAdapter(gateway.private_key, {
+      isProduction: false,
+      baseUrl: proxyBaseUrl
+    });
 
     try {
-      // Prioritize explicit API_URL, then Vercel System URL, then fallback to window origin
-      const publicUrl = getBaseUrl();
       const apiUrl = getApiUrl(''); // Just base API URL if needed, or use publicUrl
 
       let paymentMethodId = '';

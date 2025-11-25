@@ -60,10 +60,15 @@ export class MercadoPagoAdapter {
     private accessToken: string;
     private baseUrl: string;
 
-    constructor(accessToken: string, isProduction = false) {
+    constructor(accessToken: string, options?: { isProduction?: boolean; baseUrl?: string } | boolean) {
         this.accessToken = accessToken;
-        // Use local proxy to bypass CORS
-        this.baseUrl = '/mp-api';
+
+        // Handle legacy boolean argument or options object
+        const isProduction = typeof options === 'boolean' ? options : options?.isProduction || false;
+        const customBaseUrl = typeof options === 'object' ? options.baseUrl : undefined;
+
+        // Use provided base URL or fallback to local proxy
+        this.baseUrl = customBaseUrl || '/mp-api';
     }
 
     /**
