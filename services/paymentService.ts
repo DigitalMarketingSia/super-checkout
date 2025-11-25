@@ -98,7 +98,7 @@ class PaymentService {
 
       // Persist Order
       // Persist Order - Only save the new order, not the entire list
-      await storage.saveOrders([newOrder]);
+      await storage.createOrder(newOrder);
 
       // 3. Route to Gateway Implementation
       let gatewayResponse: ProcessPaymentResult;

@@ -792,6 +792,39 @@ class StorageService {
     }
   }
 
+  async createOrder(order: Order) {
+    let merchantId = null;
+
+    // If logged in (Merchant creating manual order)
+    const user = await this.getUser();
+    if (user) {
+      merchantId = user.id;
+    } else if (order.checkout_id) {
+      // Public Checkout: Fetch checkout to find merchant ID
+      const { data: checkout } = await supabase
+        .from('checkouts')
+        .select('user_id')
+        .eq('id', order.checkout_id)
+        .single();
+      if (checkout) merchantId = checkout.user_id;
+    }
+
+    // Prepare record
+    const { amount, ...rest } = order;
+    const record = {
+      ...rest,
+      total: amount,
+      items: order.items,
+      user_id: merchantId
+    };
+
+    const { error } = await supabase.from('orders').insert(record);
+    if (error) {
+      console.error("Error creating order:", error.message);
+      throw new Error(`Failed to create order: ${error.message}`);
+    }
+  }
+
   // --- PAYMENTS ---
   // --- PAYMENTS ---
 
