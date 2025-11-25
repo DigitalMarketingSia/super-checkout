@@ -421,6 +421,23 @@ class StorageService {
     return data;
   }
 
+  async getCheckoutByDomainId(domainId: string): Promise<Checkout | null> {
+    const { data, error } = await supabase
+      .from('checkouts')
+      .select('*')
+      .eq('domain_id', domainId)
+      .eq('active', true)
+      .single();
+
+    if (error) {
+      if (error.code !== 'PGRST116') { // Row not found
+        console.error('Error fetching checkout by domain:', error.message);
+      }
+      return null;
+    }
+    return data as Checkout;
+  }
+
   async updateCheckout(checkout: Checkout) {
     const user = await this.getUser();
     if (!user) throw new Error('No user logged in');

@@ -31,3 +31,5 @@ verify_connection.ts
 *.njsproj
 *.sln
 *.sw?
+
+.vercel

@@ -16,7 +16,8 @@ import {
   Copy,
   ExternalLink,
   RotateCw,
-  X
+  X,
+  Trash2
 } from 'lucide-react';
 
 export const Domains = () => {
@@ -24,7 +25,10 @@ export const Domains = () => {
   const [checkouts, setCheckouts] = useState<Checkout[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [verifyingId, setVerifyingId] = useState<string | null>(null);
+  const [removingId, setRemovingId] = useState<string | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -34,6 +38,9 @@ export const Domains = () => {
     type: DomainType.CNAME
   });
 
+  // DNS Records State for Modal/Card
+  const [dnsRecords, setDnsRecords] = useState<any>(null);
+
   useEffect(() => {
     const loadData = async () => {
       setDomains(await storage.getDomains());
@@ -42,33 +49,124 @@ export const Domains = () => {
     loadData();
   }, []);
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newDomain: Domain = {
-      id: `dom_${Date.now()}`,
-      status: DomainStatus.PENDING,
-      created_at: new Date().toISOString(),
-      ...formData
-    };
+    setIsLoading(true);
+    setError(null);
 
-    const updated = [...domains, newDomain];
-    storage.saveDomains(updated);
-    setDomains(updated);
-    setIsModalOpen(false);
-    setFormData({ domain: '', checkout_id: '', slug: '', type: DomainType.CNAME });
+    try {
+      // 1. Add to Vercel Project
+      const res = await fetch('/api/domains/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ domain: formData.domain })
+      });
+
+      const contentType = res.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('API indisponível. Use "vercel dev" para testar localmente.');
+      }
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Falha ao adicionar domínio na Vercel');
+      }
+
+      // 2. Save to Supabase
+      const newDomain: Domain = {
+        id: `dom_${Date.now()}`,
+        status: DomainStatus.PENDING, // Vercel starts as pending usually
+        created_at: new Date().toISOString(),
+        domain: formData.domain,
+        type: formData.type
+      };
+
+      const updated = [...domains, newDomain];
+      await storage.saveDomains(updated);
+      setDomains(updated);
+
+      // 3. Trigger initial verification to get DNS records
+      await verifyDomain(newDomain.id, formData.domain);
+
+      setIsModalOpen(false);
+      setFormData({ domain: '', checkout_id: '', slug: '', type: DomainType.CNAME });
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleVerify = (id: string) => {
+  const verifyDomain = async (id: string, domainName: string) => {
     setVerifyingId(id);
-    // Simulate DNS propagation check
-    setTimeout(() => {
+    try {
+      const res = await fetch(`/api/domains/verify?domain=${domainName}`);
+
+      const contentType = res.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('API indisponível. Use "vercel dev" para testar localmente.');
+      }
+
+      const data = await res.json();
+
+      if (data.error) throw new Error(data.error);
+
+      // Update Status based on Vercel response
+      let newStatus = DomainStatus.PENDING;
+      if (data.verified) newStatus = DomainStatus.ACTIVE;
+      else if (data.error) newStatus = DomainStatus.ERROR;
+
+      // Update in State & DB
       const updated = domains.map(d =>
-        d.id === id ? { ...d, status: DomainStatus.ACTIVE } : d
+        d.id === id ? { ...d, status: newStatus } : d
       );
-      storage.saveDomains(updated);
       setDomains(updated);
+      await storage.saveDomains(updated);
+
+      // If pending, we might want to store/show the DNS challenges
+      if (!data.verified && data.verification) {
+        setDnsRecords(data.verification);
+      } else {
+        setDnsRecords(null);
+      }
+
+    } catch (err) {
+      console.error('Verification failed:', err);
+    } finally {
       setVerifyingId(null);
-    }, 2000);
+    }
+  };
+
+  const handleRemove = async (id: string, domainName: string) => {
+    if (!confirm('Tem certeza que deseja remover este domínio?')) return;
+
+    setRemovingId(id);
+    try {
+      // 1. Remove from Vercel
+      const res = await fetch(`/api/domains/remove?domain=${domainName}`, { method: 'DELETE' });
+
+      const contentType = res.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+      } else if (!res.ok) {
+        // If not JSON but error status (e.g. 404 from Vite)
+        throw new Error('API indisponível. Use "vercel dev" para testar localmente.');
+      }
+
+      // 2. Remove from Supabase (Logic needed in storageService or just filter out)
+      // For now, we simulate removal by filtering and saving
+      const updated = domains.filter(d => d.id !== id);
+      await storage.saveDomains(updated);
+      setDomains(updated);
+
+    } catch (err) {
+      console.error('Removal failed:', err);
+      alert('Erro ao remover domínio');
+    } finally {
+      setRemovingId(null);
+    }
   };
 
   const handleCopy = (text: string, field: string) => {
@@ -104,8 +202,8 @@ export const Domains = () => {
     }
   };
 
-  const systemDomain = window.location.host;
-  const systemUrl = `${window.location.protocol}//${systemDomain}`;
+  const systemDomain = 'cname.vercel-dns.com'; // Standard Vercel CNAME
+  const systemUrl = `${window.location.protocol}//${window.location.host}`;
 
   return (
     <Layout>
@@ -166,19 +264,24 @@ export const Domains = () => {
                   </div>
                 </div>
 
-                {/* DNS Info Box (If Pending) */}
-                {domain.status === DomainStatus.PENDING && domain.type === DomainType.CNAME && (
+                {/* DNS Info Box (If Pending & Records Available) */}
+                {domain.status === DomainStatus.PENDING && (
                   <div className="flex-1 bg-yellow-500/5 border border-yellow-500/10 rounded-lg p-3 text-sm lg:mx-8">
                     <div className="flex items-center gap-2 text-yellow-500 font-bold mb-2 text-xs uppercase tracking-wide">
-                      <AlertTriangle className="w-3 h-3" /> Ação Necessária
+                      <AlertTriangle className="w-3 h-3" /> Configuração DNS Necessária
                     </div>
-                    <div className="flex flex-col sm:flex-row gap-4 text-xs text-gray-300">
+                    <div className="flex flex-col gap-2 text-xs text-gray-300">
+                      <p>Aponte seu domínio para a Vercel:</p>
                       <div className="flex items-center gap-2">
-                        <span className="text-gray-500">Host:</span>
-                        <code className="bg-black/20 px-1.5 py-0.5 rounded text-yellow-200 font-mono">checkout</code>
+                        <span className="text-gray-500 w-12">Tipo:</span>
+                        <code className="bg-black/20 px-1.5 py-0.5 rounded text-yellow-200 font-mono">CNAME</code>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-gray-500">Value:</span>
+                        <span className="text-gray-500 w-12">Nome:</span>
+                        <code className="bg-black/20 px-1.5 py-0.5 rounded text-yellow-200 font-mono">@</code> (ou subdomínio)
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-500 w-12">Valor:</span>
                         <code className="bg-black/20 px-1.5 py-0.5 rounded text-yellow-200 font-mono">{systemDomain}</code>
                       </div>
                     </div>
@@ -194,7 +297,7 @@ export const Domains = () => {
                   ) : (
                     <Button
                       size="sm"
-                      onClick={() => handleVerify(domain.id)}
+                      onClick={() => verifyDomain(domain.id, domain.domain)}
                       disabled={verifyingId === domain.id}
                       className={verifyingId === domain.id ? 'opacity-80' : ''}
                     >
@@ -210,8 +313,12 @@ export const Domains = () => {
                     </Button>
                   )}
 
-                  <button className="p-2 hover:bg-white/5 rounded-lg text-gray-400 hover:text-white transition-colors">
-                    <ExternalLink className="w-4 h-4" />
+                  <button
+                    onClick={() => handleRemove(domain.id, domain.domain)}
+                    disabled={removingId === domain.id}
+                    className="p-2 hover:bg-red-500/10 rounded-lg text-gray-400 hover:text-red-500 transition-colors"
+                  >
+                    {removingId === domain.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                   </button>
                 </div>
 
@@ -247,6 +354,13 @@ export const Domains = () => {
             {/* Body */}
             <form onSubmit={handleSave} className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
 
+              {error && (
+                <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-lg text-sm flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4" />
+                  {error}
+                </div>
+              )}
+
               {/* Basic Info */}
               <div className="space-y-4">
                 <div>
@@ -264,140 +378,47 @@ export const Domains = () => {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1.5">Checkout Vinculado</label>
-                    <select
-                      className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-primary/50 outline-none transition-all appearance-none"
-                      value={formData.checkout_id}
-                      onChange={e => setFormData({ ...formData, checkout_id: e.target.value })}
-                    >
-                      <option value="">-- Selecione (Opcional) --</option>
-                      {checkouts.map(c => (
-                        <option key={c.id} value={c.id}>{c.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1.5">Slug (Opcional)</label>
-                    <div className="flex">
-                      <span className="bg-white/5 border border-r-0 border-white/10 rounded-l-xl px-3 flex items-center text-gray-500 text-sm">/</span>
-                      <input
-                        type="text"
-                        className="w-full bg-black/20 border border-white/10 rounded-r-xl px-4 py-3 text-white placeholder-gray-600 focus:ring-2 focus:ring-primary/50 outline-none transition-all"
-                        placeholder="oferta-especial"
-                        value={formData.slug}
-                        onChange={e => setFormData({ ...formData, slug: e.target.value })}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 text-xs text-primary-light flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 bg-primary rounded-full"></div>
-                  Preview: <span className="font-mono">{formData.domain || '...'}</span>{formData.slug ? `/${formData.slug}` : ''}
-                </div>
+                {/* Fields removed as per user request (moved to Checkout Editor) */}
               </div>
 
               <div className="h-px bg-white/5"></div>
 
-              {/* Connection Method */}
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-3">Método de Conexão</label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Option CNAME */}
-                  <label className={`cursor-pointer relative flex flex-col p-4 rounded-xl border transition-all ${formData.type === DomainType.CNAME
-                    ? 'bg-primary/10 border-primary/50 shadow-[0_0_15px_rgba(138,43,226,0.1)]'
-                    : 'bg-white/5 border-white/5 hover:bg-white/10'
-                    }`}>
-                    <input
-                      type="radio"
-                      name="connType"
-                      className="absolute top-4 right-4 text-primary focus:ring-primary"
-                      checked={formData.type === DomainType.CNAME}
-                      onChange={() => setFormData({ ...formData, type: DomainType.CNAME })}
-                    />
-                    <div className="mb-2 font-bold text-white flex items-center gap-2">
-                      <span className="bg-white/10 px-1.5 py-0.5 rounded text-[10px] uppercase">Recomendado</span>
-                      CNAME
-                    </div>
-                    <p className="text-xs text-gray-400 leading-relaxed">
-                      Crie um subdomínio (ex: checkout.site.com) apontando para nossa plataforma. Mais rápido e seguro.
-                    </p>
-                  </label>
+              {/* Instructions Static for now, will be dynamic after add */}
+              <div className="bg-black/30 border border-white/10 rounded-xl p-4 space-y-4 animate-in fade-in duration-300">
+                <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                  <Server className="w-4 h-4 text-primary" /> Configuração DNS (CNAME)
+                </h4>
+                <p className="text-xs text-gray-400">
+                  Após adicionar, você precisará criar um registro CNAME no seu provedor:
+                </p>
 
-                  {/* Option Redirect */}
-                  <label className={`cursor-pointer relative flex flex-col p-4 rounded-xl border transition-all ${formData.type === DomainType.REDIRECT
-                    ? 'bg-primary/10 border-primary/50 shadow-[0_0_15px_rgba(138,43,226,0.1)]'
-                    : 'bg-white/5 border-white/5 hover:bg-white/10'
-                    }`}>
-                    <input
-                      type="radio"
-                      name="connType"
-                      className="absolute top-4 right-4 text-primary focus:ring-primary"
-                      checked={formData.type === DomainType.REDIRECT}
-                      onChange={() => setFormData({ ...formData, type: DomainType.REDIRECT })}
-                    />
-                    <div className="mb-2 font-bold text-white">Redirecionamento</div>
-                    <p className="text-xs text-gray-400 leading-relaxed">
-                      Redirecione um domínio existente via seu provedor de DNS (Cloudflare/GoDaddy) para o link gerado.
-                    </p>
-                  </label>
-                </div>
-              </div>
-
-              {/* Instructions Dynamic */}
-              {formData.type === DomainType.CNAME && (
-                <div className="bg-black/30 border border-white/10 rounded-xl p-4 space-y-4 animate-in fade-in duration-300">
-                  <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                    <Server className="w-4 h-4 text-primary" /> Configuração DNS
-                  </h4>
-                  <p className="text-xs text-gray-400">
-                    Acesse seu provedor de domínio e adicione o seguinte registro:
-                  </p>
-
-                  <div className="grid grid-cols-3 gap-2 text-xs">
-                    <div className="bg-white/5 p-2 rounded border border-white/5">
-                      <span className="text-gray-500 block mb-1">Tipo</span>
-                      <span className="text-white font-mono font-bold">CNAME</span>
-                    </div>
-                    <div className="bg-white/5 p-2 rounded border border-white/5 relative group">
-                      <span className="text-gray-500 block mb-1">Host / Nome</span>
-                      <span className="text-white font-mono">checkout</span>
-                      <button onClick={() => handleCopy('checkout', 'host')} className="absolute top-2 right-2 text-gray-500 hover:text-white">
-                        {copiedField === 'host' ? <CheckCircle className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
-                      </button>
-                    </div>
-                    <div className="bg-white/5 p-2 rounded border border-white/5 relative group">
-                      <span className="text-gray-500 block mb-1">Valor / Destino</span>
-                      <span className="text-white font-mono">{systemDomain}</span>
-                      <button onClick={() => handleCopy(systemDomain, 'value')} className="absolute top-2 right-2 text-gray-500 hover:text-white">
-                        {copiedField === 'value' ? <CheckCircle className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
-                      </button>
-                    </div>
+                <div className="grid grid-cols-3 gap-2 text-xs">
+                  <div className="bg-white/5 p-2 rounded border border-white/5">
+                    <span className="text-gray-500 block mb-1">Tipo</span>
+                    <span className="text-white font-mono font-bold">CNAME</span>
                   </div>
-                </div>
-              )}
-
-              {formData.type === DomainType.REDIRECT && (
-                <div className="bg-black/30 border border-white/10 rounded-xl p-4 animate-in fade-in duration-300">
-                  <h4 className="text-sm font-bold text-white mb-2">URL de Destino</h4>
-                  <p className="text-xs text-gray-400 mb-3">Configure seu redirecionamento 301 para:</p>
-                  <div className="flex items-center bg-white/5 rounded-lg px-3 py-2 border border-white/10">
-                    <code className="text-xs text-primary-light flex-1 font-mono">{systemUrl}/c/{formData.checkout_id || 'ID_DO_CHECKOUT'}</code>
-                    <button onClick={() => handleCopy(`${systemUrl}/c/${formData.checkout_id}`, 'url')} className="text-gray-400 hover:text-white">
-                      {copiedField === 'url' ? <CheckCircle className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
+                  <div className="bg-white/5 p-2 rounded border border-white/5 relative group">
+                    <span className="text-gray-500 block mb-1">Host / Nome</span>
+                    <span className="text-white font-mono">@ (ou subdomínio)</span>
+                  </div>
+                  <div className="bg-white/5 p-2 rounded border border-white/5 relative group">
+                    <span className="text-gray-500 block mb-1">Valor / Destino</span>
+                    <span className="text-white font-mono">{systemDomain}</span>
+                    <button onClick={() => handleCopy(systemDomain, 'value')} className="absolute top-2 right-2 text-gray-500 hover:text-white">
+                      {copiedField === 'value' ? <CheckCircle className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
                     </button>
                   </div>
                 </div>
-              )}
+              </div>
 
             </form>
 
             {/* Footer */}
             <div className="px-6 py-4 bg-white/5 border-t border-white/5 flex justify-end gap-3">
               <Button variant="ghost" onClick={() => setIsModalOpen(false)}>Cancelar</Button>
-              <Button onClick={handleSave}>Salvar Configuração</Button>
+              <Button onClick={handleSave} disabled={isLoading}>
+                {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Adicionar Domínio'}
+              </Button>
             </div>
 
           </div>

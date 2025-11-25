@@ -36,6 +36,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     { path: '/admin', icon: LayoutDashboard, label: 'Visão Geral' },
     { path: '/admin/products', icon: ShoppingBag, label: 'Produtos' },
     { path: '/admin/gateways', icon: CreditCard, label: 'Gateways' },
+    { path: '/admin/domains', icon: Globe, label: 'Domínios' },
     { path: '/admin/checkouts', icon: ShoppingCart, label: 'Checkouts' },
     { path: '/admin/orders', icon: Tag, label: 'Pedidos' },
     { path: '/admin/marketing', icon: Mail, label: 'Marketing & E-mail' },
