@@ -116,6 +116,7 @@ export class MercadoPagoAdapter {
             };
             const idempotencyKey = generateUUID();
 
+            console.log('[MercadoPagoAdapter] Starting fetch to', `${this.baseUrl}/v1/payments`);
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
 

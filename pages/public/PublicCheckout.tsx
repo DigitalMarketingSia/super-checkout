@@ -393,7 +393,9 @@ export const PublicCheckout = ({ checkoutId: propId }: { checkoutId?: string }) 
          });
 
          // ✅ CALL PAYMENT SERVICE (TRANSPARENT CHECKOUT)
+         console.log('[PublicCheckout] Importing paymentService...');
          const { paymentService } = await import('../../services/paymentService');
+         console.log('[PublicCheckout] paymentService imported. Calling processPayment...');
 
          const result = await paymentService.processPayment({
             checkoutId: data.checkout.id,

@@ -67,8 +67,10 @@ class PaymentService {
 
   async processPayment(request: ProcessPaymentRequest): Promise<ProcessPaymentResult> {
     try {
+      console.log('[PaymentService] processPayment started');
       // 1. Validate Gateway
       const gateways = await storage.getGateways();
+      console.log('[PaymentService] Gateways fetched', gateways.length);
       const gateway = gateways.find(g => g.id === request.gatewayId && g.active);
 
       if (!gateway) {
@@ -76,6 +78,7 @@ class PaymentService {
       }
 
       // 2. Create Local Order (Pending)
+      console.log('[PaymentService] Creating local order...');
 
 
       const newOrder: Order = {
