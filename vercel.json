@@ -2,16 +2,12 @@
     "rewrites": [
         {
             "source": "/mp-api/:path*",
-            "destination": "https://api.mercadopago.com/:path*"{
-                "rewrites": [
-                    {
-                        "source": "/mp-api/:path*",
-                        "destination": "https://api.mercadopago.com/:path*"
-                    },
-                    {
-                        "source": "/((?!api/|mp-api/).*)",
-                        "destination": "/index.html"
-                    }
-                ],
-                "headers": []
-            }
+            "destination": "https://api.mercadopago.com/:path*"
+        },
+        {
+            "source": "/((?!api/|mp-api/).*)",
+            "destination": "/index.html"
+        }
+    ],
+    "headers": []
+}
