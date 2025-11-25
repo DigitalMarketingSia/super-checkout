@@ -152,7 +152,11 @@ export const Domains = () => {
       }
 
       // Return records for the modal
-      // Prioritize the challenges returned by the API
+      // Prioritize the records returned by the API (which now includes config recommendations)
+      if (data.dnsRecords && data.dnsRecords.length > 0) {
+        return data.dnsRecords;
+      }
+
       const challenges = data.verificationChallenges || data.verification;
       if (challenges && challenges.length > 0) {
         return challenges;

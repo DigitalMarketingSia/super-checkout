@@ -95,13 +95,52 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // Determine misconfigured status
         const isMisconfigured = domainData.misconfigured || config.misconfigured || configFailed;
 
+        // Construct DNS Records from Config (if verification is empty)
+        let dnsRecords: any[] = [];
+        if (verificationChallenges.length > 0) {
+            dnsRecords = verificationChallenges;
+        } else if (config) {
+            if (config.recommendedCNAME && Array.isArray(config.recommendedCNAME)) {
+                config.recommendedCNAME.forEach((rec: any) => {
+                    dnsRecords.push({
+                        type: 'CNAME',
+                        domain: domain,
+                        value: rec.value.endsWith('.') ? rec.value.slice(0, -1) : rec.value,
+                        reason: 'recommended_cname'
+                    });
+                });
+            }
+            if (config.recommendedIPv4 && Array.isArray(config.recommendedIPv4)) {
+                config.recommendedIPv4.forEach((rec: any) => {
+                    if (Array.isArray(rec.value)) {
+                        rec.value.forEach((val: string) => {
+                            dnsRecords.push({
+                                type: 'A',
+                                domain: '@',
+                                value: val,
+                                reason: 'recommended_a'
+                            });
+                        });
+                    } else {
+                        dnsRecords.push({
+                            type: 'A',
+                            domain: '@',
+                            value: rec.value,
+                            reason: 'recommended_a'
+                        });
+                    }
+                });
+            }
+        }
+
         return res.status(200).json({
             configured: !isMisconfigured,
             verified: domainData.verified,
             verification: verificationChallenges,
             status: isMisconfigured ? 'pending' : 'active',
             config,
-            verificationChallenges: verificationChallenges.length > 0 ? verificationChallenges : (config.verification || []),
+            verificationChallenges: verificationChallenges,
+            dnsRecords, // New field with the best available records
             // DEBUG DATA
             debug_domain: domainData,
             debug_verify: verifyData || null,
