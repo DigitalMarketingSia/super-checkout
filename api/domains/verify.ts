@@ -29,31 +29,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         let config = await configRes.json();
 
         // AUTO-DETECT TEAM ID if 403 Forbidden
-        if (config.error && config.error.code === 'forbidden' && config.error.message.includes('scope')) {
+        if (config.error && config.error.code === 'forbidden') {
             try {
-                // Extract scope (slug) from error message
-                // Message format: "Not authorized: Trying to access resource under scope "SLUG". ..."
-                const match = config.error.message.match(/scope "([^"]+)"/);
-                if (match && match[1]) {
-                    const slug = match[1];
-                    // Fetch Team ID by slug
-                    const teamsRes = await fetch(`https://api.vercel.com/v2/teams?slug=${slug}`, {
-                        headers: { Authorization: `Bearer ${VERCEL_TOKEN}` }
-                    });
-                    const teamsData = await teamsRes.json();
-                    if (teamsData.teams && teamsData.teams.length > 0) {
-                        currentTeamId = teamsData.teams[0].id;
+                // Fetch Project Details to get Team ID
+                // If we can access the project domains, we should be able to access the project details
+                const projectRes = await fetch(
+                    `https://api.vercel.com/v9/projects/${PROJECT_ID}`,
+                    { headers: { Authorization: `Bearer ${VERCEL_TOKEN}` } }
+                );
+                const projectData = await projectRes.json();
 
-                        // RETRY CONFIG with new Team ID
-                        configRes = await fetch(
-                            `https://api.vercel.com/v6/domains/${domain}/config?teamId=${currentTeamId}`,
-                            { headers: { Authorization: `Bearer ${VERCEL_TOKEN}` } }
-                        );
-                        config = await configRes.json();
-                    }
+                if (projectData.teamId) {
+                    currentTeamId = projectData.teamId;
+
+                    // RETRY CONFIG with new Team ID
+                    configRes = await fetch(
+                        `https://api.vercel.com/v6/domains/${domain}/config?teamId=${currentTeamId}`,
+                        { headers: { Authorization: `Bearer ${VERCEL_TOKEN}` } }
+                    );
+                    config = await configRes.json();
                 }
             } catch (e) {
-                console.warn('Failed to auto-detect team:', e);
+                console.warn('Failed to auto-detect team via project:', e);
             }
         }
 
