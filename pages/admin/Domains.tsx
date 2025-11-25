@@ -84,15 +84,16 @@ export const Domains = () => {
 
       const savedDomain = await storage.createDomain(newDomainData);
 
-      // Update local state
+      // Update local state immediately
       const updated = [...domains, savedDomain];
       setDomains(updated);
 
+      // Close modal and reset form
       setIsAddModalOpen(false);
       setFormData({ domain: '', type: DomainType.CNAME });
 
-      // Open DNS modal immediately for the new domain
-      openDnsModal(savedDomain);
+      // We do NOT open the DNS modal automatically anymore.
+      // User must click "Detalhes DNS" to see instructions.
 
     } catch (err: any) {
       setError(err.message);
@@ -146,6 +147,16 @@ export const Domains = () => {
 
     // Fetch fresh records
     const records = await verifyDomain(domain.id, domain.domain, true);
+    if (records) {
+      setDnsRecords(records);
+    }
+    setDnsLoading(false);
+  };
+
+  const refreshDnsData = async () => {
+    if (!selectedDomain) return;
+    setDnsLoading(true);
+    const records = await verifyDomain(selectedDomain.id, selectedDomain.domain, true);
     if (records) {
       setDnsRecords(records);
     }
@@ -352,11 +363,12 @@ export const Domains = () => {
                   </p>
                   <Button
                     size="sm"
-                    variant="ghost"
-                    onClick={() => openDnsModal(selectedDomain)}
+                    onClick={refreshDnsData}
                     disabled={dnsLoading}
+                    className="bg-primary/20 text-primary hover:bg-primary/30 border-primary/20"
                   >
-                    {dnsLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <RotateCw className="w-3 h-3" />}
+                    {dnsLoading ? <Loader2 className="w-3 h-3 animate-spin mr-2" /> : <RotateCw className="w-3 h-3 mr-2" />}
+                    Atualizar Dados
                   </Button>
                 </div>
 
@@ -366,8 +378,9 @@ export const Domains = () => {
                   </div>
                 ) : !dnsRecords ? (
                   <div className="text-center py-8 text-gray-400">
-                    <p>Não foi possível carregar os registros DNS.</p>
-                    <Button variant="link" onClick={() => openDnsModal(selectedDomain)}>Tentar novamente</Button>
+                    <p className="mb-2">Não foi possível carregar os registros DNS.</p>
+                    <p className="text-xs text-gray-500 mb-4">Isso pode acontecer se o domínio ainda estiver sendo propagado.</p>
+                    <Button variant="outline" onClick={refreshDnsData}>Tentar novamente</Button>
                   </div>
                 ) : (
                   <div className="space-y-2">
