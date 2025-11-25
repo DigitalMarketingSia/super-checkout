@@ -101,35 +101,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             dnsRecords = verificationChallenges;
         } else if (config) {
             if (config.recommendedCNAME && Array.isArray(config.recommendedCNAME)) {
-                config.recommendedCNAME.forEach((rec: any) => {
-                    dnsRecords.push({
-                        type: 'CNAME',
-                        domain: domain,
-                        value: rec.value.endsWith('.') ? rec.value.slice(0, -1) : rec.value,
-                        reason: 'recommended_cname'
+                config.recommendedCNAME
+                    .filter((rec: any) => rec.rank === 1)
+                    .forEach((rec: any) => {
+                        dnsRecords.push({
+                            type: 'CNAME',
+                            domain: domain,
+                            value: rec.value.endsWith('.') ? rec.value.slice(0, -1) : rec.value,
+                            reason: 'recommended_cname'
+                        });
                     });
-                });
             }
             if (config.recommendedIPv4 && Array.isArray(config.recommendedIPv4)) {
-                config.recommendedIPv4.forEach((rec: any) => {
-                    if (Array.isArray(rec.value)) {
-                        rec.value.forEach((val: string) => {
+                config.recommendedIPv4
+                    .filter((rec: any) => rec.rank === 1)
+                    .forEach((rec: any) => {
+                        if (Array.isArray(rec.value)) {
+                            rec.value.forEach((val: string) => {
+                                dnsRecords.push({
+                                    type: 'A',
+                                    domain: '@',
+                                    value: val,
+                                    reason: 'recommended_a'
+                                });
+                            });
+                        } else {
                             dnsRecords.push({
                                 type: 'A',
                                 domain: '@',
-                                value: val,
+                                value: rec.value,
                                 reason: 'recommended_a'
                             });
-                        });
-                    } else {
-                        dnsRecords.push({
-                            type: 'A',
-                            domain: '@',
-                            value: rec.value,
-                            reason: 'recommended_a'
-                        });
-                    }
-                });
+                        }
+                    });
             }
         }
 
