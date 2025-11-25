@@ -47,6 +47,50 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (domainData.error) {
             if (domainData.error.code === 'not_found') {
                 return res.status(404).json({ error: 'Domain not found in project' });
+            }
+            throw new Error(domainData.error.message);
         }
+
+        // 3. Force Verification Check if challenges are missing but domain is not active
+        let verificationChallenges = domainData.verification || [];
+        let verifyData = null;
+
+        if (verificationChallenges.length === 0 && !domainData.verified) {
+            try {
+                const verifyRes = await fetch(
+                    `https://api.vercel.com/v9/projects/${PROJECT_ID}/domains/${domain}/verify${TEAM_ID ? `?teamId=${TEAM_ID}` : ''}`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            Authorization: `Bearer ${VERCEL_TOKEN}`,
+                        },
+                    }
+                );
+                verifyData = await verifyRes.json();
+                if (verifyData.verification) {
+                    verificationChallenges = verifyData.verification;
+                }
+            } catch (e) {
+                console.warn('Failed to force verify:', e);
+            }
+        }
+
+        return res.status(200).json({
+            configured: !domainData.misconfigured,
+            verified: domainData.verified,
+            verification: verificationChallenges,
+            status: domainData.misconfigured ? 'pending' : 'active',
+            config,
+            verificationChallenges: verificationChallenges.length > 0 ? verificationChallenges : (config.verification || []),
+            // DEBUG DATA
+            debug_domain: domainData,
+            debug_verify: verifyData || null,
+            debug_config: config,
+            ...domainData
+        });
+
+    } catch (error: any) {
+        console.error('Error verifying domain:', error);
+        return res.status(500).json({ error: error.message });
     }
 }
