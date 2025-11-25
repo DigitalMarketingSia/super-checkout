@@ -1,9 +1,10 @@
 export default async function handler(req, res) {
     // 1. Handle CORS
     // We set these headers for ALL responses, including errors
-    const origin = req.headers.origin || '*';
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-    res.setHeader('Access-Control-Allow-Origin', origin);
+    // 1. Handle CORS
+    // We set these headers for ALL responses, including errors
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    // res.setHeader('Access-Control-Allow-Credentials', 'true'); // Not needed for wildcard
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
     res.setHeader(
         'Access-Control-Allow-Headers',
