@@ -1,7 +1,11 @@
 export default async function handler(req, res) {
-    // 1. Handle CORS
-    // Relying on vercel.json for headers to avoid duplication
-    // We just handle the OPTIONS response code
+    // 1. Set CORS Headers explicitly for EVERY response
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+    res.setHeader(
+        'Access-Control-Allow-Headers',
+        'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization, X-Idempotency-Key'
+    );
 
     // 2. Handle Preflight (OPTIONS)
     if (req.method === 'OPTIONS') {
@@ -9,6 +13,8 @@ export default async function handler(req, res) {
     }
 
     try {
+        console.log(`[Proxy] Incoming ${req.method} request`);
+
         // 3. Health Check / Debug
         const { endpoint } = req.query;
         if (!endpoint) {
@@ -16,13 +22,11 @@ export default async function handler(req, res) {
         }
 
         const targetUrl = `https://api.mercadopago.com${endpoint}`;
-        console.log(`[Proxy] Forwarding ${req.method} to ${targetUrl}`);
+        console.log(`[Proxy] Forwarding to ${targetUrl}`);
 
         // 4. Prepare Body
         let body;
         if (req.method !== 'GET' && req.method !== 'HEAD') {
-            // Vercel parses JSON body automatically. If it's an object, stringify it.
-            // If it's already a string, use it as is.
             body = typeof req.body === 'object' ? JSON.stringify(req.body) : req.body;
         }
 
@@ -43,6 +47,7 @@ export default async function handler(req, res) {
 
     } catch (error) {
         console.error('[Proxy] Internal Error:', error);
+        // Even in error, headers are already set above
         return res.status(500).json({ error: error.message || 'Internal Proxy Error' });
     }
 }
