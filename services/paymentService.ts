@@ -134,7 +134,12 @@ class PaymentService {
         };
       } else {
         // Mark order as failed if immediate failure
-        await this.updateOrderStatus(newOrder.id, OrderStatus.FAILED);
+        // Wrap in try-catch to avoid RLS errors masking the real payment error
+        try {
+          await this.updateOrderStatus(newOrder.id, OrderStatus.FAILED);
+        } catch (updateError) {
+          console.warn('[PaymentService] Failed to update order status (likely RLS for anon user):', updateError);
+        }
         return { success: false, message: gatewayResponse.message };
       }
 
