@@ -128,7 +128,14 @@ const DomainDispatcher = () => {
   }
 
   if (customCheckoutId) {
-    return <PublicCheckout checkoutId={customCheckoutId} />;
+    return (
+      <Routes>
+        <Route path="/" element={<PublicCheckout checkoutId={customCheckoutId} />} />
+        <Route path="/pagamento/pix/:orderId" element={<PixPayment />} />
+        <Route path="/thank-you/:orderId" element={<ThankYou />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    );
   }
 
   return (
