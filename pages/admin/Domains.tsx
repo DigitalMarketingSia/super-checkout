@@ -108,12 +108,18 @@ export const Domains = () => {
       const res = await fetch(`/api/domains/verify?domain=${domainName}`);
       const data = await res.json();
 
+      console.log('Verification response:', data); // Debugging
+
       if (data.error) throw new Error(data.error);
 
-      // Update Status ONLY if explicitly verified
+      // Update Status: STRICTER LOGIC
+      // Only ACTIVE if verified AND configured (not misconfigured)
       let newStatus = DomainStatus.PENDING;
-      if (data.verified) newStatus = DomainStatus.ACTIVE;
-      else if (data.error) newStatus = DomainStatus.ERROR;
+      if (data.verified && !data.misconfigured) {
+        newStatus = DomainStatus.ACTIVE;
+      } else if (data.error) {
+        newStatus = DomainStatus.ERROR;
+      }
 
       // Only update state if status actually changed
       const currentDomain = domains.find(d => d.id === id);
@@ -129,6 +135,18 @@ export const Domains = () => {
       if (data.verification) {
         return data.verification;
       }
+
+      // If verified but misconfigured (or just no verification data), return default records
+      // This ensures the user sees SOMETHING to configure
+      if (!data.verified || data.misconfigured) {
+        return [{
+          type: 'CNAME',
+          domain: domainName,
+          value: 'cname.vercel-dns.com',
+          reason: 'fallback'
+        }];
+      }
+
       return null;
 
     } catch (err) {
@@ -336,8 +354,8 @@ export const Domains = () => {
             <div className="px-6 py-5 border-b border-white/5 flex justify-between items-center bg-white/5">
               <div className="flex items-center gap-3">
                 <div className={`w-10 h-10 rounded-lg flex items-center justify-center border ${selectedDomain.status === DomainStatus.ACTIVE
-                    ? 'bg-green-500/20 text-green-500 border-green-500/20'
-                    : 'bg-yellow-500/20 text-yellow-500 border-yellow-500/20'
+                  ? 'bg-green-500/20 text-green-500 border-green-500/20'
+                  : 'bg-yellow-500/20 text-yellow-500 border-yellow-500/20'
                   }`}>
                   <Server className="w-5 h-5" />
                 </div>
