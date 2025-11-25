@@ -114,8 +114,11 @@ export const Domains = () => {
 
       // Update Status: STRICTER LOGIC
       // Only ACTIVE if verified AND configured (not misconfigured)
+      // Check both project config (data.misconfigured) and global config (data.config?.misconfigured)
+      const isMisconfigured = data.misconfigured || data.config?.misconfigured;
+
       let newStatus = DomainStatus.PENDING;
-      if (data.verified && !data.misconfigured) {
+      if (data.verified && !isMisconfigured) {
         newStatus = DomainStatus.ACTIVE;
       } else if (data.error) {
         newStatus = DomainStatus.ERROR;
@@ -132,22 +135,18 @@ export const Domains = () => {
       }
 
       // Return records for the modal
-      if (data.verification) {
+      if (data.verification && data.verification.length > 0) {
         return data.verification;
       }
 
-      // If verified but misconfigured (or just no verification data), return default records
-      // This ensures the user sees SOMETHING to configure
-      if (!data.verified || data.misconfigured) {
-        return [{
-          type: 'CNAME',
-          domain: domainName,
-          value: 'cname.vercel-dns.com',
-          reason: 'fallback'
-        }];
-      }
-
-      return null;
+      // FALLBACK: If no verification data (common when verified but propagating, or just verified)
+      // Always return the default CNAME so the user sees something.
+      return [{
+        type: 'CNAME',
+        domain: domainName,
+        value: 'cname.vercel-dns.com',
+        reason: 'fallback'
+      }];
 
     } catch (err) {
       console.error('Verification failed:', err);
