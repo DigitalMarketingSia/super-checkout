@@ -69,14 +69,31 @@ const DomainDispatcher = () => {
         console.log('Domain found:', domain);
 
         if (domain) {
-          // New Logic: Find checkout that points to this domain
-          const checkout = await storage.getCheckoutByDomainId(domain.id);
-          console.log('Checkout found for domain:', checkout);
+          // Check for reserved paths (Thank You, Pix, etc)
+          const pathname = window.location.pathname;
+          if (pathname.startsWith('/thank-you') || pathname.startsWith('/pagamento')) {
+            console.log('Reserved path detected, skipping checkout resolution.');
+            setLoading(false);
+            // We set a dummy ID to allow rendering the Routes block, 
+            // but the specific routes (ThankYou/Pix) don't use it.
+            setCustomCheckoutId('system');
+            return;
+          }
+
+          // Extract slug from URL (e.g. /master1 -> master1)
+          // If root /, slug is empty string
+          const slug = pathname.substring(1);
+
+          // New Logic: Find checkout that points to this domain AND slug
+          const checkout = await storage.getCheckoutByDomainAndSlug(domain.id, slug);
+          console.log('Checkout found for domain/slug:', checkout);
 
           if (checkout) {
             setCustomCheckoutId(checkout.id);
           } else {
-            setError('Este domínio está conectado, mas nenhum checkout foi vinculado ainda.');
+            // If we are at root and no checkout found, maybe try to find ANY checkout for this domain?
+            // For now, strict matching.
+            setError('Checkout não encontrado para este endereço.');
           }
         } else {
           // Domain points here but not found in DB
@@ -131,6 +148,7 @@ const DomainDispatcher = () => {
     return (
       <Routes>
         <Route path="/" element={<PublicCheckout checkoutId={customCheckoutId} />} />
+        <Route path="/:slug" element={<PublicCheckout checkoutId={customCheckoutId} />} />
         <Route path="/pagamento/pix/:orderId" element={<PixPayment />} />
         <Route path="/thank-you/:orderId" element={<ThankYou />} />
         <Route path="*" element={<Navigate to="/" replace />} />

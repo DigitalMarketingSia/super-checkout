@@ -421,18 +421,24 @@ class StorageService {
     return data;
   }
 
-  async getCheckoutByDomainId(domainId: string): Promise<Checkout | null> {
-    const { data, error } = await supabase
+  async getCheckoutByDomainAndSlug(domainId: string, slug?: string): Promise<Checkout | null> {
+    let query = supabase
       .from('checkouts')
       .select('*')
       .eq('domain_id', domainId)
-      .eq('active', true)
-      .single();
+      .eq('active', true);
+
+    if (slug) {
+      query = query.eq('custom_url_slug', slug);
+    }
+
+    // If no slug is provided, we might want to find a "default" checkout (e.g. one with empty slug)
+    // or just return the first one found. For now, let's return the first one found to keep simple.
+
+    const { data, error } = await query.limit(1).maybeSingle();
 
     if (error) {
-      if (error.code !== 'PGRST116') { // Row not found
-        console.error('Error fetching checkout by domain:', error.message);
-      }
+      console.error('Error fetching checkout by domain/slug:', error.message);
       return null;
     }
     return data as Checkout;
