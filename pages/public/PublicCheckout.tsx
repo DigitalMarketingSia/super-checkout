@@ -418,9 +418,13 @@ export const PublicCheckout = ({ checkoutId: propId }: { checkoutId?: string }) 
             } : undefined
          });
 
+         console.log('[PublicCheckout] processPayment returned:', result);
+
          if (result.success) {
+            console.log('[PublicCheckout] Payment success. Method:', paymentMethod);
             // Handle Success Types
             if (paymentMethod === 'pix' && result.pixData) {
+               console.log('[PublicCheckout] Navigating to Pix page...');
                // Navigate to Pix Page with QR Code Data
                navigate(`/pagamento/pix/${result.orderId}`, {
                   state: {

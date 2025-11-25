@@ -243,18 +243,13 @@ class PaymentService {
         created_at: new Date().toISOString()
       };
 
-      try {
-        console.log('[PaymentService] Saving payment to DB...');
-        // Race against a timeout to prevent UI hang if DB is slow/unresponsive
-        const savePromise = this.savePayment(newPayment);
-        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('DB Timeout')), 3000));
+      // Fire and forget - Don't wait for DB
+      console.log('[PaymentService] Starting background save...');
+      this.savePayment(newPayment)
+        .then(() => console.log('[PaymentService] Background save success'))
+        .catch(err => console.warn('[PaymentService] Background save failed:', err));
 
-        await Promise.race([savePromise, timeoutPromise]);
-        console.log('[PaymentService] Payment saved successfully.');
-      } catch (saveError) {
-        console.warn('[PaymentService] Failed to save payment locally (RLS or Timeout), continuing flow:', saveError);
-        // Continue flow - Webhook will handle persistence
-      }
+      console.log('[PaymentService] Proceeding to handle response immediately...');
 
       // 4. Handle Response
       if (paymentResponse.status === 'approved' || paymentResponse.status === 'in_process' || paymentResponse.status === 'pending') {
