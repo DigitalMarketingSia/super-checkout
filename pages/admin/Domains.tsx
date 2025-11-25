@@ -30,6 +30,7 @@ export const Domains = () => {
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [dnsLoading, setDnsLoading] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -87,10 +88,6 @@ export const Domains = () => {
       const updated = [...domains, savedDomain];
       setDomains(updated);
 
-      // 3. Trigger initial verification to get DNS records
-      // We don't wait for this to close the modal, we just start it
-      verifyDomain(savedDomain.id, formData.domain, true);
-
       setIsAddModalOpen(false);
       setFormData({ domain: '', type: DomainType.CNAME });
 
@@ -112,19 +109,23 @@ export const Domains = () => {
 
       if (data.error) throw new Error(data.error);
 
-      // Update Status
+      // Update Status ONLY if explicitly verified
       let newStatus = DomainStatus.PENDING;
       if (data.verified) newStatus = DomainStatus.ACTIVE;
       else if (data.error) newStatus = DomainStatus.ERROR;
 
-      const updatedDomains = domains.map(d =>
-        d.id === id ? { ...d, status: newStatus } : d
-      );
-      setDomains(updatedDomains);
-      await storage.saveDomains(updatedDomains.filter(d => d.id === id));
+      // Only update state if status actually changed
+      const currentDomain = domains.find(d => d.id === id);
+      if (currentDomain && currentDomain.status !== newStatus) {
+        const updatedDomains = domains.map(d =>
+          d.id === id ? { ...d, status: newStatus } : d
+        );
+        setDomains(updatedDomains);
+        await storage.saveDomains(updatedDomains.filter(d => d.id === id));
+      }
 
       // Return records for the modal
-      if (!data.verified && data.verification) {
+      if (data.verification) {
         return data.verification;
       }
       return null;
@@ -140,6 +141,7 @@ export const Domains = () => {
   const openDnsModal = async (domain: Domain) => {
     setSelectedDomain(domain);
     setDnsRecords(null); // Reset while loading
+    setDnsLoading(true);
     setIsDnsModalOpen(true);
 
     // Fetch fresh records
@@ -147,6 +149,7 @@ export const Domains = () => {
     if (records) {
       setDnsRecords(records);
     }
+    setDnsLoading(false);
   };
 
   const handleRemove = async (id: string, domainName: string) => {
@@ -246,16 +249,15 @@ export const Domains = () => {
                 </div>
 
                 <div className="flex items-center gap-3 self-end lg:self-auto">
-                  {domain.status !== DomainStatus.ACTIVE && (
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => openDnsModal(domain)}
-                      className="bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20 border-yellow-500/20"
-                    >
-                      <Server className="w-4 h-4 mr-2" /> Configuração DNS
-                    </Button>
-                  )}
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => openDnsModal(domain)}
+                    className="bg-white/5 hover:bg-white/10 border-white/10"
+                  >
+                    <Server className="w-4 h-4 mr-2" />
+                    {domain.status === DomainStatus.ACTIVE ? 'Detalhes DNS' : 'Configuração DNS'}
+                  </Button>
 
                   <Button
                     size="sm"
@@ -322,12 +324,21 @@ export const Domains = () => {
           <div className="bg-[#0F0F13] w-full max-w-2xl rounded-2xl shadow-2xl border border-white/10 overflow-hidden animate-in fade-in zoom-in duration-200">
             <div className="px-6 py-5 border-b border-white/5 flex justify-between items-center bg-white/5">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-yellow-500/20 flex items-center justify-center text-yellow-500 border border-yellow-500/20">
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center border ${selectedDomain.status === DomainStatus.ACTIVE
+                    ? 'bg-green-500/20 text-green-500 border-green-500/20'
+                    : 'bg-yellow-500/20 text-yellow-500 border-yellow-500/20'
+                  }`}>
                   <Server className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-white">Configuração DNS</h2>
-                  <p className="text-xs text-gray-400">Configure seu provedor para conectar o domínio.</p>
+                  <h2 className="text-lg font-bold text-white">
+                    {selectedDomain.status === DomainStatus.ACTIVE ? 'Domínio Conectado' : 'Configuração DNS'}
+                  </h2>
+                  <p className="text-xs text-gray-400">
+                    {selectedDomain.status === DomainStatus.ACTIVE
+                      ? 'Seu domínio está ativo e funcionando.'
+                      : 'Configure seu provedor para conectar o domínio.'}
+                  </p>
                 </div>
               </div>
               <button onClick={() => setIsDnsModalOpen(false)} className="text-gray-500 hover:text-white"><X className="w-5 h-5" /></button>
@@ -335,13 +346,28 @@ export const Domains = () => {
 
             <div className="p-6 space-y-6">
               <div className="bg-black/30 border border-white/10 rounded-xl p-4 space-y-4">
-                <p className="text-sm text-gray-300">
-                  Adicione o seguinte registro no seu provedor de domínio (Cloudflare, GoDaddy, etc):
-                </p>
+                <div className="flex justify-between items-center">
+                  <p className="text-sm text-gray-300">
+                    Registros DNS encontrados:
+                  </p>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => openDnsModal(selectedDomain)}
+                    disabled={dnsLoading}
+                  >
+                    {dnsLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <RotateCw className="w-3 h-3" />}
+                  </Button>
+                </div>
 
-                {!dnsRecords ? (
+                {dnsLoading ? (
                   <div className="flex justify-center py-8">
                     <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                  </div>
+                ) : !dnsRecords ? (
+                  <div className="text-center py-8 text-gray-400">
+                    <p>Não foi possível carregar os registros DNS.</p>
+                    <Button variant="link" onClick={() => openDnsModal(selectedDomain)}>Tentar novamente</Button>
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -375,7 +401,7 @@ export const Domains = () => {
               </div>
 
               <div className="flex justify-end">
-                <Button onClick={() => setIsDnsModalOpen(false)}>Entendi, configurei</Button>
+                <Button onClick={() => setIsDnsModalOpen(false)}>Fechar</Button>
               </div>
             </div>
           </div>
