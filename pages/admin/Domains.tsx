@@ -139,14 +139,8 @@ export const Domains = () => {
         return data.verification;
       }
 
-      // FALLBACK: If no verification data (common when verified but propagating, or just verified)
-      // Always return the default CNAME so the user sees something.
-      return [{
-        type: 'CNAME',
-        domain: domainName,
-        value: 'cname.vercel-dns.com',
-        reason: 'fallback'
-      }];
+      // NO FALLBACK: Return null so the UI shows the "Manual Config" state
+      return null;
 
     } catch (err) {
       console.error('Verification failed:', err);
@@ -395,9 +389,17 @@ export const Domains = () => {
                   </div>
                 ) : !dnsRecords ? (
                   <div className="text-center py-8 text-gray-400">
-                    <p className="mb-2">Não foi possível carregar os registros DNS.</p>
-                    <p className="text-xs text-gray-500 mb-4">Isso pode acontecer se o domínio ainda estiver sendo propagado.</p>
-                    <Button variant="outline" onClick={refreshDnsData}>Tentar novamente</Button>
+                    <p className="mb-2 font-medium text-white">Não foi possível obter os registros automaticamente.</p>
+                    <p className="text-xs text-gray-500 mb-6 max-w-md mx-auto">
+                      Isso pode acontecer se o domínio já estiver verificado em outra conta ou se houver um conflito.
+                      Acesse o painel da Vercel para ver os valores corretos.
+                    </p>
+                    <Button
+                      onClick={() => window.open('https://vercel.com/dashboard', '_blank')}
+                      className="bg-white text-black hover:bg-gray-200"
+                    >
+                      Ver Configuração na Vercel <ExternalLink className="w-4 h-4 ml-2" />
+                    </Button>
                   </div>
                 ) : (
                   <div className="space-y-2">
