@@ -156,7 +156,11 @@ class PaymentService {
     const mpAdapter = new MercadoPagoAdapter(gateway.private_key, false); // false = sandbox (could be dynamic too)
 
     try {
-      const publicUrl = process.env.PUBLIC_URL || window.location.origin;
+      // Prioritize explicit API_URL, then Vercel System URL, then fallback to window origin
+      const publicUrl = process.env.PUBLIC_URL ||
+        process.env.VITE_VERCEL_URL ||
+        (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined) ||
+        window.location.origin;
       const apiUrl = process.env.API_URL || publicUrl;
 
       let paymentMethodId = '';

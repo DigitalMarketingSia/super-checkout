@@ -78,6 +78,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
     };
 
+    let paymentRecord: any = null;
+
     try {
         console.log('[Webhook] Received POST request');
         const payload = req.body;
@@ -96,7 +98,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // 2. Fetch Payment Info from Mercado Pago
 
         // A. Find the payment record to get the gateway_id
-        let paymentRecord = null;
         if (supabaseKey) {
             try {
                 console.log(`[Webhook] Fetching payment record for transaction ${paymentId}`);
@@ -226,36 +227,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 console.error('[Webhook] Error updating records:', updateError);
                 await logToSupabase('webhook.error_updating_records', { error: updateError.message }, false);
             }
+        } else {
+            // If we don't have a payment record, we can't update the order directly.
+            // But we should log this as a warning. In a more advanced system, we might want to create the record.
+            await logToSupabase('webhook.warning', {
+                message: 'Payment record not found, cannot update order',
+                paymentId,
+                mpStatus: status
+            }, false);
         }
-    } else {
-        // If we don't have a payment record, we can't update the order directly.
-        // But we should log this as a warning. In a more advanced system, we might want to create the record.
-        await logToSupabase('webhook.warning', {
-            message: 'Payment record not found, cannot update order',
-            paymentId,
-            mpStatus: status
-        }, false);
-    }
 
-    // 6. Send Email if Payment is Approved
+        // 6. Send Email if Payment is Approved
 
-    if (orderStatus === 'paid' && paymentRecord && supabaseKey) {
-        try {
-            console.log(`[Webhook] Attempting to send approval email for Order ${paymentRecord.order_id}`);
+        if (orderStatus === 'paid' && paymentRecord && supabaseKey) {
+            try {
+                console.log(`[Webhook] Attempting to send approval email for Order ${paymentRecord.order_id}`);
 
-            // Fetch full order details
-            const orderRes = await fetch(`${supabaseUrl}/rest/v1/orders?id=eq.${paymentRecord.order_id}&select=*`, {
-                headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
-            });
+                // Fetch full order details
+                const orderRes = await fetch(`${supabaseUrl}/rest/v1/orders?id=eq.${paymentRecord.order_id}&select=*`, {
+                    headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
+                });
 
-            if (orderRes.ok) {
-                const orders = await orderRes.json();
-                const order = orders[0];
+                if (orderRes.ok) {
+                    const orders = await orderRes.json();
+                    const order = orders[0];
 
-                if (order && order.customer_email) {
-                    const productName = order.items?.[0]?.name || 'seu produto';
+                    if (order && order.customer_email) {
+                        const productName = order.items?.[0]?.name || 'seu produto';
 
-                    const html = `
+                        const html = `
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -309,49 +309,47 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 </center>
 </body>
 </html>
-                    `;
+                        `;
 
-                    // Call Edge Function to send email
-                    const emailRes = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${supabaseKey}`
-                        },
-                        body: JSON.stringify({
-                            to: order.customer_email,
-                            subject: `Pagamento Aprovado - Acesso Liberado!`,
-                            html
-                        })
-                    });
+                        // Call Edge Function to send email
+                        const emailRes = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${supabaseKey}`
+                            },
+                            body: JSON.stringify({
+                                to: order.customer_email,
+                                subject: `Pagamento Aprovado - Acesso Liberado!`,
+                                html
+                            })
+                        });
 
-                    if (emailRes.ok) {
-                        console.log(`[Webhook] Email sent successfully to ${order.customer_email}`);
-                        await logToSupabase('webhook.email_sent', { orderId: order.id, email: order.customer_email }, true, paymentRecord.gateway_id);
-                    } else {
-                        const errText = await emailRes.text();
-                        console.error(`[Webhook] Failed to send email: ${errText}`);
-                        await logToSupabase('webhook.error_sending_email', { error: errText }, false);
+                        if (emailRes.ok) {
+                            console.log(`[Webhook] Email sent successfully to ${order.customer_email}`);
+                            await logToSupabase('webhook.email_sent', { orderId: order.id, email: order.customer_email }, true, paymentRecord.gateway_id);
+                        } else {
+                            const errText = await emailRes.text();
+                            console.error(`[Webhook] Failed to send email: ${errText}`);
+                            await logToSupabase('webhook.error_sending_email', { error: errText }, false);
+                        }
                     }
                 }
+            } catch (emailError: any) {
+                console.error('[Webhook] Error in email sending flow:', emailError);
+                await logToSupabase('webhook.error_email_flow', { error: emailError.message }, false);
             }
-        } catch (emailError: any) {
-            console.error('[Webhook] Error in email sending flow:', emailError);
-            await logToSupabase('webhook.error_email_flow', { error: emailError.message }, false);
         }
+
+        return res.status(200).json({ success: true });
+
+    } catch (error: any) {
+        console.error('[Webhook] Critical Error:', error);
+        // Try to log the critical error if possible
+        try {
+            await logToSupabase('webhook.critical_error', { error: error.message }, false);
+        } catch (e) { }
+
+        return res.status(500).json({ error: error.message });
     }
-
-
-    return res.status(200).json({ success: true });
-
-} catch (error: any) {
-    console.error('[Webhook] Critical Error:', error);
-    // Try to log the critical error if possible
-    try {
-        // Re-define logToSupabase locally if needed or just use the one in scope if valid
-        // Assuming logToSupabase is available in scope
-    } catch (e) { }
-
-    return res.status(500).json({ error: error.message });
-}
 }
