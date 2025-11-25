@@ -165,8 +165,8 @@ class PaymentService {
     const publicUrl = getBaseUrl();
 
     // Force the adapter to use the stable Vercel URL for the proxy to avoid custom domain issues
-    // We use ?endpoint= so the adapter appends /v1/payments correctly
-    const proxyBaseUrl = `${publicUrl}/api/proxy?endpoint=`;
+    // We use ?endpoint= so the adapter appends    // Use the new JS-based Edge Proxy
+    const proxyBaseUrl = `${publicUrl}/api/mp-proxy?endpoint=`;
     console.log('[PaymentService] Initializing Adapter with Base URL:', proxyBaseUrl);
 
     const mpAdapter = new MercadoPagoAdapter(gateway.private_key, {
