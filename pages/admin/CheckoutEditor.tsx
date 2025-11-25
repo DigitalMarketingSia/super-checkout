@@ -124,7 +124,7 @@ export const CheckoutEditor = () => {
             active,
             product_id: productId,
             gateway_id: gatewayId,
-            domain_id: domainId || undefined,
+            domain_id: domainId || null, // Send null to clear the field in DB
             custom_url_slug: slug || (isNew ? `chk-${Date.now()}` : id!),
             order_bump_ids: orderBumpIds,
             upsell_product_id: upsellProductId || undefined,

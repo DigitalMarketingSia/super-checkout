@@ -106,7 +106,7 @@ export interface Checkout {
   product_id: string; // Main product directly linked
   offer_id?: string; // Optional: legacy or specific offer
   gateway_id: string;
-  domain_id?: string;
+  domain_id?: string | null;
 
   // Sales Strategy
   order_bump_ids: string[]; // List of product IDs
