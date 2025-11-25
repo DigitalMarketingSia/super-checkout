@@ -124,16 +124,19 @@ export const Domains = () => {
       if (data.error) throw new Error(data.error);
 
       // Update Status: STRICTER LOGIC
+      // Check both project config (data.misconfigured) and global config (data.config?.misconfigured)
       const isMisconfigured = data.misconfigured || data.config?.misconfigured;
 
-      // Vercel returns verified=true only if everything is correct.
-      // If it's a new domain, verified is usually false.
-
       let newStatus = DomainStatus.PENDING;
+
+      // It is ONLY active if verified is true AND it is NOT misconfigured.
       if (data.verified && !isMisconfigured) {
         newStatus = DomainStatus.ACTIVE;
       } else if (data.error) {
         newStatus = DomainStatus.ERROR;
+      } else {
+        // Force PENDING if misconfigured, even if verified is true (which happens sometimes)
+        newStatus = DomainStatus.PENDING;
       }
 
       // Only update state if status actually changed
@@ -147,12 +150,13 @@ export const Domains = () => {
       }
 
       // Return records for the modal
-      if (data.verification && data.verification.length > 0) {
-        return data.verification;
+      // Prioritize the challenges returned by the API
+      const challenges = data.verificationChallenges || data.verification;
+      if (challenges && challenges.length > 0) {
+        return challenges;
       }
 
       // FALLBACK: If no verification records, return Standard Vercel Records
-      // This solves the "Manual" issue.
       return [
         { type: 'CNAME', domain: domainName, value: 'cname.vercel-dns.com', reason: 'default_cname' },
         { type: 'A', domain: '@', value: '76.76.21.21', reason: 'default_a' }

@@ -54,9 +54,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(200).json({
             configured: !domainData.misconfigured,
             verified: domainData.verified,
-            verification: domainData.verification, // Contains DNS challenges
-            status: domainData.misconfigured ? 'pending' : 'active', // Simplified status
-            config, // Return full config for debugging/display
+            verification: domainData.verification || [], // Ensure array
+            status: domainData.misconfigured ? 'pending' : 'active',
+            config, // Return full config
+            // Merge verification challenges from config if present (sometimes Vercel puts them here)
+            verificationChallenges: domainData.verification || config.verification || [],
             ...domainData
         });
 
