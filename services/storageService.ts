@@ -563,25 +563,68 @@ class StorageService {
     return data as Domain;
   }
 
-  async saveDomains(items: Domain[]) {
+  async createDomain(domain: Omit<Domain, 'id'>) {
     const user = await this.getUser();
-    if (!user) {
-      console.error('No user logged in');
-      return;
+    if (!user) throw new Error('No user logged in');
+
+    const record = {
+      user_id: user.id,
+      domain: domain.domain,
+      status: domain.status,
+      type: domain.type,
+      checkout_id: domain.checkout_id,
+      slug: domain.slug
+    };
+
+    const { data, error } = await supabase
+      .from('domains')
+      .insert(record)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating domain:', error.message);
+      throw error;
     }
+    return data;
+  }
+
+  async deleteDomain(id: string) {
+    const user = await this.getUser();
+    if (!user) throw new Error('No user logged in');
+
+    const { error } = await supabase
+      .from('domains')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', user.id);
+
+    if (error) {
+      console.error('Error deleting domain:', error.message);
+      throw error;
+    }
+  }
+
+  async saveDomains(items: Domain[]) {
+    console.warn('saveDomains is deprecated. Use createDomain instead.');
+    const user = await this.getUser();
+    if (!user) return;
+
+    // Filter out items with temp IDs (starting with 'dom_') to avoid UUID errors
+    const validItems = items.filter(i => !i.id.startsWith('dom_'));
+
+    if (validItems.length === 0) return;
 
     const { data, error } = await supabase
       .from('domains')
       .upsert(
-        items.map(i => ({ ...i, user_id: user.id })),
+        validItems.map(i => ({ ...i, user_id: user.id })),
         { onConflict: 'id', ignoreDuplicates: false }
       )
       .select();
 
     if (error) {
       console.error('Error saving domains:', error.message, error);
-    } else {
-      console.log('Domains saved successfully:', data);
     }
   }
 

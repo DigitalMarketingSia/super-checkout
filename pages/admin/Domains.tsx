@@ -74,20 +74,23 @@ export const Domains = () => {
       }
 
       // 2. Save to Supabase
-      const newDomain: Domain = {
-        id: `dom_${Date.now()}`,
+      const newDomainData = {
         status: DomainStatus.PENDING, // Vercel starts as pending usually
         created_at: new Date().toISOString(),
         domain: formData.domain,
-        type: formData.type
+        type: formData.type,
+        checkout_id: formData.checkout_id || null,
+        slug: formData.slug || null
       };
 
-      const updated = [...domains, newDomain];
-      await storage.saveDomains(updated);
+      const savedDomain = await storage.createDomain(newDomainData);
+
+      // Update local state with the real record from DB
+      const updated = [...domains, savedDomain];
       setDomains(updated);
 
       // 3. Trigger initial verification to get DNS records
-      await verifyDomain(newDomain.id, formData.domain);
+      await verifyDomain(savedDomain.id, formData.domain);
 
       setIsModalOpen(false);
       setFormData({ domain: '', checkout_id: '', slug: '', type: DomainType.CNAME });
@@ -117,12 +120,15 @@ export const Domains = () => {
       if (data.verified) newStatus = DomainStatus.ACTIVE;
       else if (data.error) newStatus = DomainStatus.ERROR;
 
-      // Update in State & DB
-      const updated = domains.map(d =>
+      // Update in State
+      const updatedDomains = domains.map(d =>
         d.id === id ? { ...d, status: newStatus } : d
       );
-      setDomains(updated);
-      await storage.saveDomains(updated);
+      setDomains(updatedDomains);
+
+      // Update in DB
+      // We can use saveDomains here as the ID is now a valid UUID
+      await storage.saveDomains(updatedDomains.filter(d => d.id === id));
 
       // If pending, we might want to store/show the DNS challenges
       if (!data.verified && data.verification) {
@@ -155,10 +161,10 @@ export const Domains = () => {
         throw new Error('API indisponível. Use "vercel dev" para testar localmente.');
       }
 
-      // 2. Remove from Supabase (Logic needed in storageService or just filter out)
-      // For now, we simulate removal by filtering and saving
+      // 2. Remove from Supabase
+      await storage.deleteDomain(id);
+
       const updated = domains.filter(d => d.id !== id);
-      await storage.saveDomains(updated);
       setDomains(updated);
 
     } catch (err) {
@@ -383,32 +389,60 @@ export const Domains = () => {
 
               <div className="h-px bg-white/5"></div>
 
-              {/* Instructions Static for now, will be dynamic after add */}
+              {/* Instructions / DNS Records */}
               <div className="bg-black/30 border border-white/10 rounded-xl p-4 space-y-4 animate-in fade-in duration-300">
                 <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                  <Server className="w-4 h-4 text-primary" /> Configuração DNS (CNAME)
+                  <Server className="w-4 h-4 text-primary" /> Configuração DNS
                 </h4>
                 <p className="text-xs text-gray-400">
-                  Após adicionar, você precisará criar um registro CNAME no seu provedor:
+                  Adicione o seguinte registro no seu provedor de domínio (Cloudflare, GoDaddy, etc):
                 </p>
 
-                <div className="grid grid-cols-3 gap-2 text-xs">
-                  <div className="bg-white/5 p-2 rounded border border-white/5">
-                    <span className="text-gray-500 block mb-1">Tipo</span>
-                    <span className="text-white font-mono font-bold">CNAME</span>
+                {dnsRecords ? (
+                  <div className="space-y-2">
+                    {dnsRecords.map((record: any, idx: number) => (
+                      <div key={idx} className="grid grid-cols-4 gap-2 text-xs">
+                        <div className="bg-white/5 p-2 rounded border border-white/5">
+                          <span className="text-gray-500 block mb-1">Type</span>
+                          <span className="text-white font-mono font-bold">{record.type}</span>
+                        </div>
+                        <div className="bg-white/5 p-2 rounded border border-white/5">
+                          <span className="text-gray-500 block mb-1">Name</span>
+                          <span className="text-white font-mono">{record.domain.startsWith('www.') ? 'www' : (record.domain.split('.').length > 2 ? record.domain.split('.')[0] : '@')}</span>
+                        </div>
+                        <div className="bg-white/5 p-2 rounded border border-white/5 relative group col-span-2">
+                          <span className="text-gray-500 block mb-1">Value</span>
+                          <span className="text-white font-mono break-all">{record.value}</span>
+                          <button onClick={() => handleCopy(record.value, `val-${idx}`)} className="absolute top-2 right-2 text-gray-500 hover:text-white">
+                            {copiedField === `val-${idx}` ? <CheckCircle className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  <div className="bg-white/5 p-2 rounded border border-white/5 relative group">
-                    <span className="text-gray-500 block mb-1">Host / Nome</span>
-                    <span className="text-white font-mono">@ (ou subdomínio)</span>
+                ) : (
+                  <div className="grid grid-cols-4 gap-2 text-xs">
+                    <div className="bg-white/5 p-2 rounded border border-white/5">
+                      <span className="text-gray-500 block mb-1">Type</span>
+                      <span className="text-white font-mono font-bold">CNAME</span>
+                    </div>
+                    <div className="bg-white/5 p-2 rounded border border-white/5">
+                      <span className="text-gray-500 block mb-1">Name</span>
+                      <span className="text-white font-mono">@ (ou sub)</span>
+                    </div>
+                    <div className="bg-white/5 p-2 rounded border border-white/5 relative group">
+                      <span className="text-gray-500 block mb-1">Value</span>
+                      <span className="text-white font-mono truncate">{systemDomain}</span>
+                      <button onClick={() => handleCopy(systemDomain, 'def-val')} className="absolute top-2 right-2 text-gray-500 hover:text-white">
+                        {copiedField === 'def-val' ? <CheckCircle className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+                      </button>
+                    </div>
+                    <div className="bg-white/5 p-2 rounded border border-white/5 flex flex-col justify-center">
+                      <span className="text-gray-500 block mb-1">Proxy</span>
+                      <span className="text-gray-400">Desativado</span>
+                    </div>
                   </div>
-                  <div className="bg-white/5 p-2 rounded border border-white/5 relative group">
-                    <span className="text-gray-500 block mb-1">Valor / Destino</span>
-                    <span className="text-white font-mono">{systemDomain}</span>
-                    <button onClick={() => handleCopy(systemDomain, 'value')} className="absolute top-2 right-2 text-gray-500 hover:text-white">
-                      {copiedField === 'value' ? <CheckCircle className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
-                    </button>
-                  </div>
-                </div>
+                )}
               </div>
 
             </form>

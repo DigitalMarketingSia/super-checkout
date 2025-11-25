@@ -259,8 +259,10 @@ export const CheckoutEditor = () => {
                                        onChange={e => setDomainId(e.target.value)}
                                     >
                                        <option value="">supercheckout.app (Padrão)</option>
-                                       {domains.filter(d => d.status === DomainStatus.ACTIVE).map(d => (
-                                          <option key={d.id} value={d.id}>{d.domain}</option>
+                                       {domains.map(d => (
+                                          <option key={d.id} value={d.id}>
+                                             {d.domain} {d.status !== DomainStatus.ACTIVE ? `(${d.status})` : ''}
+                                          </option>
                                        ))}
                                     </select>
                                  </div>
