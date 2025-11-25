@@ -447,6 +447,13 @@ export const Domains = () => {
                     </div>
                   </div>
                 )}
+                {/* DEBUG SECTION */}
+                <details className="mt-4 border-t border-white/10 pt-4">
+                  <summary className="text-xs text-gray-500 cursor-pointer hover:text-white">Ver Dados de Debug (v1.2)</summary>
+                  <pre className="mt-2 p-2 bg-black/50 rounded text-[10px] text-gray-400 overflow-auto max-h-40">
+                    {JSON.stringify(debugData, null, 2)}
+                  </pre>
+                </details>
               </div>
 
               <div className="flex justify-end">
