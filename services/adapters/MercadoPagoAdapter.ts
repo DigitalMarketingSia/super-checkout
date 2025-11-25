@@ -116,24 +116,43 @@ export class MercadoPagoAdapter {
             };
             const idempotencyKey = generateUUID();
 
-            const response = await fetch(`${this.baseUrl}/v1/payments`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.accessToken}`,
-                    'X-Idempotency-Key': idempotencyKey
-                },
-                body: JSON.stringify(paymentData)
-            });
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                console.error('[MercadoPagoAdapter] Payment API Error Body:', errorData);
-                throw new Error(`Payment API Error: ${errorData.message || JSON.stringify(errorData)}`);
+            try {
+                const response = await fetch(`${this.baseUrl}/v1/payments`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${this.accessToken}`,
+                        'X-Idempotency-Key': idempotencyKey
+                    },
+                    body: JSON.stringify(paymentData),
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+
+                if (!response.ok) {
+                    const text = await response.text();
+                    let errorData;
+                    try {
+                        errorData = JSON.parse(text);
+                    } catch {
+                        errorData = { message: text || 'Unknown error' };
+                    }
+                    console.error('[MercadoPagoAdapter] Payment API Error Body:', errorData);
+                    throw new Error(`Payment API Error: ${errorData.message || JSON.stringify(errorData)}`);
+                }
+
+                const data = await response.json();
+                return data;
+            } catch (error: any) {
+                clearTimeout(timeoutId);
+                if (error.name === 'AbortError') {
+                    throw new Error('Payment request timed out');
+                }
+                throw error;
             }
-
-            const data = await response.json();
-            return data;
 
         } catch (error: any) {
             console.error('[MercadoPagoAdapter] Create payment error:', error);

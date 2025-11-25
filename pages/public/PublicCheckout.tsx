@@ -450,7 +450,13 @@ export const PublicCheckout = ({ checkoutId: propId }: { checkoutId?: string }) 
 
       } catch (error: any) {
          console.error('Payment error:', error);
-         showAlert('Erro', 'Erro ao processar pagamento. Verifique os dados e tente novamente.', 'error');
+         // Log detailed error for debugging custom domain issues
+         console.error('Payment Error Details:', {
+            message: error.message,
+            stack: error.stack,
+            name: error.name
+         });
+         showAlert('Erro', `Erro ao processar pagamento: ${error.message || 'Verifique os dados e tente novamente.'}`, 'error');
          setIsProcessing(false);
       }
    };

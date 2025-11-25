@@ -22,6 +22,9 @@ export default defineConfig(({ mode }) => {
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
       'process.env.VITE_SUPABASE_URL': JSON.stringify(env.VITE_SUPABASE_URL),
       'process.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(env.VITE_SUPABASE_ANON_KEY),
+      // Correctly expose VERCEL_URL to import.meta.env for client-side usage
+      'import.meta.env.VITE_VERCEL_URL': JSON.stringify(process.env.VERCEL_URL || env.VERCEL_URL),
+      // Keep process.env version for backward compatibility if used elsewhere
       'process.env.VITE_VERCEL_URL': JSON.stringify(process.env.VERCEL_URL || env.VERCEL_URL)
     },
     resolve: {
