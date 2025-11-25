@@ -21,26 +21,46 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     try {
-        // 1. Get Domain Config (Status, Misconfigured, etc)
-        const configRes = await fetch(
-            `https://api.vercel.com/v6/domains/${domain}/config${TEAM_ID ? `?teamId=${TEAM_ID}` : ''}`,
-            {
-                headers: {
-                    Authorization: `Bearer ${VERCEL_TOKEN}`,
-                },
-            }
+        let currentTeamId = TEAM_ID;
+        let configRes = await fetch(
+            `https://api.vercel.com/v6/domains/${domain}/config${currentTeamId ? `?teamId=${currentTeamId}` : ''}`,
+            { headers: { Authorization: `Bearer ${VERCEL_TOKEN}` } }
         );
-        const config = await configRes.json();
+        let config = await configRes.json();
+
+        // AUTO-DETECT TEAM ID if 403 Forbidden
+        if (config.error && config.error.code === 'forbidden' && config.error.message.includes('scope')) {
+            try {
+                // Extract scope (slug) from error message
+                // Message format: "Not authorized: Trying to access resource under scope "SLUG". ..."
+                const match = config.error.message.match(/scope "([^"]+)"/);
+                if (match && match[1]) {
+                    const slug = match[1];
+                    // Fetch Team ID by slug
+                    const teamsRes = await fetch(`https://api.vercel.com/v2/teams?slug=${slug}`, {
+                        headers: { Authorization: `Bearer ${VERCEL_TOKEN}` }
+                    });
+                    const teamsData = await teamsRes.json();
+                    if (teamsData.teams && teamsData.teams.length > 0) {
+                        currentTeamId = teamsData.teams[0].id;
+
+                        // RETRY CONFIG with new Team ID
+                        configRes = await fetch(
+                            `https://api.vercel.com/v6/domains/${domain}/config?teamId=${currentTeamId}`,
+                            { headers: { Authorization: `Bearer ${VERCEL_TOKEN}` } }
+                        );
+                        config = await configRes.json();
+                    }
+                }
+            } catch (e) {
+                console.warn('Failed to auto-detect team:', e);
+            }
+        }
 
         // 2. Get Domain Status (Verification challenges)
-        // Use v10 to match add.ts
         const domainRes = await fetch(
-            `https://api.vercel.com/v10/projects/${PROJECT_ID}/domains/${domain}${TEAM_ID ? `?teamId=${TEAM_ID}` : ''}`,
-            {
-                headers: {
-                    Authorization: `Bearer ${VERCEL_TOKEN}`,
-                },
-            }
+            `https://api.vercel.com/v10/projects/${PROJECT_ID}/domains/${domain}${currentTeamId ? `?teamId=${currentTeamId}` : ''}`,
+            { headers: { Authorization: `Bearer ${VERCEL_TOKEN}` } }
         );
         const domainData = await domainRes.json();
 
@@ -52,23 +72,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
         // 3. Force Verification Check
-        // We force verify if:
-        // a) Challenges are missing
-        // b) Config failed (we can't trust the status)
-        // c) Domain is not verified
         let verificationChallenges = domainData.verification || [];
         let verifyData = null;
         const configFailed = !!config.error;
 
-        if (verificationChallenges.length === 0 || configFailed) {
+        // If challenges missing, try POST verify
+        if (verificationChallenges.length === 0) {
             try {
                 const verifyRes = await fetch(
-                    `https://api.vercel.com/v9/projects/${PROJECT_ID}/domains/${domain}/verify${TEAM_ID ? `?teamId=${TEAM_ID}` : ''}`,
+                    `https://api.vercel.com/v9/projects/${PROJECT_ID}/domains/${domain}/verify${currentTeamId ? `?teamId=${currentTeamId}` : ''}`,
                     {
                         method: 'POST',
-                        headers: {
-                            Authorization: `Bearer ${VERCEL_TOKEN}`,
-                        },
+                        headers: { Authorization: `Bearer ${VERCEL_TOKEN}` }
                     }
                 );
                 verifyData = await verifyRes.json();
@@ -81,7 +96,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
         // Determine misconfigured status
-        // If config failed, we assume it's misconfigured to be safe
         const isMisconfigured = domainData.misconfigured || config.misconfigured || configFailed;
 
         return res.status(200).json({
@@ -95,8 +109,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             debug_domain: domainData,
             debug_verify: verifyData || null,
             debug_config: config,
+            detected_team_id: currentTeamId,
             ...domainData,
-            misconfigured: isMisconfigured // Override with calculated value
+            misconfigured: isMisconfigured
         });
 
     } catch (error: any) {
