@@ -3,6 +3,7 @@ import { Gateway, GatewayProvider, Order, OrderStatus, Payment, WebhookLog, Orde
 import { storage } from './storageService';
 import { MercadoPagoAdapter } from './adapters/MercadoPagoAdapter';
 import { emailService } from './emailService';
+import { getApiUrl, getBaseUrl } from '../utils/apiUtils';
 
 // Helper for UUID generation
 const generateUUID = () => {
@@ -113,7 +114,6 @@ class PaymentService {
       if (gatewayResponse.success) {
         // If payment is already approved (e.g. Credit Card), send approval email immediately
         // This is crucial for local testing where webhooks don't reach localhost
-        const paymentStatus = gatewayResponse.status || (gatewayResponse.message === 'approved' ? 'approved' : undefined);
 
         // Check if we have a status in the response or if it's implicitly successful
         // For Mercado Pago adapter, it returns { success: true } for approved payments
@@ -157,11 +157,8 @@ class PaymentService {
 
     try {
       // Prioritize explicit API_URL, then Vercel System URL, then fallback to window origin
-      const publicUrl = process.env.PUBLIC_URL ||
-        process.env.VITE_VERCEL_URL ||
-        (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined) ||
-        window.location.origin;
-      const apiUrl = process.env.API_URL || publicUrl;
+      const publicUrl = getBaseUrl();
+      const apiUrl = getApiUrl(''); // Just base API URL if needed, or use publicUrl
 
       let paymentMethodId = '';
       let token = undefined;

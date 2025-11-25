@@ -8,6 +8,7 @@ import { supabase } from '../../services/supabase';
 import { Order, OrderStatus } from '../../types';
 import { Button } from '../../components/ui/Button';
 import { AlertModal } from '../../components/ui/Modal';
+import { getApiUrl } from '../../utils/apiUtils';
 
 // Mocks de segurança conforme solicitado
 const FALLBACK_MOCK_ORDER = {
@@ -94,7 +95,7 @@ export const PixPayment = () => {
     const checkStatus = async () => {
       try {
         // Call our new API endpoint which actively checks Mercado Pago
-        const response = await fetch(`/api/check-status?orderId=${orderId}`);
+        const response = await fetch(getApiUrl(`/api/check-status?orderId=${orderId}`));
 
         const contentType = response.headers.get('content-type');
         if (response.ok && contentType && contentType.includes('application/json')) {
