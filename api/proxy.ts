@@ -1,10 +1,6 @@
 export default async function handler(req, res) {
-    // 1. Handle CORS
-    // We set these headers for ALL responses, including errors
-    // 1. Handle CORS
-    // We set these headers for ALL responses, including errors
+    // 1. Handle CORS - Set these for ALL responses
     res.setHeader('Access-Control-Allow-Origin', '*');
-    // res.setHeader('Access-Control-Allow-Credentials', 'true'); // Not needed for wildcard
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
     res.setHeader(
         'Access-Control-Allow-Headers',
@@ -17,18 +13,24 @@ export default async function handler(req, res) {
     }
 
     try {
-        // 3. Extract Endpoint
+        // 3. Health Check / Debug
         const { endpoint } = req.query;
-
-        if (!endpoint || typeof endpoint !== 'string') {
-            return res.status(400).json({ error: 'Missing endpoint parameter' });
+        if (!endpoint) {
+            return res.status(200).json({ status: 'ok', message: 'Proxy is running' });
         }
 
         const targetUrl = `https://api.mercadopago.com${endpoint}`;
         console.log(`[Proxy] Forwarding ${req.method} to ${targetUrl}`);
 
-        // 4. Forward Request
-        // Using global fetch (Node 18+)
+        // 4. Prepare Body
+        let body;
+        if (req.method !== 'GET' && req.method !== 'HEAD') {
+            // Vercel parses JSON body automatically. If it's an object, stringify it.
+            // If it's already a string, use it as is.
+            body = typeof req.body === 'object' ? JSON.stringify(req.body) : req.body;
+        }
+
+        // 5. Forward Request
         const response = await fetch(targetUrl, {
             method: req.method,
             headers: {
@@ -36,13 +38,11 @@ export default async function handler(req, res) {
                 'Authorization': req.headers.authorization || '',
                 'X-Idempotency-Key': req.headers['x-idempotency-key'] || ''
             },
-            body: req.method !== 'GET' ? JSON.stringify(req.body) : undefined
+            body: body
         });
 
-        // 5. Return Response
+        // 6. Return Response
         const data = await response.json();
-
-        // Forward the status code from upstream
         return res.status(response.status).json(data);
 
     } catch (error) {
