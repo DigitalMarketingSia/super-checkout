@@ -242,7 +242,13 @@ class PaymentService {
         raw_response: JSON.stringify(paymentResponse),
         created_at: new Date().toISOString()
       };
-      await this.savePayment(newPayment);
+
+      try {
+        await this.savePayment(newPayment);
+      } catch (saveError) {
+        console.warn('[PaymentService] Failed to save payment locally (likely RLS), but gateway success:', saveError);
+        // Continue flow - Webhook will handle persistence/updates if this fails
+      }
 
       // 4. Handle Response
       if (paymentResponse.status === 'approved' || paymentResponse.status === 'in_process' || paymentResponse.status === 'pending') {
