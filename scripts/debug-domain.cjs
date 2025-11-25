@@ -27,6 +27,7 @@ const env = {};
 const VERCEL_TOKEN = env.VERCEL_TOKEN;
 const PROJECT_ID = env.VERCEL_PROJECT_ID;
 const TEAM_ID = env.VERCEL_TEAM_ID;
+// Use the domain the user mentioned
 const DOMAIN = 'pay.kitizinho.shop';
 
 console.log('Project ID:', PROJECT_ID ? `${PROJECT_ID.substring(0, 5)}...` : 'MISSING');
@@ -38,10 +39,10 @@ if (!VERCEL_TOKEN || !PROJECT_ID) {
     process.exit(1);
 }
 
-// Use v10 and list all domains to debug
-const url = `https://api.vercel.com/v10/projects/${PROJECT_ID}/domains${TEAM_ID ? `?teamId=${TEAM_ID}` : ''}`;
+// List projects to find the correct ID
+const url = `https://api.vercel.com/v9/projects${TEAM_ID ? `?teamId=${TEAM_ID}` : ''}`;
 
-console.log(`Listing domains for project ${PROJECT_ID}...`);
+console.log(`Listing projects...`);
 
 const req = https.request(url, {
     headers: {
