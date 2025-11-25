@@ -51,11 +51,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             throw new Error(domainData.error.message);
         }
 
-        // 3. Force Verification Check if challenges are missing but domain is not active
+        // 3. Force Verification Check
+        // We force verify if:
+        // a) Challenges are missing
+        // b) Config failed (we can't trust the status)
+        // c) Domain is not verified
         let verificationChallenges = domainData.verification || [];
         let verifyData = null;
+        const configFailed = !!config.error;
 
-        if (verificationChallenges.length === 0 && !domainData.verified) {
+        if (verificationChallenges.length === 0 || configFailed) {
             try {
                 const verifyRes = await fetch(
                     `https://api.vercel.com/v9/projects/${PROJECT_ID}/domains/${domain}/verify${TEAM_ID ? `?teamId=${TEAM_ID}` : ''}`,
@@ -75,18 +80,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             }
         }
 
+        // Determine misconfigured status
+        // If config failed, we assume it's misconfigured to be safe
+        const isMisconfigured = domainData.misconfigured || config.misconfigured || configFailed;
+
         return res.status(200).json({
-            configured: !domainData.misconfigured,
+            configured: !isMisconfigured,
             verified: domainData.verified,
             verification: verificationChallenges,
-            status: domainData.misconfigured ? 'pending' : 'active',
+            status: isMisconfigured ? 'pending' : 'active',
             config,
             verificationChallenges: verificationChallenges.length > 0 ? verificationChallenges : (config.verification || []),
             // DEBUG DATA
             debug_domain: domainData,
             debug_verify: verifyData || null,
             debug_config: config,
-            ...domainData
+            ...domainData,
+            misconfigured: isMisconfigured // Override with calculated value
         });
 
     } catch (error: any) {
