@@ -22,37 +22,37 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     try {
         let currentTeamId = TEAM_ID;
+
+        // 0. Auto-detect Team ID if missing
+        // If we don't have a Team ID, try to fetch it from the user's teams.
+        // This handles Team-Scoped Tokens where TEAM_ID might not be in env.
+        if (!currentTeamId) {
+            try {
+                const teamsRes = await fetch('https://api.vercel.com/v2/teams', {
+                    headers: { Authorization: `Bearer ${VERCEL_TOKEN}` }
+                });
+                const teamsData = await teamsRes.json();
+                if (teamsData.teams && teamsData.teams.length > 0) {
+                    // Use the first team found (usually the one the token is scoped to)
+                    currentTeamId = teamsData.teams[0].id;
+                }
+            } catch (e) {
+                console.warn('Failed to fetch teams:', e);
+            }
+        }
+
+        // 1. Get Domain Config
         let configRes = await fetch(
             `https://api.vercel.com/v6/domains/${domain}/config${currentTeamId ? `?teamId=${currentTeamId}` : ''}`,
             { headers: { Authorization: `Bearer ${VERCEL_TOKEN}` } }
         );
         let config = await configRes.json();
 
-        // AUTO-DETECT TEAM ID if 403 Forbidden
-        if (config.error && config.error.code === 'forbidden') {
-            try {
-                // Fetch Project Details to get Team ID
-                // If we can access the project domains, we should be able to access the project details
-                const projectRes = await fetch(
-                    `https://api.vercel.com/v9/projects/${PROJECT_ID}`,
-                    { headers: { Authorization: `Bearer ${VERCEL_TOKEN}` } }
-                );
-                const projectData = await projectRes.json();
-
-                if (projectData.teamId) {
-                    currentTeamId = projectData.teamId;
-
-                    // RETRY CONFIG with new Team ID
-                    configRes = await fetch(
-                        `https://api.vercel.com/v6/domains/${domain}/config?teamId=${currentTeamId}`,
-                        { headers: { Authorization: `Bearer ${VERCEL_TOKEN}` } }
-                    );
-                    config = await configRes.json();
-                }
-            } catch (e) {
-                console.warn('Failed to auto-detect team via project:', e);
-            }
-        }
+        // Retry if forbidden (just in case our detection failed or we need to try another way)
+        // If config.error.code is 'forbidden' and we still don't have a teamId, it means the token
+        // might be scoped to a personal account or a different team.
+        // For now, we'll rely on the upfront team detection.
+        // The previous complex project fetch logic is removed as per instructions.
 
         // 2. Get Domain Status (Verification challenges)
         const domainRes = await fetch(
