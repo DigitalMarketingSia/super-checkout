@@ -40,6 +40,7 @@ export const Domains = () => {
 
   // DNS Records State
   const [dnsRecords, setDnsRecords] = useState<any>(null);
+  const [debugData, setDebugData] = useState<any>(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -118,6 +119,7 @@ export const Domains = () => {
     try {
       const res = await fetch(`/api/domains/verify?domain=${domainName}`);
       const data = await res.json();
+      setDebugData(data); // Save for debug modal
 
       console.log('Verification response:', data); // Debugging
 
@@ -162,8 +164,13 @@ export const Domains = () => {
         { type: 'A', domain: '@', value: '76.76.21.21', reason: 'default_a' }
       ];
 
-    } catch (err) {
+    } catch (err: any) {
       console.error('Verification failed:', err);
+      setDebugData({ error: err.message });
+
+      // Force update to ERROR if verification fails
+      setDomains(prev => prev.map(d => d.id === id ? { ...d, status: DomainStatus.ERROR } : d));
+
       return null;
     } finally {
       if (!silent) setVerifyingId(null);
