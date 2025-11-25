@@ -165,7 +165,8 @@ class PaymentService {
     const publicUrl = getBaseUrl();
 
     // Force the adapter to use the stable Vercel URL for the proxy to avoid custom domain issues
-    const proxyBaseUrl = `${publicUrl}/mp-api`;
+    // We use ?endpoint= so the adapter appends /v1/payments correctly
+    const proxyBaseUrl = `${publicUrl}/api/proxy?endpoint=`;
     console.log('[PaymentService] Initializing Adapter with Base URL:', proxyBaseUrl);
 
     const mpAdapter = new MercadoPagoAdapter(gateway.private_key, {
