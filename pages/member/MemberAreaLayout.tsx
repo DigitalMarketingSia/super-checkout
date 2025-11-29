@@ -104,32 +104,49 @@ export const MemberAreaLayout: React.FC<MemberAreaLayoutProps> = ({ children, me
                 </div>
 
                 <div className="flex items-center gap-6">
-                    <div className="group relative">
-                        <div className="flex items-center gap-2 cursor-pointer">
-                            <div className="w-8 h-8 rounded bg-blue-600 flex items-center justify-center text-xs font-bold" style={{ backgroundColor: memberArea?.primary_color }}>
-                                {user?.user_metadata?.name?.substring(0, 2).toUpperCase() || 'US'}
-                            </div>
-                        </div>
-
-                        {/* Dropdown */}
-                        <div className="absolute right-0 top-full mt-2 w-48 bg-[#1A1D21] border border-white/10 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top-right">
-                            <div className="py-2">
-                                <div className="px-4 py-2 border-b border-white/10 mb-2">
-                                    <p className="text-sm font-medium text-white truncate">{user?.user_metadata?.name || 'Usuário'}</p>
-                                    <p className="text-xs text-gray-400 truncate">{user?.email}</p>
+                    {user ? (
+                        <div className="group relative">
+                            <div className="flex items-center gap-2 cursor-pointer">
+                                <div className="w-8 h-8 rounded bg-blue-600 flex items-center justify-center text-xs font-bold" style={{ backgroundColor: memberArea?.primary_color }}>
+                                    {user?.user_metadata?.name?.substring(0, 2).toUpperCase() || 'US'}
                                 </div>
-                                <Link to={`${appLink}/profile`} className="block px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/10">
-                                    <User className="w-4 h-4 inline mr-2" /> Perfil
-                                </Link>
-                                <button
-                                    onClick={() => { signOut(); navigate(`${appLink}/login`); }}
-                                    className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/10"
-                                >
-                                    <LogOut className="w-4 h-4 inline mr-2" /> Sair
-                                </button>
+                            </div>
+
+                            {/* Dropdown */}
+                            <div className="absolute right-0 top-full mt-2 w-48 bg-[#1A1D21] border border-white/10 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top-right">
+                                <div className="py-2">
+                                    <div className="px-4 py-2 border-b border-white/10 mb-2">
+                                        <p className="text-sm font-medium text-white truncate">{user?.user_metadata?.name || 'Usuário'}</p>
+                                        <p className="text-xs text-gray-400 truncate">{user?.email}</p>
+                                    </div>
+                                    <Link to={`${appLink}/profile`} className="block px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/10">
+                                        <User className="w-4 h-4 inline mr-2" /> Perfil
+                                    </Link>
+                                    <button
+                                        onClick={() => { signOut(); navigate(`${appLink}/login`); }}
+                                        className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/10"
+                                    >
+                                        <LogOut className="w-4 h-4 inline mr-2" /> Sair
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    ) : (
+                        <div className="flex items-center gap-3">
+                            <Link
+                                to={`${appLink}/signup`}
+                                className="px-4 py-2 text-sm font-medium text-white border border-white/30 rounded hover:bg-white/10 transition-colors"
+                            >
+                                Cadastre-se aqui
+                            </Link>
+                            <Link
+                                to={`${appLink}/login`}
+                                className="px-4 py-2 text-sm font-medium text-[#0E1012] bg-white rounded hover:bg-gray-100 transition-colors"
+                            >
+                                Entrar
+                            </Link>
+                        </div>
+                    )}
                 </div>
             </nav>
 
