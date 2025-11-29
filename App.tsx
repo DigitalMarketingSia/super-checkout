@@ -198,7 +198,8 @@ const DomainDispatcher = () => {
       <Route path="/app/:slug/signup" element={<MemberSignup />} />
 
       {/* Member Area App Routes with Slug */}
-      <Route path="/app/:slug" element={<ProtectedRoute><MemberAreaWrapper /></ProtectedRoute>}>
+      {/* Member Area App Routes with Slug */}
+      <Route path="/app/:slug" element={<MemberAreaWrapper />}>
         <Route index element={<MemberDashboard />} />
         <Route path="products" element={<MemberProducts />} />
         <Route path="faq" element={<MemberFAQ />} />
@@ -208,7 +209,7 @@ const DomainDispatcher = () => {
       </Route>
 
       {/* Course Player (Fullscreen - Outside Wrapper) */}
-      <Route path="/app/:slug/course/:id" element={<ProtectedRoute><CoursePlayer /></ProtectedRoute>} />
+      <Route path="/app/:slug/course/:id" element={<CoursePlayer />} />
 
       {/* Redirect root to Admin */}
       <Route path="/" element={<Navigate to="/admin" replace />} />

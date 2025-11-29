@@ -19,9 +19,13 @@ class StorageService {
   // --- PRODUCTS ---
 
   async getProducts(): Promise<Product[]> {
+    const user = await this.getUser();
+    if (!user) return [];
+
     const { data, error } = await supabase
       .from('products')
       .select('*')
+      .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -41,8 +45,9 @@ class StorageService {
       category: p.category,
       redirect_link: p.redirect_link,
       is_order_bump: p.is_order_bump,
-      is_order_bump: p.is_order_bump,
       is_upsell: p.is_upsell,
+      visible_in_member_area: p.visible_in_member_area,
+      for_sale: p.for_sale,
       member_area_action: p.member_area_action,
       member_area_checkout_id: p.member_area_checkout_id
     }));
@@ -363,7 +368,14 @@ class StorageService {
   // --- OFFERS ---
 
   async getOffers(): Promise<Offer[]> {
-    const { data, error } = await supabase.from('offers').select('*');
+    const user = await this.getUser();
+    if (!user) return [];
+
+    const { data, error } = await supabase
+      .from('offers')
+      .select('*')
+      .eq('user_id', user.id);
+
     if (error) {
       console.error('Error fetching offers:', error.message);
       return [];
@@ -462,7 +474,14 @@ class StorageService {
   // --- CHECKOUTS ---
 
   async getCheckouts(): Promise<Checkout[]> {
-    const { data, error } = await supabase.from('checkouts').select('*');
+    const user = await this.getUser();
+    if (!user) return [];
+
+    const { data, error } = await supabase
+      .from('checkouts')
+      .select('*')
+      .eq('user_id', user.id);
+
     if (error) {
       console.error('Error fetching checkouts:', error.message);
       return [];
@@ -624,7 +643,14 @@ class StorageService {
   // --- DOMAINS ---
 
   async getDomains(): Promise<Domain[]> {
-    const { data, error } = await supabase.from('domains').select('*');
+    const user = await this.getUser();
+    if (!user) return [];
+
+    const { data, error } = await supabase
+      .from('domains')
+      .select('*')
+      .eq('user_id', user.id);
+
     if (error) {
       console.error('Error fetching domains:', error.message);
       return [];
@@ -718,7 +744,14 @@ class StorageService {
   // --- GATEWAYS ---
 
   async getGateways(): Promise<Gateway[]> {
-    const { data, error } = await supabase.from('gateways').select('*');
+    const user = await this.getUser();
+    if (!user) return [];
+
+    const { data, error } = await supabase
+      .from('gateways')
+      .select('*')
+      .eq('user_id', user.id);
+
     if (error) {
       console.error('Error fetching gateways:', error.message);
       return [];
@@ -806,10 +839,13 @@ class StorageService {
   // --- ORDERS ---
 
   async getOrders(): Promise<Order[]> {
-    // RLS handles filtering for the logged-in merchant
+    const user = await this.getUser();
+    if (!user) return [];
+
     const { data: orders, error } = await supabase
       .from('orders')
       .select('*')
+      .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -916,7 +952,13 @@ class StorageService {
   // --- PAYMENTS ---
 
   async getPayments(): Promise<Payment[]> {
-    const { data, error } = await supabase.from('payments').select('*');
+    const user = await this.getUser();
+    if (!user) return [];
+
+    const { data, error } = await supabase
+      .from('payments')
+      .select('*')
+      .eq('user_id', user.id);
     if (error) {
       console.error('Error fetching payments:', error.message);
       return [];
@@ -1043,7 +1085,13 @@ class StorageService {
   // --- WEBHOOKS ---
 
   async getWebhooks(): Promise<WebhookConfig[]> {
-    const { data, error } = await supabase.from('webhooks').select('*');
+    const user = await this.getUser();
+    if (!user) return [];
+
+    const { data, error } = await supabase
+      .from('webhooks')
+      .select('*')
+      .eq('user_id', user.id);
     if (error) {
       console.error('Error fetching webhooks:', error.message);
       return [];
