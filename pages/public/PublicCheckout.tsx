@@ -156,9 +156,8 @@ export const PublicCheckout = ({ checkoutId: propId }: { checkoutId?: string }) 
    useEffect(() => {
       const load = async () => {
          try {
-            const checkouts = await storage.getCheckouts();
-            // Find by ID or Slug
-            const checkout = checkouts.find(c => c.id === id || c.custom_url_slug === id);
+            // 1. Get Checkout (Public)
+            const checkout = await storage.getPublicCheckout(id!);
 
             if (!checkout) {
                setError("Checkout não encontrado.");
@@ -172,11 +171,11 @@ export const PublicCheckout = ({ checkoutId: propId }: { checkoutId?: string }) 
                return;
             }
 
-            const products = await storage.getProducts();
-            const mainProduct = products.find(p => p.id === checkout.product_id);
+            // 2. Get Main Product (Public)
+            const mainProduct = await storage.getPublicProduct(checkout.product_id);
 
-            const gateways = await storage.getGateways();
-            const gateway = gateways.find(g => g.id === checkout.gateway_id);
+            // 3. Get Gateway (Public)
+            const gateway = await storage.getPublicGateway(checkout.gateway_id);
 
             if (!mainProduct || !gateway) {
                setError("Configuração inválida de produto ou gateway.");
@@ -184,10 +183,14 @@ export const PublicCheckout = ({ checkoutId: propId }: { checkoutId?: string }) 
                return;
             }
 
-            // Resolve Bumps
-            const resolvedBumps = checkout.order_bump_ids
-               ? products.filter(p => checkout.order_bump_ids.includes(p.id))
-               : [];
+            // 4. Resolve Bumps (Public)
+            const resolvedBumps: Product[] = [];
+            if (checkout.order_bump_ids && checkout.order_bump_ids.length > 0) {
+               for (const bumpId of checkout.order_bump_ids) {
+                  const bump = await storage.getPublicProduct(bumpId);
+                  if (bump) resolvedBumps.push(bump);
+               }
+            }
 
             setData({ checkout, product: mainProduct, gateway, bumps: resolvedBumps });
 
@@ -198,11 +201,17 @@ export const PublicCheckout = ({ checkoutId: propId }: { checkoutId?: string }) 
 
             setLoading(false);
          } catch (err: any) {
-            setError(err.message);
+            console.error('Error loading checkout:', err);
+            setError("Erro ao carregar checkout. Tente novamente.");
             setLoading(false);
          }
       };
-      load();
+      if (id) {
+         load();
+      } else {
+         setError("Checkout não especificado.");
+         setLoading(false);
+      }
    }, [id]);
 
    // Timer Logic

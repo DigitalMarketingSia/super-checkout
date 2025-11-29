@@ -640,6 +640,83 @@ class StorageService {
     if (error) console.error('Error saving checkouts:', error.message, error);
   }
 
+  // --- PUBLIC METHODS (NO AUTH REQUIRED) ---
+
+  async getPublicCheckout(idOrSlug: string): Promise<Checkout | null> {
+    // Try by ID first
+    let { data, error } = await supabase
+      .from('checkouts')
+      .select('*')
+      .eq('id', idOrSlug)
+      .eq('active', true)
+      .maybeSingle();
+
+    if (!data) {
+      // Try by Slug
+      const { data: dataSlug, error: errorSlug } = await supabase
+        .from('checkouts')
+        .select('*')
+        .eq('custom_url_slug', idOrSlug)
+        .eq('active', true)
+        .maybeSingle();
+
+      data = dataSlug;
+      error = errorSlug;
+    }
+
+    if (error) {
+      console.error('Error fetching public checkout:', error.message);
+      return null;
+    }
+    return data as Checkout;
+  }
+
+  async getPublicProduct(id: string): Promise<Product | null> {
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      console.error('Error fetching public product:', error.message);
+      return null;
+    }
+
+    return {
+      id: data.id,
+      name: data.name,
+      description: data.description,
+      active: data.active,
+      imageUrl: data.image_url,
+      price_real: data.price_real,
+      price_fake: data.price_fake,
+      sku: data.sku,
+      category: data.category,
+      redirect_link: data.redirect_link,
+      is_order_bump: data.is_order_bump,
+      is_upsell: data.is_upsell,
+      visible_in_member_area: data.visible_in_member_area,
+      for_sale: data.for_sale,
+      member_area_action: data.member_area_action,
+      member_area_checkout_id: data.member_area_checkout_id
+    };
+  }
+
+  async getPublicGateway(id: string): Promise<Gateway | null> {
+    const { data, error } = await supabase
+      .from('gateways')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) {
+      console.error('Error fetching public gateway:', error.message);
+      return null;
+    }
+    return data as Gateway;
+  }
+
   // --- DOMAINS ---
 
   async getDomains(): Promise<Domain[]> {
