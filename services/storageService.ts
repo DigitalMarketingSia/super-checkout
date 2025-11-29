@@ -1747,14 +1747,35 @@ class StorageService {
           .in('id', itemIds);
         relatedData = data || [];
       } else if (track.type === 'contents') {
-        const { data } = await supabase.from('contents').select('*').in('id', itemIds);
-        relatedData = data || [];
+        const { data } = await supabase
+          .from('contents')
+          .select('*, product_contents(products(*))')
+          .in('id', itemIds);
+
+        relatedData = (data || []).map((c: any) => ({
+          ...c,
+          associated_product: c.product_contents?.[0]?.products
+        }));
       } else if (track.type === 'modules') {
-        const { data } = await supabase.from('modules').select('*').in('id', itemIds);
-        relatedData = data || [];
+        const { data } = await supabase
+          .from('modules')
+          .select('*, content:contents(product_contents(products(*)))')
+          .in('id', itemIds);
+
+        relatedData = (data || []).map((m: any) => ({
+          ...m,
+          associated_product: m.content?.product_contents?.[0]?.products
+        }));
       } else if (track.type === 'lessons') {
-        const { data } = await supabase.from('lessons').select('*').in('id', itemIds);
-        relatedData = data || [];
+        const { data } = await supabase
+          .from('lessons')
+          .select('*, module:modules(content:contents(product_contents(products(*))))')
+          .in('id', itemIds);
+
+        relatedData = (data || []).map((l: any) => ({
+          ...l,
+          associated_product: l.module?.content?.product_contents?.[0]?.products
+        }));
       }
 
       // Merge

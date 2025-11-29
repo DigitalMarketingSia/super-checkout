@@ -233,6 +233,7 @@ export interface Content {
 
   modules_layout?: 'vertical' | 'horizontal';
   is_free?: boolean;
+  associated_product?: Product; // Product that grants access to this content
 }
 
 export interface Module {
@@ -246,6 +247,7 @@ export interface Module {
   image_vertical_url?: string;
   image_horizontal_url?: string;
   is_free?: boolean;
+  associated_product?: Product;
 }
 
 export interface LessonResource {
@@ -270,6 +272,7 @@ export interface Lesson {
   created_at: string;
   image_url?: string;
   gallery?: LessonResource[];
+  associated_product?: Product;
 }
 
 export interface AccessGrant {

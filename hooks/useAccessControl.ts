@@ -107,6 +107,18 @@ export const useAccessControl = (accessGrants: AccessGrant[] = []): UseAccessCon
                 productToSell = item.product;
             } else if ('price_real' in item) {
                 productToSell = item as Product;
+            } else if ('content' in item && item.content?.associated_product) {
+                // TrackItem with Content
+                productToSell = item.content.associated_product;
+            } else if ('module' in item && item.module?.associated_product) {
+                // TrackItem with Module
+                productToSell = item.module.associated_product;
+            } else if ('lesson' in item && item.lesson?.associated_product) {
+                // TrackItem with Lesson
+                productToSell = item.lesson.associated_product;
+            } else if ('associated_product' in item) {
+                // Direct Content/Module/Lesson object
+                productToSell = (item as any).associated_product;
             }
             // For content/module/lesson, we might not know WHICH product to sell without more info.
             // The caller might need to handle fetching the associated product.
