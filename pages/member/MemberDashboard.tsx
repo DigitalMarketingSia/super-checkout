@@ -4,6 +4,8 @@ import { storage } from '../../services/storageService';
 import { Content, MemberArea, Track, AccessGrant } from '../../types';
 import { Play, Info } from 'lucide-react';
 import { TrackSlider } from '../../components/member/TrackSlider';
+import { useAccessControl } from '../../hooks/useAccessControl';
+import { ProductSalesModal } from '../../components/member/ProductSalesModal';
 
 interface MemberAreaContextType {
     memberArea: MemberArea | null;
@@ -16,6 +18,9 @@ export const MemberDashboard = () => {
     const [loading, setLoading] = useState(true);
     const [featuredContent, setFeaturedContent] = useState<Content | null>(null);
     const [accessGrants, setAccessGrants] = useState<AccessGrant[]>([]);
+    const { handleAccess } = useAccessControl(accessGrants);
+    const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     const appLink = memberArea ? `/app/${memberArea.slug}` : '/app';
 
@@ -53,48 +58,27 @@ export const MemberDashboard = () => {
     };
 
     const handleItemClick = async (item: any) => {
-        const user = await storage.getUser();
-        const isLoggedIn = !!user;
-
-        // Check access
-        const hasAccess = accessGrants.some(grant => {
-            if (grant.access_type === 'full_access') return true;
-            if (grant.access_type === 'product' && item.product && grant.product_id === item.product.id) return true;
-            // Add more granular checks if needed
-            return false;
+        handleAccess(item, {
+            onAccess: () => {
+                const appLink = memberArea ? `/app/${memberArea.slug}` : '/app';
+                if (item.content) {
+                    navigate(`${appLink}/content/${item.content.id}`);
+                } else if (item.module) {
+                    navigate(`${appLink}/course/${item.module.content_id}`);
+                } else if (item.lesson) {
+                    navigate(`${appLink}/course/${item.lesson.module_id}`);
+                }
+            },
+            onSalesModal: (product) => {
+                if (product) {
+                    setSelectedProduct(product);
+                    setIsModalOpen(true);
+                } else {
+                    // Fallback if no product found directly
+                    alert('Conteúdo exclusivo para assinantes.');
+                }
+            }
         });
-
-        // Check if content is free
-        const isFree = item.content?.is_free || item.module?.is_free || item.lesson?.is_free;
-
-        if (isFree && !isLoggedIn) {
-            navigate(`${appLink}/signup`);
-            return;
-        }
-
-        if (item.content) {
-            if (hasAccess || isFree) {
-                navigate(`${appLink}/content/${item.content.id}`);
-            } else {
-                // Redirect to sales page or show locked modal
-                alert('Conteúdo exclusivo para assinantes.');
-            }
-        } else if (item.module) {
-            if (hasAccess || isFree) {
-                navigate(`${appLink}/course/${item.module.content_id}`);
-            } else {
-                alert('Conteúdo exclusivo para assinantes.');
-            }
-        } else if (item.lesson) {
-            if (hasAccess || isFree) {
-                navigate(`${appLink}/course/${item.lesson.module_id}`);
-            } else {
-                alert('Conteúdo exclusivo para assinantes.');
-            }
-        } else if (item.product) {
-            // Product click usually means "Buy this"
-            alert('Fluxo de compra do produto: ' + item.product.name);
-        }
     };
 
     if (loading && tracks.length === 0) {
@@ -156,7 +140,7 @@ export const MemberDashboard = () => {
                             ) : featuredContent ? (
                                 <>
                                     <button
-                                        onClick={() => navigate(`${appLink}/content/${featuredContent.id}`)}
+                                        onClick={() => handleItemClick({ content: featuredContent })}
                                         className="flex items-center gap-2 bg-white text-black px-8 py-3 rounded font-bold hover:bg-gray-200 transition-colors"
                                     >
                                         <Play className="w-5 h-5 fill-black" /> Assistir
@@ -188,6 +172,12 @@ export const MemberDashboard = () => {
                     ))
                 )}
             </div>
+
+            <ProductSalesModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                product={selectedProduct}
+            />
         </>
     );
 };

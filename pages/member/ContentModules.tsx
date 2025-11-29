@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useOutletContext, useNavigate, useParams } from 'react-router-dom';
 import { storage, supabase } from '../../services/storageService';
-import { Content, MemberArea, Module } from '../../types';
+import { Content, MemberArea, Module, AccessGrant } from '../../types';
 import { Play, ArrowLeft, FileText } from 'lucide-react';
+import { useAccessControl } from '../../hooks/useAccessControl';
+import { ProductSalesModal } from '../../components/member/ProductSalesModal';
 
 interface MemberAreaContextType {
     memberArea: MemberArea | null;
@@ -15,6 +17,10 @@ export const ContentModules = () => {
     const [content, setContent] = useState<Content | null>(null);
     const [modules, setModules] = useState<Module[]>([]);
     const [loading, setLoading] = useState(true);
+    const [accessGrants, setAccessGrants] = useState<AccessGrant[]>([]);
+    const { handleAccess } = useAccessControl(accessGrants);
+    const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     useEffect(() => {
         loadData();
@@ -36,6 +42,10 @@ export const ContentModules = () => {
                 // Fetch modules
                 const modulesData = await storage.getModules(id);
                 setModules(modulesData);
+
+                // Fetch access grants
+                const grants = await storage.getAccessGrants();
+                setAccessGrants(grants);
             }
         } catch (error) {
             console.error('Error loading content modules:', error);
@@ -95,7 +105,15 @@ export const ContentModules = () => {
                     {modules.map((module, index) => (
                         <div
                             key={module.id}
-                            onClick={() => navigate(`${appLink}/course/${content.id}?module_id=${module.id}`)}
+                            onClick={() => {
+                                handleAccess(module, {
+                                    onAccess: () => navigate(`${appLink}/course/${content.id}?module_id=${module.id}`),
+                                    onSalesModal: (product) => {
+                                        setSelectedProduct(product);
+                                        setIsModalOpen(true);
+                                    }
+                                });
+                            }}
                             className="bg-[#1A1D21] p-4 rounded-xl border border-white/5 hover:border-white/20 transition-all cursor-pointer group flex items-center gap-4"
                         >
                             <div className="w-12 h-12 bg-white/5 rounded-lg flex items-center justify-center text-gray-400 group-hover:text-white group-hover:bg-red-600 transition-colors">

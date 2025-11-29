@@ -2,6 +2,7 @@ import React, { useRef } from 'react';
 import { ChevronLeft, ChevronRight, Lock, PlayCircle, Package, FileText, BookOpen } from 'lucide-react';
 import { Track, TrackItem, AccessGrant } from '../../types';
 import { ProductSalesModal } from './ProductSalesModal';
+import { useAccessControl } from '../../hooks/useAccessControl';
 
 interface TrackSliderProps {
     track: Track;
@@ -10,6 +11,7 @@ interface TrackSliderProps {
 }
 
 export const TrackSlider: React.FC<TrackSliderProps> = ({ track, onItemClick, accessGrants = [] }) => {
+    const { handleAccess } = useAccessControl(accessGrants);
     const [selectedProduct, setSelectedProduct] = React.useState<any | null>(null);
     const [isModalOpen, setIsModalOpen] = React.useState(false);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -66,12 +68,13 @@ export const TrackSlider: React.FC<TrackSliderProps> = ({ track, onItemClick, ac
                             key={item.id}
                             item={item}
                             onClick={() => {
-                                if (item.product) {
-                                    setSelectedProduct(item.product);
-                                    setIsModalOpen(true);
-                                } else {
-                                    onItemClick(item);
-                                }
+                                handleAccess(item, {
+                                    onAccess: () => onItemClick(item),
+                                    onSalesModal: (product) => {
+                                        setSelectedProduct(product || item.product);
+                                        setIsModalOpen(true);
+                                    }
+                                });
                             }}
                             accessGrants={accessGrants}
                             cardStyle={track.card_style || 'vertical'}
@@ -107,6 +110,7 @@ interface TrackItemCardProps {
 }
 
 const TrackItemCard: React.FC<TrackItemCardProps> = ({ item, onClick, accessGrants, cardStyle }) => {
+    const { checkAccess } = useAccessControl(accessGrants);
     // Determine content based on item type (polymorphic)
     let title = '';
     let imageUrl = '';
@@ -148,27 +152,9 @@ const TrackItemCard: React.FC<TrackItemCardProps> = ({ item, onClick, accessGran
     // Access Check Logic
     const isLocked = React.useMemo(() => {
         if (!item) return false;
-        if (isFree) return false; // Free items are never locked
-
-        // If product, check if user has access to product
-        if (item.product) {
-            return !accessGrants.some(g => g.product_id === item.product!.id);
-        }
-
-        // If content, check if user has access to content
-        if (item.content) {
-            return !accessGrants.some(g => g.content_id === item.content!.id);
-        }
-
-        // If module, check if user has access to parent content
-        if (item.module) {
-            return !accessGrants.some(g => g.content_id === item.module!.content_id);
-        }
-
-        // If lesson, check if user has access to parent content (via module)
-        // For now, let's assume unlocked for lessons in tracks for now
-        return false;
-    }, [item, accessGrants, isFree]);
+        const action = checkAccess(item);
+        return action !== 'ACCESS';
+    }, [item, accessGrants, checkAccess]);
 
 
     return (

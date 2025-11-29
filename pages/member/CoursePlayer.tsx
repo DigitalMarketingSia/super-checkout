@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { storage } from '../../services/storageService';
-import { Content, Module, Lesson, MemberArea } from '../../types';
+import { Content, Module, Lesson, MemberArea, AccessGrant } from '../../types';
 import { ChevronLeft, CheckCircle, Circle, PlayCircle, FileText, Download, Menu, X, ChevronDown, ChevronUp, PanelLeftClose, PanelLeftOpen, Search, Play, ChevronRight, Home } from 'lucide-react';
+import { useAccessControl } from '../../hooks/useAccessControl';
+import { ProductSalesModal } from '../../components/member/ProductSalesModal';
 
 export const CoursePlayer = () => {
     const { slug, id } = useParams<{ slug: string; id: string }>();
@@ -15,6 +17,10 @@ export const CoursePlayer = () => {
     const [modules, setModules] = useState<Module[]>([]);
     const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
     const [progressMap, setProgressMap] = useState<Record<string, boolean>>({});
+    const [accessGrants, setAccessGrants] = useState<AccessGrant[]>([]);
+    const { handleAccess, checkAccess } = useAccessControl(accessGrants);
+    const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [expandedModuleId, setExpandedModuleId] = useState<string | null>(null);
@@ -45,6 +51,9 @@ export const CoursePlayer = () => {
             setContent(foundContent);
             const modulesData = await storage.getModules(contentId);
             setModules(modulesData);
+
+            const grants = await storage.getAccessGrants();
+            setAccessGrants(grants);
 
             // Find lesson to play
             let lessonToPlay: Lesson | null = null;
@@ -96,13 +105,34 @@ export const CoursePlayer = () => {
         }
     };
 
-    const handleLessonSelect = (lesson: Lesson) => {
-        setCurrentLesson(lesson);
-        checkProgress(lesson.id);
-        // On mobile, close sidebar
-        if (window.innerWidth < 768) {
-            setSidebarOpen(false);
+    // Check access when currentLesson changes (for direct URL access)
+    useEffect(() => {
+        if (!loading && currentLesson) {
+            handleAccess(currentLesson, {
+                onAccess: () => { }, // Do nothing, already here
+                onSalesModal: (product) => {
+                    setSelectedProduct(product);
+                    setIsModalOpen(true);
+                }
+            });
         }
+    }, [currentLesson, loading, accessGrants]);
+
+    const handleLessonSelect = (lesson: Lesson) => {
+        handleAccess(lesson, {
+            onAccess: () => {
+                setCurrentLesson(lesson);
+                checkProgress(lesson.id);
+                // On mobile, close sidebar
+                if (window.innerWidth < 768) {
+                    setSidebarOpen(false);
+                }
+            },
+            onSalesModal: (product) => {
+                setSelectedProduct(product);
+                setIsModalOpen(true);
+            }
+        });
     };
 
     const toggleModule = (moduleId: string) => {
@@ -471,6 +501,12 @@ export const CoursePlayer = () => {
                     )}
                 </div>
             </main>
+
+            <ProductSalesModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                product={selectedProduct}
+            />
         </div>
     );
 };
