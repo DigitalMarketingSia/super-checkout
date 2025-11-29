@@ -122,7 +122,7 @@ export const MemberAreaLayout: React.FC<MemberAreaLayoutProps> = ({ children, me
                                     <User className="w-4 h-4 inline mr-2" /> Perfil
                                 </Link>
                                 <button
-                                    onClick={() => { signOut(); navigate('/login'); }}
+                                    onClick={() => { signOut(); navigate(`${appLink}/login`); }}
                                     className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/10"
                                 >
                                     <LogOut className="w-4 h-4 inline mr-2" /> Sair
