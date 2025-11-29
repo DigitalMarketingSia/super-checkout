@@ -14,12 +14,22 @@ import { Orders } from './pages/admin/Orders';
 import { Webhooks } from './pages/admin/Webhooks';
 import { Marketing } from './pages/Marketing';
 import { IntegrationsHub } from './pages/IntegrationsHub';
-import { MembersArea } from './pages/MembersArea';
+import { MemberAreas } from './pages/admin/MemberAreas';
+import { MemberAreaDashboard } from './pages/admin/MemberAreaDashboard';
+import { ContentEditor } from './pages/admin/ContentEditor';
+import { MemberDashboard } from './pages/member/MemberDashboard';
+import { CoursePlayer } from './pages/member/CoursePlayer';
+import { ContentModules } from './pages/member/ContentModules';
 import { PublicCheckout } from './pages/public/PublicCheckout';
 import { PixPayment } from './pages/public/PixPayment';
 import { ThankYou } from './pages/public/ThankYou';
 import { Login } from './pages/Login';
 import { UpdatePassword } from './pages/UpdatePassword';
+import { MemberLogin } from './pages/member/MemberLogin';
+import { MemberSignup } from './pages/member/MemberSignup';
+import { MemberAreaWrapper } from './pages/member/MemberAreaWrapper';
+import { MemberProducts } from './pages/member/MemberProducts';
+import { MemberFAQ } from './pages/member/MemberFAQ';
 import { ThemeProvider } from './context/ThemeContext';
 
 import { storage } from './services/storageService';
@@ -178,7 +188,27 @@ const DomainDispatcher = () => {
       <Route path="/admin/webhooks" element={<ProtectedRoute><Webhooks /></ProtectedRoute>} />
       <Route path="/admin/marketing" element={<ProtectedRoute><Marketing /></ProtectedRoute>} />
       <Route path="/admin/integrations" element={<ProtectedRoute><IntegrationsHub /></ProtectedRoute>} />
-      <Route path="/admin/members" element={<ProtectedRoute><MembersArea /></ProtectedRoute>} />
+      <Route path="/admin/members" element={<ProtectedRoute><MemberAreas /></ProtectedRoute>} />
+      <Route path="/admin/members/:id" element={<ProtectedRoute><MemberAreaDashboard /></ProtectedRoute>} />
+      <Route path="/admin/contents/:id" element={<ProtectedRoute><ContentEditor /></ProtectedRoute>} />
+
+
+      {/* Member Area Public Routes */}
+      <Route path="/app/:slug/login" element={<MemberLogin />} />
+      <Route path="/app/:slug/signup" element={<MemberSignup />} />
+
+      {/* Member Area App Routes with Slug */}
+      <Route path="/app/:slug" element={<ProtectedRoute><MemberAreaWrapper /></ProtectedRoute>}>
+        <Route index element={<MemberDashboard />} />
+        <Route path="products" element={<MemberProducts />} />
+        <Route path="faq" element={<MemberFAQ />} />
+        <Route path="my-list" element={<MemberDashboard />} />
+        <Route path="new" element={<MemberDashboard />} />
+        <Route path="content/:id" element={<ContentModules />} />
+      </Route>
+
+      {/* Course Player (Fullscreen - Outside Wrapper) */}
+      <Route path="/app/:slug/course/:id" element={<ProtectedRoute><CoursePlayer /></ProtectedRoute>} />
 
       {/* Redirect root to Admin */}
       <Route path="/" element={<Navigate to="/admin" replace />} />

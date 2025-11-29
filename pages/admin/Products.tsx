@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Layout } from '../../components/Layout';
 import { storage } from '../../services/storageService';
-import { Product } from '../../types';
+import { Product, Content, Checkout } from '../../types';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { ConfirmModal, AlertModal } from '../../components/ui/Modal';
@@ -22,7 +22,10 @@ const initialFormState = {
   redirect_link: '',
   is_order_bump: false,
   is_upsell: false,
-  active: true
+
+  active: true,
+  member_area_action: 'checkout' as 'checkout' | 'sales_page',
+  member_area_checkout_id: ''
 };
 
 export const Products = () => {
@@ -33,7 +36,13 @@ export const Products = () => {
   const [currentProductId, setCurrentProductId] = useState<string | null>(null);
   const [formData, setFormData] = useState(initialFormState);
   const [uploading, setUploading] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Content Linking State
+  const [availableContents, setAvailableContents] = useState<Content[]>([]);
+  const [selectedContentIds, setSelectedContentIds] = useState<string[]>([]);
+  const [checkouts, setCheckouts] = useState<Checkout[]>([]);
 
   // Modal States
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -72,6 +81,16 @@ export const Products = () => {
     setLoading(true);
     const data = await storage.getProducts();
     setProducts(data);
+
+    // Load available contents for the selector
+    const contents = await storage.getContents();
+
+    setAvailableContents(contents);
+
+    // Load available checkouts
+    const checkoutsData = await storage.getCheckouts();
+    setCheckouts(checkoutsData);
+
     setLoading(false);
   };
 
@@ -97,6 +116,11 @@ export const Products = () => {
         });
       }
 
+      // Save Content Links
+      if (currentProductId) {
+        await storage.setProductContents(currentProductId, selectedContentIds);
+      }
+
       // Reload real data
       await loadData();
       setViewMode('grid');
@@ -104,7 +128,7 @@ export const Products = () => {
       setCurrentProductId(null);
     } catch (error) {
       console.error('Error saving product:', error);
-      showAlert('Erro', 'Erro ao salvar produto. Verifique o console.', 'error');
+      showAlert('Erro', 'Erro ao salvar produto.', 'error');
     } finally {
       setLoading(false);
     }
@@ -165,8 +189,14 @@ export const Products = () => {
         redirect_link: product.redirect_link || '',
         is_order_bump: product.is_order_bump || false,
         is_upsell: product.is_upsell || false,
-        active: product.active
+
+        active: product.active,
+
+        member_area_action: product.member_area_action || 'checkout',
+        member_area_checkout_id: product.member_area_checkout_id || ''
       });
+      // Load linked contents
+      storage.getProductContents(product.id).then(ids => setSelectedContentIds(ids));
     } else {
       setEditingId(null);
       // Generate a new UUID for the new product immediately
@@ -174,6 +204,7 @@ export const Products = () => {
       setCurrentProductId(newId);
 
       setFormData(initialFormState);
+      setSelectedContentIds([]);
     }
     setViewMode('edit');
   };
@@ -428,6 +459,114 @@ export const Products = () => {
                 >
                   <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${formData.is_upsell ? 'translate-x-6' : 'translate-x-1'}`} />
                 </button>
+              </div>
+            </div>
+          </Card>
+
+          {/* Configuração da Área de Membros */}
+          <Card>
+            <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+              <Layers className="w-5 h-5 text-primary" />
+              Configuração da Área de Membros
+            </h3>
+
+            <div className="space-y-6">
+              <div>
+                <label className="block text-sm text-gray-300 mb-2">Ação ao Clicar (para quem não comprou)</label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <label className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all ${formData.member_area_action === 'checkout' || !formData.member_area_action ? 'bg-primary/10 border-primary' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}>
+                    <input
+                      type="radio"
+                      name="member_area_action"
+                      className="hidden"
+                      checked={formData.member_area_action === 'checkout' || !formData.member_area_action}
+                      onChange={() => setFormData({ ...formData, member_area_action: 'checkout' })}
+                    />
+                    <div className="w-4 h-4 rounded-full border border-gray-400 flex items-center justify-center">
+                      {(formData.member_area_action === 'checkout' || !formData.member_area_action) && <div className="w-2 h-2 rounded-full bg-primary" />}
+                    </div>
+                    <div>
+                      <div className="font-medium text-white">Direcionar para Checkout</div>
+                      <div className="text-xs text-gray-400">Envia o usuário direto para o link de pagamento.</div>
+                    </div>
+                  </label>
+
+                  <label className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all ${formData.member_area_action === 'sales_page' ? 'bg-primary/10 border-primary' : 'bg-white/5 border-white/10 hover:bg-white/10'}`}>
+                    <input
+                      type="radio"
+                      name="member_area_action"
+                      className="hidden"
+                      checked={formData.member_area_action === 'sales_page'}
+                      onChange={() => setFormData({ ...formData, member_area_action: 'sales_page' })}
+                    />
+                    <div className="w-4 h-4 rounded-full border border-gray-400 flex items-center justify-center">
+                      {formData.member_area_action === 'sales_page' && <div className="w-2 h-2 rounded-full bg-primary" />}
+                    </div>
+                    <div>
+                      <div className="font-medium text-white">Página de Vendas Interna</div>
+                      <div className="text-xs text-gray-400">Abre um modal com detalhes do produto antes da compra.</div>
+                    </div>
+                  </label>
+                </div>
+
+                {/* Checkout Selector - Only visible if action is 'checkout' */}
+                {(formData.member_area_action === 'checkout' || !formData.member_area_action) && (
+                  <div className="mt-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                    <label className="block text-sm text-gray-300 mb-2">Selecione o Checkout</label>
+                    <select
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all [&>option]:bg-gray-900 [&>option]:text-white"
+                      value={formData.member_area_checkout_id}
+                      onChange={(e) => setFormData({ ...formData, member_area_checkout_id: e.target.value })}
+                    >
+                      <option value="" className="bg-gray-900 text-white">-- Selecione um Checkout --</option>
+                      {checkouts.map(checkout => (
+                        <option key={checkout.id} value={checkout.id} className="bg-gray-900 text-white">
+                          {checkout.name} ({checkout.custom_url_slug})
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-gray-500 mt-2">
+                      O usuário será redirecionado para este checkout específico.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </Card>
+
+          {/* Entrega Automática (Member Area) */}
+          <Card>
+            <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+              <Layers className="w-5 h-5 text-primary" />
+              Entrega Automática (Área de Membros)
+            </h3>
+            <div className="space-y-4">
+              <p className="text-sm text-gray-400">Selecione o conteúdo que será liberado após a compra:</p>
+              <div className="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                {availableContents.length === 0 ? (
+                  <div className="text-sm text-gray-500 italic">Nenhum conteúdo cadastrado. Crie em "Conteúdos".</div>
+                ) : (
+                  availableContents.map(content => (
+                    <label key={content.id} className="flex items-center gap-3 p-3 rounded-xl border border-white/5 bg-white/5 cursor-pointer hover:bg-white/10 transition-colors">
+                      <input
+                        type="checkbox"
+                        className="w-5 h-5 rounded border-gray-600 text-primary focus:ring-primary bg-black/20"
+                        checked={selectedContentIds.includes(content.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedContentIds([...selectedContentIds, content.id]);
+                          } else {
+                            setSelectedContentIds(selectedContentIds.filter(id => id !== content.id));
+                          }
+                        }}
+                      />
+                      <div className="flex-1">
+                        <div className="font-medium text-white">{content.title}</div>
+                        <div className="text-xs text-gray-400 capitalize">{content.type}</div>
+                      </div>
+                    </label>
+                  ))
+                )}
               </div>
             </div>
           </Card>

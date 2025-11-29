@@ -48,6 +48,8 @@ export interface Product {
   // New fields for UI Overhaul
   price_real?: number;    // Preço "Por"
   price_fake?: number;    // Preço "De"
+  member_area_action?: 'checkout' | 'sales_page'; // Ação ao clicar na área de membros
+  member_area_checkout_id?: string; // Checkout específico para redirecionamento
   sku?: string;           // Código
   category?: string;
   redirect_link?: string;
@@ -211,4 +213,161 @@ export interface Integration {
   config: any;
   active: boolean;
   created_at: string;
+}
+
+// --- MEMBER AREA TYPES ---
+
+export interface Content {
+  id: string;
+  title: string;
+  description: string;
+  thumbnail_url: string;
+  type: 'course' | 'pack' | 'software' | 'ebook';
+  member_area_id: string;
+  author_id?: string;
+  created_at: string;
+  updated_at: string;
+  modules_count?: number; // Helper for UI
+  image_vertical_url?: string;
+  image_horizontal_url?: string;
+
+  modules_layout?: 'vertical' | 'horizontal';
+  is_free?: boolean;
+}
+
+export interface Module {
+  id: string;
+  content_id: string;
+  title: string;
+  description: string;
+  order_index: number;
+  created_at: string;
+  lessons?: Lesson[]; // Nested for UI
+  image_vertical_url?: string;
+  image_horizontal_url?: string;
+  is_free?: boolean;
+}
+
+export interface LessonResource {
+  id: string;
+  title: string;
+  image_url: string;
+  link_url: string;
+  button_text: string;
+}
+
+export interface Lesson {
+  id: string;
+  module_id: string;
+  title: string;
+  content_type: 'video' | 'text' | 'file' | 'link' | 'embed';
+  video_url?: string;
+  content_text?: string;
+  file_url?: string;
+  order_index: number;
+  duration?: number;
+  is_free: boolean;
+  created_at: string;
+  image_url?: string;
+  gallery?: LessonResource[];
+}
+
+export interface AccessGrant {
+  id: string;
+  user_id: string;
+  content_id: string;
+  product_id?: string;
+  granted_at: string;
+  status: 'active' | 'revoked' | 'expired';
+  content?: Content; // Joined
+}
+
+export interface MemberArea {
+  id: string;
+  owner_id: string;
+  name: string;
+  slug: string;
+  domain_id?: string;
+  logo_url?: string;
+  primary_color: string;
+  favicon_url?: string;
+  created_at: string;
+  layout_mode?: 'content' | 'module';
+  card_style?: 'standard' | 'flyer';
+  login_image_url?: string;
+  allow_free_signup?: boolean;
+  banner_url?: string;
+  banner_title?: string;
+  banner_description?: string;
+  banner_button_text?: string;
+  banner_button_link?: string;
+  sidebar_config?: SidebarItem[];
+  custom_links?: CustomLink[];
+  faqs?: FAQ[];
+}
+
+export interface CustomLink {
+  id: string;
+  title: string;
+  url: string;
+  icon: string;
+  active: boolean;
+}
+
+export interface FAQ {
+  id: string;
+  question: string;
+  answer: string;
+  active: boolean;
+}
+
+export interface SidebarItem {
+  id: string;
+  title: string;
+  type: 'link' | 'section';
+  url?: string;
+  icon?: string;
+  children?: SidebarItem[];
+}
+
+export interface LessonProgress {
+  id: string;
+  user_id: string;
+  lesson_id: string;
+  completed: boolean;
+  last_position_seconds?: number;
+  updated_at: string;
+}
+
+export interface Track {
+  id: string;
+  member_area_id: string;
+  title: string;
+  type: 'products' | 'contents' | 'modules' | 'lessons';
+  position: number;
+  is_visible: boolean;
+  created_at: string;
+  items?: TrackItem[]; // Nested for UI
+  card_style?: 'vertical' | 'horizontal';
+}
+
+export interface TrackItem {
+  id: string;
+  track_id: string;
+  item_id: string;
+  position: number;
+  created_at: string;
+  // Polymorphic relations - populated based on track type
+  product?: Product;
+  content?: Content;
+  module?: Module;
+  lesson?: Lesson;
+}
+
+export interface Member {
+  user_id: string;
+  email: string;
+  name: string;
+  joined_at: string;
+  status: 'active' | 'revoked' | 'expired';
 }

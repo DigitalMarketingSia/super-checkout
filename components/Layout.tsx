@@ -20,7 +20,8 @@ import {
   LogOut,
   Mail,
   Plug,
-  Users
+  Users,
+  BookOpen
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';

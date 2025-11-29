@@ -1,6 +1,7 @@
 
 import {
-  Product, Offer, Checkout, Gateway, Order, Payment, WebhookLog, Domain, WebhookConfig, Integration
+  Product, Offer, Checkout, Gateway, Order, Payment, WebhookLog, Domain, WebhookConfig, Integration,
+  Content, Module, Lesson, MemberArea, LessonProgress, Track, TrackItem
 } from '../types';
 import { supabase } from './supabase';
 export { supabase };
@@ -10,7 +11,7 @@ export { supabase };
  */
 class StorageService {
 
-  private async getUser() {
+  async getUser() {
     const { data: { session } } = await supabase.auth.getSession();
     return session?.user;
   }
@@ -40,7 +41,79 @@ class StorageService {
       category: p.category,
       redirect_link: p.redirect_link,
       is_order_bump: p.is_order_bump,
-      is_upsell: p.is_upsell
+      is_order_bump: p.is_order_bump,
+      is_upsell: p.is_upsell,
+      member_area_action: p.member_area_action,
+      member_area_checkout_id: p.member_area_checkout_id
+    }));
+  }
+
+  async getMemberAreaProducts(areaId: string): Promise<Product[]> {
+    // 1. Get all PRODUCT tracks for this member area
+    const { data: tracks, error: tracksError } = await supabase
+      .from('tracks')
+      .select('id')
+      .eq('member_area_id', areaId)
+      .eq('type', 'products'); // Filter by track type
+
+    if (tracksError) {
+      console.error('Error fetching tracks for products:', tracksError.message);
+      return [];
+    }
+
+    if (!tracks || tracks.length === 0) return [];
+
+    const trackIds = tracks.map(t => t.id);
+
+    // 2. Get all items from these tracks (they are guaranteed to be products)
+    const { data: trackItems, error: itemsError } = await supabase
+      .from('track_items')
+      .select('item_id')
+      .in('track_id', trackIds);
+
+    if (itemsError) {
+      console.error('Error fetching track items:', itemsError.message);
+      return [];
+    }
+
+    if (!trackItems || trackItems.length === 0) return [];
+
+    const productIds = [...new Set(trackItems.map(i => i.item_id))]; // Unique IDs
+
+    // 3. Get the actual products
+    const { data, error } = await supabase
+      .from('products')
+      .select('*, checkouts:member_area_checkout_id(id, custom_url_slug, domain_id, domains:domain_id(domain))')
+      .in('id', productIds)
+      .eq('active', true)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching member area products:', error.message);
+      return [];
+    }
+
+    return (data || []).map((p: any) => ({
+      id: p.id,
+      name: p.name,
+      description: p.description,
+      active: p.active,
+      imageUrl: p.image_url,
+      price_real: p.price_real,
+      price_fake: p.price_fake,
+      sku: p.sku,
+      category: p.category,
+      redirect_link: p.redirect_link,
+      is_order_bump: p.is_order_bump,
+      is_upsell: p.is_upsell,
+      visible_in_member_area: p.visible_in_member_area,
+      for_sale: p.for_sale,
+      member_area_action: p.member_area_action,
+      member_area_checkout_id: p.member_area_checkout_id,
+      // Helper to resolve redirect link dynamically if checkout is selected
+      redirect_link: (p.member_area_action === 'checkout' && p.checkouts)
+        ? `https://${p.checkouts.domains?.domain || 'checkout.supercheckout.com'}/${p.checkouts.custom_url_slug}`
+        : p.redirect_link
     }));
   }
 
@@ -63,7 +136,11 @@ class StorageService {
       category: product.category,
       redirect_link: product.redirect_link,
       is_order_bump: product.is_order_bump,
-      is_upsell: product.is_upsell
+      is_upsell: product.is_upsell,
+      visible_in_member_area: product.visible_in_member_area,
+      for_sale: product.for_sale,
+      member_area_action: product.member_area_action,
+      member_area_checkout_id: product.member_area_checkout_id
     };
 
     const { data, error } = await supabase
@@ -95,7 +172,11 @@ class StorageService {
       category: product.category,
       redirect_link: product.redirect_link,
       is_order_bump: product.is_order_bump,
-      is_upsell: product.is_upsell
+      is_upsell: product.is_upsell,
+      visible_in_member_area: product.visible_in_member_area,
+      for_sale: product.for_sale,
+      member_area_action: product.member_area_action,
+      member_area_checkout_id: product.member_area_checkout_id
     };
 
     const { data, error } = await supabase
@@ -1002,6 +1083,711 @@ class StorageService {
     const { error } = await supabase.from('webhook_logs').insert(items);
     if (error) console.error('Error saving logs:', error.message);
   }
+
+  // --- MEMBER AREA: CONTENTS ---
+
+  async getContents(memberAreaId?: string): Promise<Content[]> {
+    let query = supabase
+      .from('contents')
+      .select('*, modules_count:modules(count)')
+      .order('created_at', { ascending: false });
+
+    if (memberAreaId) {
+      query = query.eq('member_area_id', memberAreaId);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error fetching contents:', error.message);
+      return [];
+    }
+
+    return data.map((c: any) => ({
+      ...c,
+      modules_count: c.modules_count?.[0]?.count || 0
+    })) as Content[];
+  }
+
+  async createContent(content: Omit<Content, 'id' | 'created_at' | 'updated_at'> & { id?: string }) {
+    const user = await this.getUser();
+    if (!user) throw new Error('No user logged in');
+
+    const record = {
+      id: content.id,
+      title: content.title,
+      description: content.description,
+      thumbnail_url: content.thumbnail_url,
+      type: content.type,
+      member_area_id: content.member_area_id,
+      author_id: user.id,
+      is_free: content.is_free,
+      image_vertical_url: content.image_vertical_url,
+      image_horizontal_url: content.image_horizontal_url,
+      modules_layout: content.modules_layout || 'horizontal'
+    };
+
+    const { data, error } = await supabase
+      .from('contents')
+      .insert(record)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async updateContent(content: Content) {
+    const record = {
+      title: content.title,
+      description: content.description,
+      thumbnail_url: content.thumbnail_url,
+      type: content.type,
+      updated_at: new Date().toISOString(),
+      image_vertical_url: content.image_vertical_url,
+      image_horizontal_url: content.image_horizontal_url,
+      modules_layout: content.modules_layout,
+      is_free: content.is_free
+    };
+
+    const { data, error } = await supabase
+      .from('contents')
+      .update(record)
+      .eq('id', content.id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async deleteContent(id: string) {
+    // 1. Delete files from storage
+    try {
+      const { data: files } = await supabase.storage.from('contents').list(id);
+      if (files && files.length > 0) {
+        const filesToRemove = files.map(f => `${id}/${f.name}`);
+        await supabase.storage.from('contents').remove(filesToRemove);
+      }
+    } catch (error) {
+      console.error('Error deleting content files:', error);
+      // Continue to delete DB record even if storage cleanup fails
+    }
+
+    // 2. Delete DB record
+    const { error } = await supabase.from('contents').delete().eq('id', id);
+    if (error) throw error;
+  }
+
+  async uploadContentThumbnail(file: File, contentId: string): Promise<string> {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${contentId}/thumb_${Date.now()}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('contents') // Ensure this bucket exists!
+      .upload(fileName, file);
+
+    if (uploadError) throw uploadError;
+
+    const { data } = supabase.storage.from('contents').getPublicUrl(fileName);
+    return data.publicUrl;
+  }
+
+  async uploadContentImage(file: File, contentId: string, type: 'vertical' | 'horizontal'): Promise<string> {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${contentId}/${type}_${Date.now()}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('contents')
+      .upload(fileName, file);
+
+    if (uploadError) throw uploadError;
+
+    const { data } = supabase.storage.from('contents').getPublicUrl(fileName);
+    return data.publicUrl;
+  }
+
+  // --- MEMBER AREA: MODULES ---
+
+  async getModules(contentId: string): Promise<Module[]> {
+    const { data, error } = await supabase
+      .from('modules')
+      .select('*, lessons(*)')
+      .eq('content_id', contentId)
+      .order('order_index', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching modules:', error.message);
+      return [];
+    }
+
+    // Sort lessons inside modules
+    const modules = data.map((m: any) => ({
+      ...m,
+      lessons: m.lessons?.sort((a: any, b: any) => a.order_index - b.order_index) || []
+    }));
+
+    return modules as Module[];
+  }
+
+  async getModulesByAreaId(areaId: string): Promise<Module[]> {
+    // First get all contents for the area
+    const { data: contents, error: contentsError } = await supabase
+      .from('contents')
+      .select('id')
+      .eq('member_area_id', areaId);
+
+    if (contentsError || !contents) return [];
+
+    const contentIds = contents.map(c => c.id);
+    if (contentIds.length === 0) return [];
+
+    // Then get modules for these contents
+    const { data, error } = await supabase
+      .from('modules')
+      .select('*, lessons(*)')
+      .in('content_id', contentIds)
+      .order('order_index', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching modules by area:', error.message);
+      return [];
+    }
+
+    return data as Module[];
+  }
+
+  async createModule(module: Partial<Module>) {
+    const record = {
+      id: module.id,
+      content_id: module.content_id,
+      title: module.title,
+      description: module.description,
+      order_index: module.order_index,
+      image_vertical_url: module.image_vertical_url,
+      image_horizontal_url: module.image_horizontal_url,
+      is_free: module.is_free
+    };
+
+    const { data, error } = await supabase
+      .from('modules')
+      .insert(record)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async updateModule(module: Module) {
+    const { data, error } = await supabase
+      .from('modules')
+      .update({
+        title: module.title,
+        description: module.description,
+        order_index: module.order_index,
+        image_vertical_url: module.image_vertical_url,
+        image_horizontal_url: module.image_horizontal_url,
+        is_free: module.is_free
+      })
+      .eq('id', module.id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async deleteModule(id: string) {
+    const { error } = await supabase.from('modules').delete().eq('id', id);
+  }
+
+  async uploadModuleImage(file: File, moduleId: string, type: 'vertical' | 'horizontal'): Promise<string> {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${moduleId}/${type}_${Date.now()}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('contents')
+      .upload(fileName, file);
+
+    if (uploadError) throw uploadError;
+
+    const { data } = supabase.storage.from('contents').getPublicUrl(fileName);
+    return data.publicUrl;
+  }
+
+  // --- MEMBER AREA: LESSONS ---
+
+  async createLesson(lesson: Omit<Lesson, 'id' | 'created_at'>) {
+    const { data, error } = await supabase
+      .from('lessons')
+      .insert(lesson)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async updateLesson(lesson: Lesson) {
+    const { data, error } = await supabase
+      .from('lessons')
+      .update({
+        title: lesson.title,
+        content_type: lesson.content_type,
+        video_url: lesson.video_url,
+        content_text: lesson.content_text,
+        file_url: lesson.file_url,
+        order_index: lesson.order_index,
+        is_free: lesson.is_free,
+        duration: lesson.duration,
+        image_url: lesson.image_url,
+        gallery: lesson.gallery
+      })
+      .eq('id', lesson.id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async deleteLesson(id: string) {
+    const { error } = await supabase.from('lessons').delete().eq('id', id);
+    if (error) throw error;
+  }
+
+  async uploadLessonImage(file: File, lessonId: string): Promise<string> {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${lessonId}/card_${Date.now()}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('contents')
+      .upload(fileName, file);
+
+    if (uploadError) throw uploadError;
+
+    const { data } = supabase.storage.from('contents').getPublicUrl(fileName);
+    return data.publicUrl;
+  }
+
+
+  // --- PRODUCT - CONTENT LINKING ---
+
+  async getProductContents(productId: string): Promise<string[]> {
+    const { data, error } = await supabase
+      .from('product_contents')
+      .select('content_id')
+      .eq('product_id', productId);
+
+    if (error) {
+      console.error('Error fetching product contents:', error.message);
+      return [];
+    }
+    return data.map((r: any) => r.content_id);
+  }
+
+  async setProductContents(productId: string, contentIds: string[]) {
+    // 1. Remove existing links
+    await supabase.from('product_contents').delete().eq('product_id', productId);
+
+    if (contentIds.length === 0) return;
+
+    // 2. Insert new links
+    const records = contentIds.map(cid => ({
+      product_id: productId,
+      content_id: cid
+    }));
+
+    const { error } = await supabase.from('product_contents').insert(records);
+    if (error) throw error;
+  }
+
+  // --- LESSON PROGRESS ---
+
+  async getLessonProgress(lessonId: string): Promise<LessonProgress | null> {
+    const user = await this.getUser();
+    if (!user) return null;
+
+    const { data, error } = await supabase
+      .from('lesson_progress')
+      .select('*')
+      .eq('lesson_id', lessonId)
+      .eq('user_id', user.id)
+      .single();
+
+    if (error) return null;
+    return data as LessonProgress;
+  }
+
+  // --- ACCESS GRANTS ---
+
+  async getAccessGrants(): Promise<AccessGrant[]> {
+    const user = await this.getUser();
+    if (!user) return [];
+
+    const { data, error } = await supabase
+      .from('access_grants')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('status', 'active');
+
+    if (error) {
+      console.error('Error fetching access grants:', error.message);
+      return [];
+    }
+    return data as AccessGrant[];
+  }
+
+  async updateLessonProgress(progress: { lesson_id: string, completed: boolean, last_position_seconds?: number }) {
+    const user = await this.getUser();
+    if (!user) return;
+
+    const { error } = await supabase
+      .from('lesson_progress')
+      .upsert({
+        user_id: user.id,
+        lesson_id: progress.lesson_id,
+        completed: progress.completed,
+        last_position_seconds: progress.last_position_seconds,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'user_id, lesson_id' });
+
+    if (error) console.error('Error updating progress:', error);
+  }
+
+  // --- MEMBER AREAS ---
+
+  async getMemberAreas(): Promise<MemberArea[]> {
+    const user = await this.getUser();
+    if (!user) return [];
+
+    const { data, error } = await supabase
+      .from('member_areas')
+      .select('*')
+      .eq('owner_id', user.id)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching member areas:', error.message);
+      return [];
+    }
+    return data as MemberArea[];
+  }
+
+  async getMemberAreaById(id: string): Promise<MemberArea | null> {
+    const { data, error } = await supabase
+      .from('member_areas')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) return null;
+    return data as MemberArea;
+  }
+
+  async getMemberAreaBySlug(slug: string): Promise<MemberArea | null> {
+    const { data, error } = await supabase
+      .from('member_areas')
+      .select('*')
+      .eq('slug', slug)
+      .single();
+
+    if (error) return null;
+    return data as MemberArea;
+  }
+
+  async getMemberAreaMembers(areaId: string): Promise<Member[]> {
+    const { data, error } = await supabase.rpc('get_member_area_members', { area_id: areaId });
+
+    if (error) {
+      console.error('Error fetching member area members:', error.message);
+      return [];
+    }
+    return data as Member[];
+  }
+
+  async createMemberArea(area: Omit<MemberArea, 'id' | 'created_at'>) {
+    const user = await this.getUser();
+    if (!user) throw new Error('No user logged in');
+
+    const { data, error } = await supabase
+      .from('member_areas')
+      .insert({
+        ...area,
+        owner_id: user.id,
+        login_image_url: area.login_image_url,
+        allow_free_signup: area.allow_free_signup,
+        banner_url: area.banner_url,
+        banner_title: area.banner_title,
+        banner_description: area.banner_description,
+        banner_button_text: area.banner_button_text,
+        banner_button_link: area.banner_button_link,
+        sidebar_config: area.sidebar_config,
+        custom_links: area.custom_links,
+        faqs: area.faqs
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async updateMemberArea(area: MemberArea) {
+    const { data, error } = await supabase
+      .from('member_areas')
+      .update({
+        name: area.name,
+        slug: area.slug,
+        domain_id: area.domain_id,
+        logo_url: area.logo_url,
+        primary_color: area.primary_color,
+        favicon_url: area.favicon_url,
+        favicon_url: area.favicon_url,
+        layout_mode: area.layout_mode,
+        card_style: area.card_style,
+        login_image_url: area.login_image_url,
+        allow_free_signup: area.allow_free_signup,
+        banner_url: area.banner_url,
+        banner_title: area.banner_title,
+        banner_description: area.banner_description,
+        banner_button_text: area.banner_button_text,
+        banner_button_link: area.banner_button_link,
+        sidebar_config: area.sidebar_config,
+        custom_links: area.custom_links,
+        faqs: area.faqs
+      })
+      .eq('id', area.id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async deleteMemberArea(id: string) {
+    // 1. Delete files from storage (member-areas bucket)
+    try {
+      const { data: files } = await supabase.storage.from('member-areas').list(id);
+      if (files && files.length > 0) {
+        const filesToRemove = files.map(f => `${id}/${f.name}`);
+        await supabase.storage.from('member-areas').remove(filesToRemove);
+      }
+    } catch (error) {
+      console.error('Error deleting member area files:', error);
+    }
+
+    // 2. Delete DB record
+    const { error } = await supabase.from('member_areas').delete().eq('id', id);
+    if (error) throw error;
+  }
+
+  async uploadMemberAreaLogo(file: File, areaId: string): Promise<string> {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${areaId}/logo_${Date.now()}.${fileExt}`; // Removed 'member-areas/' prefix as it's now the bucket name
+
+    const { error: uploadError } = await supabase.storage
+      .from('member-areas') // Use dedicated bucket
+      .upload(fileName, file, {
+        upsert: true
+      });
+
+    if (uploadError) throw uploadError;
+
+    const { data } = supabase.storage.from('member-areas').getPublicUrl(fileName);
+    return data.publicUrl;
+  }
+
+  async uploadMemberAreaFavicon(file: File, areaId: string): Promise<string> {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${areaId}/favicon_${Date.now()}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('member-areas')
+      .upload(fileName, file, {
+        upsert: true
+      });
+
+    if (uploadError) throw uploadError;
+
+    const { data } = supabase.storage.from('member-areas').getPublicUrl(fileName);
+    return data.publicUrl;
+  }
+
+  async uploadMemberAreaLoginImage(file: File, areaId: string): Promise<string> {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${areaId}/login_${Date.now()}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('member-areas')
+      .upload(fileName, file, {
+        upsert: true
+      });
+
+    if (uploadError) throw uploadError;
+
+    const { data } = supabase.storage.from('member-areas').getPublicUrl(fileName);
+    return data.publicUrl;
+  }
+
+  async uploadMemberAreaBanner(file: File, areaId: string): Promise<string> {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${areaId}/banner_${Date.now()}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('member-areas')
+      .upload(fileName, file, {
+        upsert: true
+      });
+
+    if (uploadError) throw uploadError;
+
+    const { data } = supabase.storage.from('member-areas').getPublicUrl(fileName);
+    return data.publicUrl;
+  }
+
+
+  // --- TRACKS ---
+
+  async getTracks(memberAreaId: string): Promise<Track[]> {
+    const { data, error } = await supabase
+      .from('tracks')
+      .select('*')
+      .eq('member_area_id', memberAreaId)
+      .order('position');
+
+    if (error) {
+      console.error('Error fetching tracks:', error.message);
+      return [];
+    }
+    return data as Track[];
+  }
+
+  async getTrackWithItems(trackId: string): Promise<Track | null> {
+    // 1. Get Track
+    const { data: track, error } = await supabase
+      .from('tracks')
+      .select('*')
+      .eq('id', trackId)
+      .single();
+
+    if (error || !track) return null;
+
+    // 2. Get Items
+    const { data: items, error: itemsError } = await supabase
+      .from('track_items')
+      .select('*')
+      .eq('track_id', trackId)
+      .order('position');
+
+    if (itemsError) return null;
+
+    // 3. Populate Items based on Track Type
+    const populatedItems: TrackItem[] = [];
+
+    if (items && items.length > 0) {
+      const itemIds = items.map(i => i.item_id);
+      console.log(`[getTrackWithItems] Track: ${track.title}, Type: ${track.type}, Items: ${items.length}`);
+
+      let relatedData: any[] = [];
+
+      if (track.type === 'products') {
+        const { data } = await supabase
+          .from('products')
+          .select('*, checkouts:member_area_checkout_id(id, custom_url_slug, domain_id, domains:domain_id(domain))')
+          .in('id', itemIds);
+        relatedData = data || [];
+      } else if (track.type === 'contents') {
+        const { data } = await supabase.from('contents').select('*').in('id', itemIds);
+        relatedData = data || [];
+      } else if (track.type === 'modules') {
+        const { data } = await supabase.from('modules').select('*').in('id', itemIds);
+        relatedData = data || [];
+      } else if (track.type === 'lessons') {
+        const { data } = await supabase.from('lessons').select('*').in('id', itemIds);
+        relatedData = data || [];
+      }
+
+      // Merge
+      console.log(`[getTrackWithItems] Related Data Found: ${relatedData.length}`);
+      populatedItems.push(...items.map((item: any) => {
+        const related = relatedData.find(r => r.id === item.item_id);
+        // Map image_url to imageUrl for Products to match interface
+        if (track.type === 'products' && related) {
+          related.imageUrl = related.image_url;
+
+          // Construct redirect link if needed
+          if ((!related.member_area_action || related.member_area_action === 'checkout') && related.checkouts) {
+            related.redirect_link = `https://${related.checkouts.domains?.domain || 'checkout.supercheckout.com'}/${related.checkouts.custom_url_slug}`;
+          }
+        }
+
+        return {
+          ...item,
+          product: track.type === 'products' ? related : undefined,
+          content: track.type === 'contents' ? related : undefined,
+          module: track.type === 'modules' ? related : undefined,
+          lesson: track.type === 'lessons' ? related : undefined,
+        };
+      }));
+    }
+
+    return { ...track, items: populatedItems };
+  }
+
+  async createTrack(track: Omit<Track, 'id' | 'created_at'>) {
+    const { data, error } = await supabase
+      .from('tracks')
+      .insert(track)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async updateTrack(track: Partial<Track> & { id: string }) {
+    const { data, error } = await supabase
+      .from('tracks')
+      .update(track)
+      .eq('id', track.id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async deleteTrack(id: string) {
+    const { error } = await supabase.from('tracks').delete().eq('id', id);
+    if (error) throw error;
+  }
+
+  async addTrackItem(trackId: string, itemId: string, position: number) {
+    const { data, error } = await supabase
+      .from('track_items')
+      .insert({ track_id: trackId, item_id: itemId, position })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async removeTrackItem(itemId: string) {
+    const { error } = await supabase.from('track_items').delete().eq('id', itemId);
+    if (error) throw error;
+  }
+
+  async updateTrackPositions(updates: { id: string, position: number }[]) {
+    // Supabase doesn't support bulk update easily with different values, so loop for now or use RPC
+    // For small number of tracks, loop is fine.
+    for (const update of updates) {
+      await supabase.from('tracks').update({ position: update.position }).eq('id', update.id);
+    }
+  }
+
 }
 
 export const storage = new StorageService();
