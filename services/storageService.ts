@@ -1157,7 +1157,7 @@ class StorageService {
     })) as Content[];
   }
 
-  async createContent(content: Omit<Content, 'id' | 'created_at' | 'updated_at'> & { id?: string }) {
+  async createContent(content: Omit<Content, 'id' | 'created_at' | 'updated_at'> & { id?: string }, productId?: string) {
     const user = await this.getUser();
     if (!user) throw new Error('No user logged in');
 
@@ -1182,10 +1182,15 @@ class StorageService {
       .single();
 
     if (error) throw error;
+
+    if (productId) {
+      await this.setContentProduct(data.id, productId);
+    }
+
     return data;
   }
 
-  async updateContent(content: Content) {
+  async updateContent(content: Content, productId?: string) {
     const record = {
       title: content.title,
       description: content.description,
@@ -1206,6 +1211,11 @@ class StorageService {
       .single();
 
     if (error) throw error;
+
+    if (productId !== undefined) {
+      await this.setContentProduct(content.id, productId || null);
+    }
+
     return data;
   }
 
@@ -1448,6 +1458,20 @@ class StorageService {
     }));
 
     const { error } = await supabase.from('product_contents').insert(records);
+    if (error) throw error;
+  }
+
+  async setContentProduct(contentId: string, productId: string | null) {
+    // 1. Remove existing links for this content (ensure 1 product per content for this flow)
+    await supabase.from('product_contents').delete().eq('content_id', contentId);
+
+    if (!productId) return;
+
+    // 2. Insert new link
+    const { error } = await supabase.from('product_contents').insert({
+      product_id: productId,
+      content_id: contentId
+    });
     if (error) throw error;
   }
 
