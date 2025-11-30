@@ -273,6 +273,7 @@ export interface Lesson {
   image_url?: string;
   gallery?: LessonResource[];
   associated_product?: Product;
+  module?: Module; // Populated in some queries
 }
 
 export interface AccessGrant {

@@ -114,9 +114,9 @@ export const CoursePlayer = () => {
                     setSelectedProduct(product);
                     setIsModalOpen(true);
                 }
-            });
+            }, { content: content || undefined });
         }
-    }, [currentLesson, loading, accessGrants]);
+    }, [currentLesson, loading, accessGrants, content]);
 
     const handleLessonSelect = (lesson: Lesson) => {
         handleAccess(lesson, {
@@ -132,7 +132,7 @@ export const CoursePlayer = () => {
                 setSelectedProduct(product);
                 setIsModalOpen(true);
             }
-        });
+        }, { content: content || undefined });
     };
 
     const toggleModule = (moduleId: string) => {

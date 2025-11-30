@@ -5,13 +5,14 @@ import { AccessGrant, Content, Module, Lesson, Product, TrackItem } from '../typ
 export type AccessAction = 'ACCESS' | 'LOGIN' | 'SALES_MODAL';
 
 interface UseAccessControlResult {
-    checkAccess: (item: TrackItem | Content | Module | Lesson | Product) => AccessAction;
+    checkAccess: (item: TrackItem | Content | Module | Lesson | Product, context?: { content?: Content }) => AccessAction;
     handleAccess: (
         item: TrackItem | Content | Module | Lesson | Product,
         callbacks: {
             onAccess: () => void;
             onSalesModal: (product?: Product) => void;
-        }
+        },
+        context?: { content?: Content }
     ) => void;
 }
 
@@ -20,7 +21,10 @@ export const useAccessControl = (accessGrants: AccessGrant[] = []): UseAccessCon
     const navigate = useNavigate();
     const { memberArea } = useOutletContext<{ memberArea: any }>() || {};
 
-    const checkAccess = (item: TrackItem | Content | Module | Lesson | Product): AccessAction => {
+    const checkAccess = (
+        item: TrackItem | Content | Module | Lesson | Product,
+        context?: { content?: Content }
+    ): AccessAction => {
         // Normalize item to check properties
         let isFree = false;
         let productId: string | undefined;
@@ -42,13 +46,27 @@ export const useAccessControl = (accessGrants: AccessGrant[] = []): UseAccessCon
         } else if ('lesson' in item && item.lesson) {
             // It's a TrackItem with lesson
             isFree = item.lesson.is_free || false;
-            // We'd need to know the parent content/module to check access fully, 
-            // but usually lessons inherit access. For now, assume strict check if passed directly.
+            // Try to get contentId from context if available
+            if (context?.content) {
+                contentId = context.content.id;
+            } else if (item.lesson.module?.content_id) {
+                // Fallback: Check if lesson has module populated with content_id
+                contentId = item.lesson.module.content_id;
+            }
         } else if ('is_free' in item) {
             // Direct Content/Module/Lesson object
             isFree = (item as any).is_free || false;
             if ('content_id' in item) contentId = (item as any).content_id;
             if ('id' in item && !('content_id' in item) && !('video_url' in item)) contentId = (item as any).id; // Content object
+
+            // If it's a Lesson (has video_url or content_text) and we have context
+            if (('video_url' in item || 'content_text' in item)) {
+                if (context?.content) {
+                    contentId = context.content.id;
+                } else if ((item as Lesson).module?.content_id) {
+                    contentId = (item as Lesson).module?.content_id;
+                }
+            }
         } else if ('price_real' in item) {
             // Direct Product object
             product = item as Product;
@@ -92,9 +110,10 @@ export const useAccessControl = (accessGrants: AccessGrant[] = []): UseAccessCon
         callbacks: {
             onAccess: () => void;
             onSalesModal: (product?: Product) => void;
-        }
+        },
+        context?: { content?: Content }
     ) => {
-        const action = checkAccess(item);
+        const action = checkAccess(item, context);
 
         if (action === 'LOGIN') {
             const appLink = memberArea ? `/app/${memberArea.slug}` : '/app';
@@ -120,9 +139,11 @@ export const useAccessControl = (accessGrants: AccessGrant[] = []): UseAccessCon
                 // Direct Content/Module/Lesson object
                 productToSell = (item as any).associated_product;
             }
-            // For content/module/lesson, we might not know WHICH product to sell without more info.
-            // The caller might need to handle fetching the associated product.
-            // But we can pass what we have.
+
+            // Fallback: If we have context content and it has a product, use that
+            if (!productToSell && context?.content?.associated_product) {
+                productToSell = context.content.associated_product;
+            }
 
             callbacks.onSalesModal(productToSell);
         } else {
