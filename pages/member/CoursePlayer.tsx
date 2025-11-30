@@ -392,7 +392,7 @@ export const CoursePlayer = () => {
 
                         <div className="flex-1 overflow-y-auto custom-scrollbar">
                             {filteredModules.map((module, index) => (
-                                <div key={module.id} className="border-b border-white/5 mb-4 last:mb-0">
+                                <div key={module.id} className="border-b border-white/5 mb-6 last:mb-0">
                                     <div
                                         onClick={() => toggleModule(module.id)}
                                         className="p-0 cursor-pointer hover:bg-white/5 transition-colors"
@@ -421,7 +421,7 @@ export const CoursePlayer = () => {
 
                                     {/* Lessons List (Accordion) */}
                                     {expandedModuleId === module.id && (
-                                        <div className="bg-transparent p-2 space-y-4">
+                                        <div className="bg-transparent px-2 pb-2 pt-6 space-y-4">
                                             {module.lessons?.map((lesson, lIndex) => {
                                                 const isActive = currentLesson?.id === lesson.id;
                                                 const isCompleted = progressMap[lesson.id];
