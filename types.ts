@@ -274,6 +274,7 @@ export interface Lesson {
   gallery?: LessonResource[];
   associated_product?: Product;
   module?: Module; // Populated in some queries
+  content_order?: string[]; // e.g. ['video', 'text', 'gallery', 'file']
 }
 
 export interface AccessGrant {

@@ -178,343 +178,357 @@ export const CoursePlayer = () => {
         const hasNext = currentIndex < allLessons.length - 1;
 
         return (
+        const renderSection = (type: string) => {
+                switch (type) {
+                    case 'video':
+                        return currentLesson.video_url ? (
+                            <div key="video" className="aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border border-white/10 w-full">
+                                <iframe
+                                    src={currentLesson.video_url.replace('watch?v=', 'embed/')}
+                                    className="w-full h-full"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                    allowFullScreen
+                                />
+                            </div>
+                        ) : null;
+
+                    case 'text':
+                        return currentLesson.content_text ? (
+                            <div key="text" className="bg-white/5 rounded-xl p-8 border border-white/5">
+                                <div className="prose prose-invert max-w-none whitespace-pre-wrap">
+                                    {currentLesson.content_text}
+                                </div>
+                            </div>
+                        ) : null;
+
+                    case 'file':
+                        return currentLesson.file_url ? (
+                            <div key="file" className="bg-white/5 rounded-xl p-6 border border-white/5 flex items-center justify-between">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-3 bg-white/5 rounded-lg">
+                                        <FileText className="w-6 h-6 text-primary" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-white text-sm">Material Complementar</h3>
+                                        <p className="text-xs text-gray-400">Clique para acessar o arquivo ou link externo</p>
+                                    </div>
+                                </div>
+                                <a
+                                    href={currentLesson.file_url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                                >
+                                    <Download className="w-4 h-4" /> Acessar Recurso
+                                </a>
+                            </div>
+                        ) : null;
+
+                    case 'gallery':
+                        return (currentLesson.gallery && currentLesson.gallery.length > 0) ? (
+                            <div key="gallery" className="pt-8 border-t border-white/5">
+                                <h3 className="text-xl font-bold text-white mb-6">Galeria de Recursos</h3>
+                                <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                    {currentLesson.gallery.map((resource) => (
+                                        <div key={resource.id} className="bg-[#1a1e26] rounded-xl overflow-hidden border border-white/5 hover:border-white/10 transition-all group">
+                                            <div className="aspect-video w-full bg-black/20 relative overflow-hidden">
+                                                {resource.image_url ? (
+                                                    <img src={resource.image_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center bg-white/5">
+                                                        <FileText className="w-10 h-10 text-gray-600" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="p-3">
+                                                <h4 className="font-bold text-white mb-2 text-sm line-clamp-2 leading-snug">{resource.title}</h4>
+                                                <a
+                                                    href={resource.link_url}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="block w-full text-center py-2 rounded-lg font-bold text-xs transition-colors bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 hover:text-white"
+                                                >
+                                                    Acessar
+                                                </a>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ) : null;
+
+                    default:
+                        return null;
+                }
+            };
+
+        const contentOrder = currentLesson.content_order || ['video', 'text', 'file', 'gallery'];
+
+        return (
             <div className="LESSON-CONTAINER w-full max-w-[1100px] mx-auto px-6 space-y-8 pb-20">
                 <div className="space-y-8">
-                    {/* Video Section */}
-                    {currentLesson.video_url && (
-                        <div className="aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border border-white/10 w-full">
-                            <iframe
-                                src={currentLesson.video_url.replace('watch?v=', 'embed/')}
-                                className="w-full h-full"
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                allowFullScreen
-                            />
-                        </div>
-                    )}
-
-                    {/* Text Content */}
-                    {currentLesson.content_text && (
-                        <div className="bg-white/5 rounded-xl p-8 border border-white/5">
-                            <div className="prose prose-invert max-w-none whitespace-pre-wrap">
-                                {currentLesson.content_text}
-                            </div>
-                        </div>
-                    )}
-
-                    {/* File/Download Section */}
-                    {currentLesson.file_url && (
-                        <div className="bg-white/5 rounded-xl p-6 border border-white/5 flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                                <div className="p-3 bg-white/5 rounded-lg">
-                                    <FileText className="w-6 h-6 text-primary" />
-                                </div>
-                                <div>
-                                    <h3 className="font-bold text-white text-sm">Material Complementar</h3>
-                                    <p className="text-xs text-gray-400">Clique para acessar o arquivo ou link externo</p>
-                                </div>
-                            </div>
-                            <a
-                                href={currentLesson.file_url}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
-                            >
-                                <Download className="w-4 h-4" /> Acessar Recurso
-                            </a>
-                        </div>
-                    )}
-                </div>
-
-                {/* Gallery Section */}
-                {currentLesson.gallery && currentLesson.gallery.length > 0 && (
-                    <div className="pt-8 border-t border-white/5">
-                        <h3 className="text-xl font-bold text-white mb-6">Galeria de Recursos</h3>
-                        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                            {currentLesson.gallery.map((resource) => (
-                                <div key={resource.id} className="bg-[#1a1e26] rounded-xl overflow-hidden border border-white/5 hover:border-white/10 transition-all group">
-                                    <div className="aspect-video w-full bg-black/20 relative overflow-hidden">
-                                        {resource.image_url ? (
-                                            <img src={resource.image_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                                        ) : (
-                                            <div className="w-full h-full flex items-center justify-center bg-white/5">
-                                                <FileText className="w-10 h-10 text-gray-600" />
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="p-3">
-                                        <h4 className="font-bold text-white mb-2 text-sm line-clamp-2 leading-snug">{resource.title}</h4>
-                                        <a
-                                            href={resource.link_url}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                            className="block w-full text-center py-2 rounded-lg font-bold text-xs transition-colors bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 hover:text-white"
-                                        >
-                                            Acessar
-                                        </a>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {/* Footer Actions & Navigation */}
-                <div className="flex flex-col md:flex-row items-center justify-between gap-6 pt-8 border-t border-white/10 pb-8">
-                    <div className="w-full md:w-auto">
-                        <h1 className="text-2xl font-bold text-white mb-1">{currentLesson.title}</h1>
-                        <p className="text-gray-400 text-sm">Módulo: {modules.find(m => m.id === currentLesson.module_id)?.title}</p>
-                    </div>
-
-                    <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={handlePrevious}
-                                disabled={!hasPrevious}
-                                className={`p-3 rounded-full border transition-colors ${!hasPrevious ? 'border-white/5 text-gray-600 cursor-not-allowed' : 'border-white/10 text-white hover:bg-white/10 hover:border-white/20'}`}
-                            >
-                                <ChevronLeft className="w-5 h-5" />
-                            </button>
-                            <button
-                                onClick={handleNext}
-                                disabled={!hasNext}
-                                className={`p-3 rounded-full border transition-colors ${!hasNext ? 'border-white/5 text-gray-600 cursor-not-allowed' : 'border-white/10 text-white hover:bg-white/10 hover:border-white/20'}`}
-                            >
-                                <ChevronRight className="w-5 h-5" />
-                            </button>
-                        </div>
-
-                        <button
-                            onClick={handleMarkCompleted}
-                            className={`flex items-center gap-2 px-6 py-3 rounded-full font-bold transition-all ${progressMap[currentLesson.id]
-                                ? 'bg-green-500 text-white hover:bg-green-600'
-                                : 'bg-white/10 text-white hover:bg-white/20'
-                                }`}
-                            style={progressMap[currentLesson.id] && memberArea?.primary_color ? { backgroundColor: memberArea.primary_color } : {}}
-                        >
-                            {progressMap[currentLesson.id] ? (
-                                <>
-                                    <CheckCircle className="w-5 h-5" /> Concluída
-                                </>
-                            ) : (
-                                <>
-                                    <Circle className="w-5 h-5" /> Marcar como Concluída
-                                </>
-                            )}
-                        </button>
-                    </div>
+                    {contentOrder.map(type => renderSection(type))}
                 </div>
             </div>
         );
+
+        {/* Footer Actions & Navigation */ }
+        <div className="flex flex-col md:flex-row items-center justify-between gap-6 pt-8 border-t border-white/10 pb-8">
+            <div className="w-full md:w-auto">
+                <h1 className="text-2xl font-bold text-white mb-1">{currentLesson.title}</h1>
+                <p className="text-gray-400 text-sm">Módulo: {modules.find(m => m.id === currentLesson.module_id)?.title}</p>
+            </div>
+
+            <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={handlePrevious}
+                        disabled={!hasPrevious}
+                        className={`p-3 rounded-full border transition-colors ${!hasPrevious ? 'border-white/5 text-gray-600 cursor-not-allowed' : 'border-white/10 text-white hover:bg-white/10 hover:border-white/20'}`}
+                    >
+                        <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <button
+                        onClick={handleNext}
+                        disabled={!hasNext}
+                        className={`p-3 rounded-full border transition-colors ${!hasNext ? 'border-white/5 text-gray-600 cursor-not-allowed' : 'border-white/10 text-white hover:bg-white/10 hover:border-white/20'}`}
+                    >
+                        <ChevronRight className="w-5 h-5" />
+                    </button>
+                </div>
+
+                <button
+                    onClick={handleMarkCompleted}
+                    className={`flex items-center gap-2 px-6 py-3 rounded-full font-bold transition-all ${progressMap[currentLesson.id]
+                        ? 'bg-green-500 text-white hover:bg-green-600'
+                        : 'bg-white/10 text-white hover:bg-white/20'
+                        }`}
+                    style={progressMap[currentLesson.id] && memberArea?.primary_color ? { backgroundColor: memberArea.primary_color } : {}}
+                >
+                    {progressMap[currentLesson.id] ? (
+                        <>
+                            <CheckCircle className="w-5 h-5" /> Concluída
+                        </>
+                    ) : (
+                        <>
+                            <Circle className="w-5 h-5" /> Marcar como Concluída
+                        </>
+                    )}
+                </button>
+            </div>
+        </div>
+            </div >
+        );
     };
 
-    const primaryColor = memberArea?.primary_color || '#dc2626'; // Default red
+const primaryColor = memberArea?.primary_color || '#dc2626'; // Default red
 
-    return (
-        <div className="flex h-screen bg-[#0D1118] text-white overflow-hidden">
-            {/* Sidebar */}
-            <aside
-                className={`
+return (
+    <div className="flex h-screen bg-[#0D1118] text-white overflow-hidden">
+        {/* Sidebar */}
+        <aside
+            className={`
           fixed md:static inset-y-0 left-0 z-50 bg-gradient-to-b from-[#0f131a] to-[#0b0f16] border-r border-white/5 flex flex-col transition-all duration-300
           ${sidebarOpen ? 'translate-x-0 w-80' : '-translate-x-full md:translate-x-0 md:w-20'}
         `}
-            >
-                {sidebarOpen ? (
-                    <>
-                        <div className="p-4 flex items-center justify-between sticky top-0 bg-[#0f131a]/95 backdrop-blur-sm z-20">
-                            <h2 className="font-bold truncate pr-4 text-sm uppercase tracking-wider text-gray-400">{content?.title || 'Carregando...'}</h2>
-                            <button
-                                onClick={() => setSidebarOpen(false)}
-                                className="p-2 text-white hover:bg-white/10 rounded-lg transition-colors"
-                                style={{ backgroundColor: primaryColor }}
-                            >
-                                <PanelLeftClose className="w-5 h-5" />
-                            </button>
-                        </div>
-
-                        {/* Search Bar */}
-                        <div className="px-4 pb-4 border-b border-white/5 sticky top-[61px] bg-[#0f131a]/95 backdrop-blur-sm z-20">
-                            <div className="relative">
-                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
-                                <input
-                                    id="search-input"
-                                    type="text"
-                                    placeholder="Buscar conteúdo"
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full bg-[#1a1e26] border-none rounded-full py-2.5 pl-10 pr-4 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-white/20 transition-all"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="flex-1 overflow-y-auto custom-scrollbar">
-                            {modules.map((module, index) => (
-                                <div key={module.id} className="border-b border-white/5">
-                                    <div
-                                        onClick={() => toggleModule(module.id)}
-                                        className="p-0 cursor-pointer hover:bg-white/5 transition-colors"
-                                    >
-                                        {/* Module Card Header */}
-                                        <div className="relative h-24 w-full overflow-hidden">
-                                            {module.image_horizontal_url ? (
-                                                <img src={module.image_horizontal_url} className="w-full h-full object-cover opacity-60" />
-                                            ) : (
-                                                <div className="w-full h-full bg-gradient-to-r from-gray-800 to-gray-900" />
-                                            )}
-                                            <div className="absolute inset-0 bg-black/40 flex items-center justify-between p-4">
-                                                <div className="flex-1 pr-4">
-                                                    <span className="text-xs text-gray-300 uppercase font-bold tracking-wider mb-1 block">Módulo {index + 1}</span>
-                                                    <h3 className="text-sm font-bold text-white line-clamp-2 leading-tight">{module.title}</h3>
-                                                </div>
-                                                {expandedModuleId === module.id ? <ChevronUp size={18} className="text-white" /> : <ChevronDown size={18} className="text-white" />}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Lessons List (Accordion) */}
-                                    {expandedModuleId === module.id && (
-                                        <div className="bg-transparent p-2 space-y-1">
-                                            {module.lessons?.map((lesson, lIndex) => {
-                                                const isActive = currentLesson?.id === lesson.id;
-                                                const isCompleted = progressMap[lesson.id];
-
-                                                // Determine thumbnail
-                                                let thumbnailUrl = lesson.image_url;
-                                                if (!thumbnailUrl && lesson.video_url) {
-                                                    // Try to get YT thumbnail
-                                                    const videoId = lesson.video_url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/)?.[1];
-                                                    if (videoId) {
-                                                        thumbnailUrl = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
-                                                    }
-                                                }
-
-                                                return (
-                                                    <button
-                                                        key={lesson.id}
-                                                        onClick={() => handleLessonSelect(lesson)}
-                                                        className={`group w-full text-left p-2 flex items-center gap-3 rounded-xl transition-all border border-transparent ${isActive
-                                                            ? 'bg-[#1c212c] border-white/10 shadow-lg'
-                                                            : 'bg-[#131720] hover:bg-[#1a1e26] border-transparent'
-                                                            }`}
-                                                    >
-                                                        {/* Thumbnail */}
-                                                        <div className="relative w-24 aspect-video flex-shrink-0 bg-gray-800 rounded-lg overflow-hidden shadow-sm">
-                                                            {thumbnailUrl ? (
-                                                                <img src={thumbnailUrl} className={`w-full h-full object-cover transition-opacity ${isActive ? 'opacity-40' : 'opacity-80 group-hover:opacity-100'}`} alt="" />
-                                                            ) : (
-                                                                <div className="w-full h-full flex items-center justify-center text-gray-600">
-                                                                    <FileText size={20} />
-                                                                </div>
-                                                            )}
-
-                                                            {isActive && (
-                                                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-[1px]">
-                                                                    <span className="text-[9px] font-bold text-white uppercase tracking-wider bg-black/60 px-1.5 py-0.5 rounded-full">Tocando</span>
-                                                                </div>
-                                                            )}
-                                                        </div>
-
-                                                        {/* Info */}
-                                                        <div className="flex-1 min-w-0 py-1">
-                                                            <p className={`text-sm font-medium line-clamp-2 leading-snug ${isActive ? 'text-white' : 'text-gray-300 group-hover:text-white'}`}>
-                                                                {lesson.title}
-                                                            </p>
-                                                        </div>
-
-                                                        {/* Status */}
-                                                        <div className="flex-shrink-0 pr-1">
-                                                            {isCompleted ? (
-                                                                <div className="bg-green-500/20 rounded-full p-0.5">
-                                                                    <CheckCircle className="w-5 h-5 text-green-500 fill-green-500/20" />
-                                                                </div>
-                                                            ) : (
-                                                                <div className="w-5 h-5 rounded-full border-2 border-gray-700/50 group-hover:border-gray-600" />
-                                                            )}
-                                                        </div>
-                                                    </button>
-                                                );
-                                            })}
-                                            {(!module.lessons || module.lessons.length === 0) && (
-                                                <div className="p-4 text-xs text-gray-500 text-center">Nenhuma aula neste módulo.</div>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-
-                        <div className="border-t border-white/10">
-                            <button
-                                onClick={() => navigate(slug ? `/app/${slug}` : '/app')}
-                                className="flex items-center justify-center gap-2 w-full py-4 font-medium text-sm transition-all bg-white/5 hover:bg-white/10 text-white"
-                                style={{ backgroundColor: primaryColor }}
-                            >
-                                <Home className="w-4 h-4" /> Ir para Vitrine
-                            </button>
-                        </div>
-                    </>
-                ) : (
-                    <div className="flex flex-col items-center py-6 space-y-6">
+        >
+            {sidebarOpen ? (
+                <>
+                    <div className="p-4 flex items-center justify-between sticky top-0 bg-[#0f131a]/95 backdrop-blur-sm z-20">
+                        <h2 className="font-bold truncate pr-4 text-sm uppercase tracking-wider text-gray-400">{content?.title || 'Carregando...'}</h2>
                         <button
-                            onClick={() => setSidebarOpen(true)}
-                            className="p-3 text-white hover:bg-white/10 rounded-xl transition-all"
-                            title="Expandir menu"
+                            onClick={() => setSidebarOpen(false)}
+                            className="p-2 text-white hover:bg-white/10 rounded-lg transition-colors"
                             style={{ backgroundColor: primaryColor }}
                         >
-                            <PanelLeftOpen className="w-6 h-6" />
-                        </button>
-
-                        <button
-                            onClick={() => {
-                                setSidebarOpen(true);
-                                setTimeout(() => document.getElementById('search-input')?.focus(), 100);
-                            }}
-                            className="p-3 text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition-all"
-                            title="Buscar"
-                        >
-                            <Search className="w-6 h-6" />
-                        </button>
-
-                        <button
-                            onClick={() => navigate(slug ? `/app/${slug}` : '/app')}
-                            className="p-3 text-white hover:bg-white/10 rounded-xl transition-all"
-                            title="Ir para Vitrine"
-                            style={{ backgroundColor: primaryColor }}
-                        >
-                            <Home className="w-6 h-6" />
+                            <PanelLeftClose className="w-5 h-5" />
                         </button>
                     </div>
-                )}
-            </aside>
 
-            {/* Main Content */}
-            <main className="flex-1 flex flex-col h-full relative">
-                {/* Mobile Toggle */}
-                {!sidebarOpen && (
+                    {/* Search Bar */}
+                    <div className="px-4 pb-4 border-b border-white/5 sticky top-[61px] bg-[#0f131a]/95 backdrop-blur-sm z-20">
+                        <div className="relative">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
+                            <input
+                                id="search-input"
+                                type="text"
+                                placeholder="Buscar conteúdo"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full bg-[#1a1e26] border-none rounded-full py-2.5 pl-10 pr-4 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-white/20 transition-all"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto custom-scrollbar">
+                        {modules.map((module, index) => (
+                            <div key={module.id} className="border-b border-white/5">
+                                <div
+                                    onClick={() => toggleModule(module.id)}
+                                    className="p-0 cursor-pointer hover:bg-white/5 transition-colors"
+                                >
+                                    {/* Module Card Header */}
+                                    <div className="relative h-24 w-full overflow-hidden">
+                                        {module.image_horizontal_url ? (
+                                            <img src={module.image_horizontal_url} className="w-full h-full object-cover opacity-60" />
+                                        ) : (
+                                            <div className="w-full h-full bg-gradient-to-r from-gray-800 to-gray-900" />
+                                        )}
+                                        <div className="absolute inset-0 bg-black/40 flex items-center justify-between p-4">
+                                            <div className="flex-1 pr-4">
+                                                <span className="text-xs text-gray-300 uppercase font-bold tracking-wider mb-1 block">Módulo {index + 1}</span>
+                                                <h3 className="text-sm font-bold text-white line-clamp-2 leading-tight">{module.title}</h3>
+                                            </div>
+                                            {expandedModuleId === module.id ? <ChevronUp size={18} className="text-white" /> : <ChevronDown size={18} className="text-white" />}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Lessons List (Accordion) */}
+                                {expandedModuleId === module.id && (
+                                    <div className="bg-transparent p-2 space-y-1">
+                                        {module.lessons?.map((lesson, lIndex) => {
+                                            const isActive = currentLesson?.id === lesson.id;
+                                            const isCompleted = progressMap[lesson.id];
+
+                                            // Determine thumbnail
+                                            let thumbnailUrl = lesson.image_url;
+                                            if (!thumbnailUrl && lesson.video_url) {
+                                                // Try to get YT thumbnail
+                                                const videoId = lesson.video_url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/)?.[1];
+                                                if (videoId) {
+                                                    thumbnailUrl = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
+                                                }
+                                            }
+
+                                            return (
+                                                <button
+                                                    key={lesson.id}
+                                                    onClick={() => handleLessonSelect(lesson)}
+                                                    className={`group w-full text-left p-2 flex items-center gap-3 rounded-xl transition-all border border-transparent ${isActive
+                                                        ? 'bg-[#1c212c] border-white/10 shadow-lg'
+                                                        : 'bg-[#131720] hover:bg-[#1a1e26] border-transparent'
+                                                        }`}
+                                                >
+                                                    {/* Thumbnail */}
+                                                    <div className="relative w-24 aspect-video flex-shrink-0 bg-gray-800 rounded-lg overflow-hidden shadow-sm">
+                                                        {thumbnailUrl ? (
+                                                            <img src={thumbnailUrl} className={`w-full h-full object-cover transition-opacity ${isActive ? 'opacity-40' : 'opacity-80 group-hover:opacity-100'}`} alt="" />
+                                                        ) : (
+                                                            <div className="w-full h-full flex items-center justify-center text-gray-600">
+                                                                <FileText size={20} />
+                                                            </div>
+                                                        )}
+
+                                                        {isActive && (
+                                                            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-[1px]">
+                                                                <span className="text-[9px] font-bold text-white uppercase tracking-wider bg-black/60 px-1.5 py-0.5 rounded-full">Tocando</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Info */}
+                                                    <div className="flex-1 min-w-0 py-1">
+                                                        <p className={`text-sm font-medium line-clamp-2 leading-snug ${isActive ? 'text-white' : 'text-gray-300 group-hover:text-white'}`}>
+                                                            {lesson.title}
+                                                        </p>
+                                                    </div>
+
+                                                    {/* Status */}
+                                                    <div className="flex-shrink-0 pr-1">
+                                                        {isCompleted ? (
+                                                            <div className="bg-green-500/20 rounded-full p-0.5">
+                                                                <CheckCircle className="w-5 h-5 text-green-500 fill-green-500/20" />
+                                                            </div>
+                                                        ) : (
+                                                            <div className="w-5 h-5 rounded-full border-2 border-gray-700/50 group-hover:border-gray-600" />
+                                                        )}
+                                                    </div>
+                                                </button>
+                                            );
+                                        })}
+                                        {(!module.lessons || module.lessons.length === 0) && (
+                                            <div className="p-4 text-xs text-gray-500 text-center">Nenhuma aula neste módulo.</div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="border-t border-white/10">
+                        <button
+                            onClick={() => navigate(slug ? `/app/${slug}` : '/app')}
+                            className="flex items-center justify-center gap-2 w-full py-4 font-medium text-sm transition-all bg-white/5 hover:bg-white/10 text-white"
+                            style={{ backgroundColor: primaryColor }}
+                        >
+                            <Home className="w-4 h-4" /> Ir para Vitrine
+                        </button>
+                    </div>
+                </>
+            ) : (
+                <div className="flex flex-col items-center py-6 space-y-6">
                     <button
                         onClick={() => setSidebarOpen(true)}
-                        className="absolute top-6 left-6 z-30 p-2 text-white md:hidden rounded-lg backdrop-blur-sm transition-colors"
+                        className="p-3 text-white hover:bg-white/10 rounded-xl transition-all"
+                        title="Expandir menu"
                         style={{ backgroundColor: primaryColor }}
                     >
                         <PanelLeftOpen className="w-6 h-6" />
                     </button>
-                )}
 
-                <div className="LESSON-WRAP flex-1 overflow-y-auto bg-[#0D1118] p-4 md:p-8 pt-12 md:pt-16 flex justify-center">
-                    {loading ? (
-                        <div className="flex items-center justify-center h-64 w-full">
-                            <div className="animate-spin w-8 h-8 border-2 border-t-transparent rounded-full" style={{ borderColor: `${primaryColor} transparent transparent transparent` }}></div>
-                        </div>
-                    ) : (
-                        renderContent()
-                    )}
+                    <button
+                        onClick={() => {
+                            setSidebarOpen(true);
+                            setTimeout(() => document.getElementById('search-input')?.focus(), 100);
+                        }}
+                        className="p-3 text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition-all"
+                        title="Buscar"
+                    >
+                        <Search className="w-6 h-6" />
+                    </button>
+
+                    <button
+                        onClick={() => navigate(slug ? `/app/${slug}` : '/app')}
+                        className="p-3 text-white hover:bg-white/10 rounded-xl transition-all"
+                        title="Ir para Vitrine"
+                        style={{ backgroundColor: primaryColor }}
+                    >
+                        <Home className="w-6 h-6" />
+                    </button>
                 </div>
-            </main>
+            )}
+        </aside>
 
-            <ProductSalesModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
-                product={selectedProduct}
-            />
-        </div>
-    );
+        {/* Main Content */}
+        <main className="flex-1 flex flex-col h-full relative">
+            {/* Mobile Toggle */}
+            {!sidebarOpen && (
+                <button
+                    onClick={() => setSidebarOpen(true)}
+                    className="absolute top-6 left-6 z-30 p-2 text-white md:hidden rounded-lg backdrop-blur-sm transition-colors"
+                    style={{ backgroundColor: primaryColor }}
+                >
+                    <PanelLeftOpen className="w-6 h-6" />
+                </button>
+            )}
+
+            <div className="LESSON-WRAP flex-1 overflow-y-auto bg-[#0D1118] p-4 md:p-8 pt-12 md:pt-16 flex justify-center">
+                {loading ? (
+                    <div className="flex items-center justify-center h-64 w-full">
+                        <div className="animate-spin w-8 h-8 border-2 border-t-transparent rounded-full" style={{ borderColor: `${primaryColor} transparent transparent transparent` }}></div>
+                    </div>
+                ) : (
+                    renderContent()
+                )}
+            </div>
+        </main>
+
+        <ProductSalesModal
+            isOpen={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+            product={selectedProduct}
+        />
+    </div>
+);
 };

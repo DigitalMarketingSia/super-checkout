@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { Lesson, LessonResource } from '../../types';
 import { Button } from '../ui/Button';
-import { Upload, Plus, Trash2, Video, FileText, Link as LinkIcon, File as FileIcon, X } from 'lucide-react';
+import { Upload, Plus, Trash2, Video, FileText, Link as LinkIcon, File as FileIcon, X, ChevronUp, ChevronDown } from 'lucide-react';
 import { storage } from '../../services/storageService';
 
 interface LessonEditorModalProps {
@@ -171,141 +171,195 @@ export const LessonEditorModal: React.FC<LessonEditorModalProps> = ({ isOpen, on
 
                     <div className="h-px bg-white/10" />
 
-                    {/* 2. Video Content */}
-                    <section className="space-y-4">
-                        <div className="flex items-center gap-2">
-                            <Video className="w-5 h-5 text-blue-400" />
-                            <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Conteúdo de Vídeo</h4>
-                        </div>
-                        <div>
-                            <label className="block text-sm text-gray-400 mb-2">URL do Vídeo (YouTube, Vimeo, Panda...)</label>
-                            <input
-                                type="text"
-                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-primary/50 outline-none"
-                                placeholder="https://..."
-                                value={editedLesson.video_url || ''}
-                                onChange={e => setEditedLesson({ ...editedLesson, video_url: e.target.value })}
-                            />
-                        </div>
-                    </section>
-
-                    <div className="h-px bg-white/10" />
-
-                    {/* 3. Text Content */}
-                    <section className="space-y-4">
-                        <div className="flex items-center gap-2">
-                            <FileText className="w-5 h-5 text-green-400" />
-                            <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Conteúdo de Texto</h4>
-                        </div>
-                        <div>
-                            <label className="block text-sm text-gray-400 mb-2">Texto / Artigo (Markdown)</label>
-                            <textarea
-                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-primary/50 outline-none font-mono text-sm"
-                                rows={8}
-                                placeholder="# Título da aula..."
-                                value={editedLesson.content_text || ''}
-                                onChange={e => setEditedLesson({ ...editedLesson, content_text: e.target.value })}
-                            />
-                        </div>
-                    </section>
-
-                    <div className="h-px bg-white/10" />
-
-                    {/* 4. File / Link Content */}
-                    <section className="space-y-4">
-                        <div className="flex items-center gap-2">
-                            <FileIcon className="w-5 h-5 text-orange-400" />
-                            <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Arquivo / Link Externo</h4>
-                        </div>
-                        <div>
-                            <label className="block text-sm text-gray-400 mb-2">URL do Arquivo ou Link</label>
-                            <input
-                                type="text"
-                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-primary/50 outline-none"
-                                placeholder="https://..."
-                                value={editedLesson.file_url || ''}
-                                onChange={e => setEditedLesson({ ...editedLesson, file_url: e.target.value })}
-                            />
-                        </div>
-                    </section>
-
-                    <div className="h-px bg-white/10" />
-
-                    {/* 5. Gallery */}
-                    <section className="space-y-6">
+                    {/* Dynamic Sections */}
+                    <div className="space-y-8">
                         <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <LinkIcon className="w-5 h-5 text-purple-400" />
-                                <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Galeria de Recursos</h4>
-                            </div>
-                            <Button size="xs" variant="secondary" onClick={addResource}>
-                                <Plus className="w-3 h-3 mr-1" /> Adicionar Recurso
-                            </Button>
+                            <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Organização do Conteúdo</h4>
+                            <p className="text-xs text-gray-500">Use as setas para reordenar os blocos</p>
                         </div>
 
-                        <div className="grid grid-cols-1 gap-4">
-                            {(editedLesson.gallery || []).map((resource, index) => (
-                                <div key={resource.id} className="p-4 bg-white/5 border border-white/10 rounded-xl space-y-4">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-sm font-medium text-gray-300">Recurso #{index + 1}</span>
-                                        <button onClick={() => removeResource(resource.id)} className="text-gray-500 hover:text-red-400">
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
-                                    </div>
+                        {(editedLesson.content_order || ['video', 'text', 'file', 'gallery']).map((sectionType, index, arr) => {
+                            const moveUp = () => {
+                                if (index === 0) return;
+                                const newOrder = [...arr];
+                                [newOrder[index - 1], newOrder[index]] = [newOrder[index], newOrder[index - 1]];
+                                setEditedLesson({ ...editedLesson, content_order: newOrder });
+                            };
 
-                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                        {/* Image */}
-                                        <div className="md:col-span-1">
-                                            <div className="relative w-full aspect-video rounded-lg bg-black/20 border-2 border-dashed border-white/10 overflow-hidden group">
-                                                {resource.image_url ? (
-                                                    <>
-                                                        <img src={resource.image_url} className="w-full h-full object-cover" />
-                                                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                                            <label className="cursor-pointer bg-white/10 hover:bg-white/20 text-white text-xs px-2 py-1 rounded flex items-center">
-                                                                <Upload className="w-3 h-3 mr-1" /> Trocar
-                                                                <input type="file" className="hidden" accept="image/*" onChange={(e) => handleGalleryImageUpload(e, resource.id)} />
-                                                            </label>
-                                                        </div>
-                                                    </>
-                                                ) : (
-                                                    <label className="absolute inset-0 flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition-colors">
-                                                        <Upload className="w-5 h-5 text-gray-400 mb-1" />
-                                                        <span className="text-[10px] text-gray-400">Img</span>
-                                                        <input type="file" className="hidden" accept="image/*" onChange={(e) => handleGalleryImageUpload(e, resource.id)} />
-                                                    </label>
-                                                )}
+                            const moveDown = () => {
+                                if (index === arr.length - 1) return;
+                                const newOrder = [...arr];
+                                [newOrder[index + 1], newOrder[index]] = [newOrder[index], newOrder[index + 1]];
+                                setEditedLesson({ ...editedLesson, content_order: newOrder });
+                            };
+
+                            const renderControls = () => (
+                                <div className="flex items-center gap-1 ml-4">
+                                    <button onClick={moveUp} disabled={index === 0} className="p-1 hover:bg-white/10 rounded disabled:opacity-30 text-gray-400">
+                                        <ChevronUp className="w-4 h-4" />
+                                    </button>
+                                    <button onClick={moveDown} disabled={index === arr.length - 1} className="p-1 hover:bg-white/10 rounded disabled:opacity-30 text-gray-400">
+                                        <ChevronDown className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            );
+
+                            if (sectionType === 'video') {
+                                return (
+                                    <div key="video" className="bg-white/5 p-4 rounded-xl border border-white/5">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <div className="flex items-center gap-2">
+                                                <Video className="w-5 h-5 text-blue-400" />
+                                                <h4 className="text-sm font-bold text-gray-300 uppercase tracking-wider">Conteúdo de Vídeo</h4>
+                                            </div>
+                                            {renderControls()}
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm text-gray-400 mb-2">URL do Vídeo (YouTube, Vimeo, Panda...)</label>
+                                            <input
+                                                type="text"
+                                                className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-primary/50 outline-none"
+                                                placeholder="https://..."
+                                                value={editedLesson.video_url || ''}
+                                                onChange={e => setEditedLesson({ ...editedLesson, video_url: e.target.value })}
+                                            />
+                                        </div>
+                                    </div>
+                                );
+                            }
+
+                            if (sectionType === 'text') {
+                                return (
+                                    <div key="text" className="bg-white/5 p-4 rounded-xl border border-white/5">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <div className="flex items-center gap-2">
+                                                <FileText className="w-5 h-5 text-green-400" />
+                                                <h4 className="text-sm font-bold text-gray-300 uppercase tracking-wider">Conteúdo de Texto</h4>
+                                            </div>
+                                            {renderControls()}
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm text-gray-400 mb-2">Texto / Artigo (Markdown)</label>
+                                            <textarea
+                                                className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-primary/50 outline-none font-mono text-sm"
+                                                rows={8}
+                                                placeholder="# Título da aula..."
+                                                value={editedLesson.content_text || ''}
+                                                onChange={e => setEditedLesson({ ...editedLesson, content_text: e.target.value })}
+                                            />
+                                        </div>
+                                    </div>
+                                );
+                            }
+
+                            if (sectionType === 'file') {
+                                return (
+                                    <div key="file" className="bg-white/5 p-4 rounded-xl border border-white/5">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <div className="flex items-center gap-2">
+                                                <FileIcon className="w-5 h-5 text-orange-400" />
+                                                <h4 className="text-sm font-bold text-gray-300 uppercase tracking-wider">Arquivo / Link Externo</h4>
+                                            </div>
+                                            {renderControls()}
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm text-gray-400 mb-2">URL do Arquivo ou Link</label>
+                                            <input
+                                                type="text"
+                                                className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-primary/50 outline-none"
+                                                placeholder="https://..."
+                                                value={editedLesson.file_url || ''}
+                                                onChange={e => setEditedLesson({ ...editedLesson, file_url: e.target.value })}
+                                            />
+                                        </div>
+                                    </div>
+                                );
+                            }
+
+                            if (sectionType === 'gallery') {
+                                return (
+                                    <div key="gallery" className="bg-white/5 p-4 rounded-xl border border-white/5">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <div className="flex items-center gap-2">
+                                                <LinkIcon className="w-5 h-5 text-purple-400" />
+                                                <h4 className="text-sm font-bold text-gray-300 uppercase tracking-wider">Galeria de Recursos</h4>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <Button size="xs" variant="secondary" onClick={addResource}>
+                                                    <Plus className="w-3 h-3 mr-1" /> Adicionar
+                                                </Button>
+                                                {renderControls()}
                                             </div>
                                         </div>
 
-                                        {/* Fields */}
-                                        <div className="md:col-span-3 space-y-3">
-                                            <input
-                                                type="text"
-                                                placeholder="Título do Recurso"
-                                                className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-white text-sm"
-                                                value={resource.title}
-                                                onChange={e => updateResource(resource.id, 'title', e.target.value)}
-                                            />
-                                            <input
-                                                type="text"
-                                                placeholder="Link de Destino (URL)"
-                                                className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-white text-sm"
-                                                value={resource.link_url}
-                                                onChange={e => updateResource(resource.id, 'link_url', e.target.value)}
-                                            />
-                                            <input
-                                                type="text"
-                                                placeholder="Texto do Botão (ex: Baixar PDF)"
-                                                className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-white text-sm"
-                                                value={resource.button_text}
-                                                onChange={e => updateResource(resource.id, 'button_text', e.target.value)}
-                                            />
+                                        <div className="grid grid-cols-1 gap-4">
+                                            {(editedLesson.gallery || []).map((resource, index) => (
+                                                <div key={resource.id} className="p-4 bg-black/20 border border-white/10 rounded-xl space-y-4">
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-sm font-medium text-gray-300">Recurso #{index + 1}</span>
+                                                        <button onClick={() => removeResource(resource.id)} className="text-gray-500 hover:text-red-400">
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                                        {/* Image */}
+                                                        <div className="md:col-span-1">
+                                                            <div className="relative w-full aspect-video rounded-lg bg-black/20 border-2 border-dashed border-white/10 overflow-hidden group">
+                                                                {resource.image_url ? (
+                                                                    <>
+                                                                        <img src={resource.image_url} className="w-full h-full object-cover" />
+                                                                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                                            <label className="cursor-pointer bg-white/10 hover:bg-white/20 text-white text-xs px-2 py-1 rounded flex items-center">
+                                                                                <Upload className="w-3 h-3 mr-1" /> Trocar
+                                                                                <input type="file" className="hidden" accept="image/*" onChange={(e) => handleGalleryImageUpload(e, resource.id)} />
+                                                                            </label>
+                                                                        </div>
+                                                                    </>
+                                                                ) : (
+                                                                    <label className="absolute inset-0 flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition-colors">
+                                                                        <Upload className="w-5 h-5 text-gray-400 mb-1" />
+                                                                        <span className="text-[10px] text-gray-400">Img</span>
+                                                                        <input type="file" className="hidden" accept="image/*" onChange={(e) => handleGalleryImageUpload(e, resource.id)} />
+                                                                    </label>
+                                                                )}
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Fields */}
+                                                        <div className="md:col-span-3 space-y-3">
+                                                            <input
+                                                                type="text"
+                                                                placeholder="Título do Recurso"
+                                                                className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-white text-sm"
+                                                                value={resource.title}
+                                                                onChange={e => updateResource(resource.id, 'title', e.target.value)}
+                                                            />
+                                                            <input
+                                                                type="text"
+                                                                placeholder="Link de Destino (URL)"
+                                                                className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-white text-sm"
+                                                                value={resource.link_url}
+                                                                onChange={e => updateResource(resource.id, 'link_url', e.target.value)}
+                                                            />
+                                                            <input
+                                                                type="text"
+                                                                placeholder="Texto do Botão (ex: Baixar PDF)"
+                                                                className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-white text-sm"
+                                                                value={resource.button_text}
+                                                                onChange={e => updateResource(resource.id, 'button_text', e.target.value)}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
                                         </div>
                                     </div>
-                                </div>
-                            ))}
-                        </div>
-                    </section>
+                                );
+                            }
+                            return null;
+                        })}
+                    </div>
 
                 </div>
 
