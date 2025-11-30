@@ -46,6 +46,22 @@ export const TrackSlider: React.FC<TrackSliderProps> = ({ track, onItemClick, ac
 
     return (
         <div className="mb-8">
+            <style>{`
+                .custom-scrollbar::-webkit-scrollbar {
+                    height: 6px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-track {
+                    background: rgba(255, 255, 255, 0.05);
+                    border-radius: 3px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb {
+                    background: ${primaryColor || '#374151'};
+                    border-radius: 3px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                    filter: brightness(1.2);
+                }
+            `}</style>
             <h3 className="text-xl font-semibold text-white mb-4 px-4 md:px-0">{track.title}</h3>
 
             <div className="relative group">
@@ -63,7 +79,7 @@ export const TrackSlider: React.FC<TrackSliderProps> = ({ track, onItemClick, ac
                 <div
                     ref={scrollContainerRef}
                     onScroll={checkScroll}
-                    className="flex overflow-x-auto gap-4 pb-4 scrollbar-hide px-4 md:px-0 snap-x"
+                    className="flex overflow-x-auto gap-4 pb-4 px-4 md:px-0 snap-x custom-scrollbar"
                 >
                     {track.items?.map((item) => (
                         <TrackItemCard
