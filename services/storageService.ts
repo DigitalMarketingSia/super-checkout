@@ -1214,7 +1214,7 @@ class StorageService {
   async getContents(memberAreaId?: string): Promise<Content[]> {
     let query = supabase
       .from('contents')
-      .select('*, modules_count:modules(count)')
+      .select('*, modules_count:modules(count), product_contents(product:products(*))')
       .order('created_at', { ascending: false });
 
     if (memberAreaId) {
@@ -1230,7 +1230,8 @@ class StorageService {
 
     return data.map((c: any) => ({
       ...c,
-      modules_count: c.modules_count?.[0]?.count || 0
+      modules_count: c.modules_count?.[0]?.count || 0,
+      associated_product: c.product_contents?.[0]?.product
     })) as Content[];
   }
 
