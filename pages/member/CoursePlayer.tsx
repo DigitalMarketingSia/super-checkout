@@ -229,7 +229,7 @@ export const CoursePlayer = () => {
                 {currentLesson.gallery && currentLesson.gallery.length > 0 && (
                     <div className="pt-8 border-t border-white/5">
                         <h3 className="text-xl font-bold text-white mb-6">Galeria de Recursos</h3>
-                        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3">
                             {currentLesson.gallery.map((resource) => (
                                 <div key={resource.id} className="bg-[#1a1e26] rounded-xl overflow-hidden border border-white/5 hover:border-white/10 transition-all group">
                                     <div className="aspect-video w-full bg-black/20 relative overflow-hidden">
@@ -241,15 +241,15 @@ export const CoursePlayer = () => {
                                             </div>
                                         )}
                                     </div>
-                                    <div className="p-5">
-                                        <h4 className="font-bold text-white mb-4 line-clamp-1">{resource.title}</h4>
+                                    <div className="p-3">
+                                        <h4 className="font-bold text-white mb-2 text-sm line-clamp-2 leading-snug">{resource.title}</h4>
                                         <a
                                             href={resource.link_url}
                                             target="_blank"
                                             rel="noreferrer"
-                                            className="block w-full text-center py-3 rounded-lg font-bold text-sm transition-colors bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 hover:text-white"
+                                            className="block w-full text-center py-2 rounded-lg font-bold text-xs transition-colors bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 hover:text-white"
                                         >
-                                            {resource.button_text || 'Acessar'}
+                                            Acessar
                                         </a>
                                     </div>
                                 </div>
