@@ -261,12 +261,19 @@ export const CoursePlayer = () => {
             }
         };
 
+        console.log('Current Lesson:', currentLesson);
+        console.log('Content Order:', currentLesson.content_order);
         const contentOrder = currentLesson.content_order || ['video', 'text', 'file', 'gallery'];
 
         return (
             <div className="LESSON-CONTAINER w-full max-w-[1100px] mx-auto px-6 space-y-8 pb-20">
                 <div className="space-y-8">
                     {contentOrder.map(type => renderSection(type))}
+                </div>
+
+                {/* DEBUG: Remove later */}
+                <div className="text-xs text-gray-600 mt-4 p-2 border border-gray-800 rounded">
+                    DEBUG ORDER: {JSON.stringify(currentLesson.content_order)}
                 </div>
 
                 {/* Footer Actions & Navigation */}
