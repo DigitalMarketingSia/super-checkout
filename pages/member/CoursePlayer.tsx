@@ -261,19 +261,12 @@ export const CoursePlayer = () => {
             }
         };
 
-        console.log('Current Lesson:', currentLesson);
-        console.log('Content Order:', currentLesson.content_order);
         const contentOrder = currentLesson.content_order || ['video', 'text', 'file', 'gallery'];
 
         return (
             <div className="LESSON-CONTAINER w-full max-w-[1100px] mx-auto px-6 space-y-8 pb-20">
                 <div className="space-y-8">
                     {contentOrder.map(type => renderSection(type))}
-                </div>
-
-                {/* DEBUG: Remove later */}
-                <div className="text-xs text-gray-600 mt-4 p-2 border border-gray-800 rounded">
-                    DEBUG ORDER: {JSON.stringify(currentLesson.content_order)}
                 </div>
 
                 {/* Footer Actions & Navigation */}
@@ -366,7 +359,7 @@ export const CoursePlayer = () => {
 
                         <div className="flex-1 overflow-y-auto custom-scrollbar">
                             {modules.map((module, index) => (
-                                <div key={module.id} className="border-b border-white/5">
+                                <div key={module.id} className="border-b border-white/5 mb-4 last:mb-0">
                                     <div
                                         onClick={() => toggleModule(module.id)}
                                         className="p-0 cursor-pointer hover:bg-white/5 transition-colors"
@@ -378,7 +371,7 @@ export const CoursePlayer = () => {
                                             ) : (
                                                 <div className="w-full h-full bg-gradient-to-r from-gray-800 to-gray-900" />
                                             )}
-                                            <div className="absolute inset-0 bg-black/40 flex items-center justify-between p-4">
+                                            <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/60 to-transparent flex items-center justify-between p-4">
                                                 <div className="flex-1 pr-4">
                                                     <span className="text-xs text-gray-300 uppercase font-bold tracking-wider mb-1 block">Módulo {index + 1}</span>
                                                     <h3 className="text-sm font-bold text-white line-clamp-2 leading-tight">{module.title}</h3>
@@ -390,7 +383,7 @@ export const CoursePlayer = () => {
 
                                     {/* Lessons List (Accordion) */}
                                     {expandedModuleId === module.id && (
-                                        <div className="bg-transparent p-2 space-y-1">
+                                        <div className="bg-transparent p-2 space-y-3">
                                             {module.lessons?.map((lesson, lIndex) => {
                                                 const isActive = currentLesson?.id === lesson.id;
                                                 const isCompleted = progressMap[lesson.id];

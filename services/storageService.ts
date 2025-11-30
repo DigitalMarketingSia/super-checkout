@@ -1465,7 +1465,6 @@ class StorageService {
   }
 
   async updateLesson(lesson: Lesson) {
-    console.log('StorageService: Updating lesson payload:', lesson);
     const { data, error } = await supabase
       .from('lessons')
       .update({
