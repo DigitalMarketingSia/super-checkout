@@ -56,6 +56,7 @@ export interface Product {
   is_order_bump?: boolean;
   is_upsell?: boolean;
   checkout_slug?: string;
+  checkout_url?: string;
 }
 
 export interface Offer {

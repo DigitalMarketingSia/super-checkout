@@ -14,8 +14,10 @@ export const ProductSalesModal: React.FC<ProductSalesModalProps> = ({ isOpen, on
     const handleBuy = () => {
         if (product.redirect_link) {
             window.open(product.redirect_link, '_blank');
+        } else if (product.checkout_url) {
+            window.open(product.checkout_url, '_blank');
         } else if (product.checkout_slug) {
-            // Construct checkout URL
+            // Fallback to relative URL
             const checkoutUrl = `/checkout/${product.checkout_slug}`;
             window.open(checkoutUrl, '_blank');
         }
