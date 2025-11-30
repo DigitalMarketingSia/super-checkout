@@ -135,7 +135,7 @@ export const MemberAreaLayout: React.FC<MemberAreaLayoutProps> = ({ children, me
                         <div className="flex items-center gap-3">
                             <Link
                                 to={`${appLink}/signup`}
-                                className="px-4 py-2 text-sm font-medium text-white border border-white/30 rounded hover:bg-white/10 transition-colors"
+                                className="hidden md:block px-4 py-2 text-sm font-medium text-white border border-white/30 rounded hover:bg-white/10 transition-colors"
                             >
                                 Cadastre-se aqui
                             </Link>
@@ -290,7 +290,7 @@ export const MemberAreaLayout: React.FC<MemberAreaLayoutProps> = ({ children, me
                 <div className="p-6 border-t border-white/5">
                     <div className="flex items-center justify-center gap-1 text-xs text-gray-600 font-medium">
                         <span className="text-[10px]">Create by</span>
-                        <span className="text-gray-500 font-bold tracking-wide">Super Checkout .APP</span>
+                        <span className="text-gray-500 font-bold tracking-wide">Super Checkout .APP<sup className="text-[8px] ml-0.5">&reg;</sup></span>
                     </div>
                 </div>
             </div>

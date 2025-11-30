@@ -93,7 +93,7 @@ export const MemberDashboard = () => {
         <>
             {/* Hero / Banner */}
             {(memberArea?.banner_url || featuredContent?.thumbnail_url) && (
-                <div className="relative h-[70vh] w-full -mt-20 mb-12">
+                <div className="relative h-[50vh] md:h-[70vh] w-full -mt-20 mb-12">
                     <div className="absolute inset-0">
                         {memberArea?.banner_url ? (
                             <img
@@ -114,7 +114,7 @@ export const MemberDashboard = () => {
                         <div className="absolute inset-0 bg-gradient-to-t from-[#0E1012] via-transparent to-transparent" />
                     </div>
 
-                    <div className="absolute bottom-0 left-0 p-8 md:p-16 w-full md:w-2/3 lg:w-1/2 space-y-6">
+                    <div className="absolute bottom-0 left-0 p-8 md:p-16 w-full md:w-2/3 lg:w-1/2 space-y-4 md:space-y-6">
                         {/* Only show badge if it's a featured content fallback, not custom banner */}
                         {!memberArea?.banner_title && featuredContent && (
                             <span className="text-red-600 font-bold tracking-widest text-sm uppercase bg-black/50 px-3 py-1 rounded backdrop-blur-sm border border-red-600/30 inline-block mb-2" style={{ color: memberArea?.primary_color, borderColor: memberArea?.primary_color ? `${memberArea.primary_color}4D` : undefined }}>

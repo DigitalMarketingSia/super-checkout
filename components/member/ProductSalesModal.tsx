@@ -26,7 +26,7 @@ export const ProductSalesModal: React.FC<ProductSalesModalProps> = ({ isOpen, on
             />
 
             {/* Modal Content */}
-            <div className="relative w-full max-w-2xl bg-[#1A1D21] rounded-2xl shadow-2xl border border-white/10 overflow-hidden animate-in fade-in zoom-in-95 duration-300">
+            <div className="relative w-[95%] md:w-full max-w-2xl bg-[#1A1D21] rounded-2xl shadow-2xl border border-white/10 overflow-hidden animate-in fade-in zoom-in-95 duration-300">
                 <button
                     onClick={onClose}
                     className="absolute top-4 right-4 p-2 rounded-full bg-black/20 hover:bg-white/10 text-white transition-colors z-10"
@@ -36,7 +36,7 @@ export const ProductSalesModal: React.FC<ProductSalesModalProps> = ({ isOpen, on
 
                 <div className="grid grid-cols-1 md:grid-cols-2">
                     {/* Image Section */}
-                    <div className="relative h-64 md:h-auto bg-black/40">
+                    <div className="relative h-48 md:h-auto bg-black/40">
                         {product.imageUrl ? (
                             <img
                                 src={product.imageUrl}
@@ -52,15 +52,15 @@ export const ProductSalesModal: React.FC<ProductSalesModalProps> = ({ isOpen, on
                     </div>
 
                     {/* Content Section */}
-                    <div className="p-8 flex flex-col">
+                    <div className="p-6 md:p-8 flex flex-col">
                         <div className="mb-6">
                             <span className="inline-block px-3 py-1 rounded-full bg-red-500/10 text-red-500 text-xs font-bold mb-3 border border-red-500/20">
                                 OFERTA ESPECIAL
                             </span>
-                            <h2 className="text-2xl font-bold text-white mb-2 leading-tight">
+                            <h2 className="text-xl md:text-2xl font-bold text-white mb-2 leading-tight line-clamp-1 md:line-clamp-none">
                                 {product.name}
                             </h2>
-                            <p className="text-gray-400 text-sm leading-relaxed line-clamp-4">
+                            <p className="text-gray-400 text-sm leading-relaxed line-clamp-1 md:line-clamp-4">
                                 {product.description || 'Aproveite esta oportunidade exclusiva para adquirir este produto e desbloquear todo o seu potencial.'}
                             </p>
                         </div>
