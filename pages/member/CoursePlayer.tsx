@@ -135,8 +135,16 @@ export const CoursePlayer = () => {
         }, { content: content || undefined });
     };
 
-    const toggleModule = (moduleId: string) => {
-        setExpandedModuleId(prev => prev === moduleId ? null : moduleId);
+    const toggleModule = (module: Module) => {
+        handleAccess(module, {
+            onAccess: () => {
+                setExpandedModuleId(prev => prev === module.id ? null : module.id);
+            },
+            onSalesModal: (product) => {
+                setSelectedProduct(product);
+                setIsModalOpen(true);
+            }
+        }, { content: content || undefined });
     };
 
     const handleMarkCompleted = async () => {
@@ -394,7 +402,7 @@ export const CoursePlayer = () => {
                             {filteredModules.map((module, index) => (
                                 <div key={module.id} className="border-b border-white/5 mb-6 last:mb-0">
                                     <div
-                                        onClick={() => toggleModule(module.id)}
+                                        onClick={() => toggleModule(module)}
                                         className="p-0 cursor-pointer hover:bg-white/5 transition-colors"
                                     >
                                         {/* Module Card Header */}

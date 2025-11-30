@@ -1347,7 +1347,7 @@ class StorageService {
   async getModules(contentId: string): Promise<Module[]> {
     const { data, error } = await supabase
       .from('modules')
-      .select('*, lessons(*)')
+      .select('*, associated_product:products(*), lessons(*, associated_product:products(*))')
       .eq('content_id', contentId)
       .order('order_index', { ascending: true });
 
