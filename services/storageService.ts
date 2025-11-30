@@ -1850,7 +1850,7 @@ class StorageService {
       } else if (track.type === 'contents') {
         const { data } = await supabase
           .from('contents')
-          .select('*, product_contents(products(*))')
+          .select('*, product_contents(products(*, checkouts:member_area_checkout_id(id, custom_url_slug, domain_id, domains:domain_id(domain))))')
           .in('id', itemIds);
 
         relatedData = (data || []).map((c: any) => ({
@@ -1860,7 +1860,7 @@ class StorageService {
       } else if (track.type === 'modules') {
         const { data } = await supabase
           .from('modules')
-          .select('*, content:contents(product_contents(products(*)))')
+          .select('*, content:contents(product_contents(products(*, checkouts:member_area_checkout_id(id, custom_url_slug, domain_id, domains:domain_id(domain)))))')
           .in('id', itemIds);
 
         relatedData = (data || []).map((m: any) => ({
@@ -1870,7 +1870,7 @@ class StorageService {
       } else if (track.type === 'lessons') {
         const { data } = await supabase
           .from('lessons')
-          .select('*, module:modules(content:contents(product_contents(products(*))))')
+          .select('*, module:modules(content:contents(product_contents(products(*, checkouts:member_area_checkout_id(id, custom_url_slug, domain_id, domains:domain_id(domain))))))')
           .in('id', itemIds);
 
         relatedData = (data || []).map((l: any) => ({
@@ -1882,9 +1882,16 @@ class StorageService {
       // Helper to map product fields
       const mapProductFields = (p: any) => {
         if (!p) return undefined;
+
+        let redirectLink = p.redirect_link;
+        if ((!p.member_area_action || p.member_area_action === 'checkout') && p.checkouts) {
+          redirectLink = `https://${p.checkouts.domains?.domain || 'checkout.supercheckout.com'}/${p.checkouts.custom_url_slug}`;
+        }
+
         return {
           ...p,
-          imageUrl: p.image_url || p.imageUrl
+          imageUrl: p.image_url || p.imageUrl,
+          redirect_link: redirectLink
         };
       };
 
