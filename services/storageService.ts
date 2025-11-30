@@ -1214,7 +1214,7 @@ class StorageService {
   async getContents(memberAreaId?: string): Promise<Content[]> {
     let query = supabase
       .from('contents')
-      .select('*, modules_count:modules(count), product_contents(product:products(*, checkout:checkouts(*)))')
+      .select('*, modules_count:modules(count), product_contents(product:products(*, checkout:checkouts!products_member_area_checkout_id_fkey(*)))')
       .order('created_at', { ascending: false });
 
     if (memberAreaId) {

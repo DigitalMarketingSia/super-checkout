@@ -58,10 +58,14 @@ export const MemberDashboard = () => {
     };
 
     const handleItemClick = async (item: any) => {
+        console.log('Item clicked:', item);
         handleAccess(item, {
             onAccess: () => {
+                console.log('Access granted');
                 const appLink = memberArea ? `/app/${memberArea.slug}` : '/app';
+                console.log('Navigating to:', appLink);
                 if (item.content) {
+                    console.log('Navigating to content:', `${appLink}/content/${item.content.id}`);
                     navigate(`${appLink}/content/${item.content.id}`);
                 } else if (item.module) {
                     navigate(`${appLink}/course/${item.module.content_id}`);
@@ -70,6 +74,7 @@ export const MemberDashboard = () => {
                 }
             },
             onSalesModal: (product) => {
+                console.log('Sales modal triggered', product);
                 if (product) {
                     setSelectedProduct(product);
                     setIsModalOpen(true);
