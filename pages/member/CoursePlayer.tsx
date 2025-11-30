@@ -320,6 +320,39 @@ export const CoursePlayer = () => {
 
     const primaryColor = memberArea?.primary_color || '#dc2626'; // Default red
 
+    const filteredModules = React.useMemo(() => {
+        if (!searchTerm) return modules;
+        const lowerTerm = searchTerm.toLowerCase();
+        return modules.map(m => {
+            const moduleMatches = m.title.toLowerCase().includes(lowerTerm);
+            const matchingLessons = m.lessons?.filter(l => l.title.toLowerCase().includes(lowerTerm));
+
+            if (moduleMatches) return m; // Return full module if title matches
+            if (matchingLessons && matchingLessons.length > 0) {
+                return { ...m, lessons: matchingLessons }; // Return module with filtered lessons
+            }
+            return null;
+        }).filter(Boolean) as Module[];
+    }, [modules, searchTerm]);
+
+    // Auto-expand modules when searching
+    useEffect(() => {
+        if (searchTerm && filteredModules.length > 0) {
+            const newExpanded: Record<string, boolean> = {};
+            filteredModules.forEach(m => newExpanded[m.id] = true);
+            // We don't setExpandedModuleId here because that controls the accordion state which is single-expand in the current UI logic? 
+            // Actually the current UI uses `expandedModuleId` state which is a string (single expansion). 
+            // The user might want to see multiple results. 
+            // Let's check the state definition: const [expandedModuleId, setExpandedModuleId] = useState<string | null>(null);
+            // It only supports one open module at a time. 
+            // For search, it might be better to allow multiple or just expand the first one.
+            // Let's just expand the first match for now to keep it simple and consistent with current state type.
+            if (filteredModules.length > 0) {
+                setExpandedModuleId(filteredModules[0].id);
+            }
+        }
+    }, [searchTerm, filteredModules]);
+
     return (
         <div className="flex h-screen bg-[#0D1118] text-white overflow-hidden">
             {/* Sidebar */}
@@ -358,7 +391,7 @@ export const CoursePlayer = () => {
                         </div>
 
                         <div className="flex-1 overflow-y-auto custom-scrollbar">
-                            {modules.map((module, index) => (
+                            {filteredModules.map((module, index) => (
                                 <div key={module.id} className="border-b border-white/5 mb-4 last:mb-0">
                                     <div
                                         onClick={() => toggleModule(module.id)}
@@ -373,7 +406,12 @@ export const CoursePlayer = () => {
                                             )}
                                             <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/60 to-transparent flex items-center justify-between p-4">
                                                 <div className="flex-1 pr-4">
-                                                    <span className="text-xs text-gray-300 uppercase font-bold tracking-wider mb-1 block">Módulo {index + 1}</span>
+                                                    <span
+                                                        className="text-[10px] text-white font-bold uppercase tracking-wider mb-1.5 inline-block px-2 py-0.5 rounded shadow-sm"
+                                                        style={{ backgroundColor: primaryColor }}
+                                                    >
+                                                        Módulo {modules.findIndex(m => m.id === module.id) + 1}
+                                                    </span>
                                                     <h3 className="text-sm font-bold text-white line-clamp-2 leading-tight">{module.title}</h3>
                                                 </div>
                                                 {expandedModuleId === module.id ? <ChevronUp size={18} className="text-white" /> : <ChevronDown size={18} className="text-white" />}
@@ -383,7 +421,7 @@ export const CoursePlayer = () => {
 
                                     {/* Lessons List (Accordion) */}
                                     {expandedModuleId === module.id && (
-                                        <div className="bg-transparent p-2 space-y-3">
+                                        <div className="bg-transparent p-2 space-y-4">
                                             {module.lessons?.map((lesson, lIndex) => {
                                                 const isActive = currentLesson?.id === lesson.id;
                                                 const isCompleted = progressMap[lesson.id];
