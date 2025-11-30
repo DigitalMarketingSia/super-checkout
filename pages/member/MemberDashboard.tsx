@@ -114,7 +114,7 @@ export const MemberDashboard = () => {
                         <div className="absolute inset-0 bg-gradient-to-t from-[#0E1012] via-transparent to-transparent" />
                     </div>
 
-                    <div className="absolute bottom-0 left-0 p-8 md:p-16 w-full md:w-2/3 lg:w-1/2 space-y-4 md:space-y-6">
+                    <div className="absolute bottom-0 left-0 p-8 md:p-16 w-full md:w-2/3 lg:w-1/2 space-y-2 md:space-y-4">
                         {/* Only show badge if it's a featured content fallback, not custom banner */}
                         {!memberArea?.banner_title && featuredContent && (
                             <span className="text-red-600 font-bold tracking-widest text-sm uppercase bg-black/50 px-3 py-1 rounded backdrop-blur-sm border border-red-600/30 inline-block mb-2" style={{ color: memberArea?.primary_color, borderColor: memberArea?.primary_color ? `${memberArea.primary_color}4D` : undefined }}>
@@ -125,15 +125,16 @@ export const MemberDashboard = () => {
                         <h1 className="text-4xl md:text-6xl font-bold text-white leading-tight drop-shadow-lg">
                             {memberArea?.banner_title || featuredContent?.title}
                         </h1>
-                        <p className="text-lg text-gray-200 line-clamp-3 drop-shadow-md">
+                        <p className="text-lg text-gray-200 line-clamp-3 drop-shadow-md pb-2">
                             {memberArea?.banner_description || featuredContent?.description}
                         </p>
 
-                        <div className="flex items-center gap-4 pt-4">
+                        <div className="flex items-center gap-4">
                             {memberArea?.banner_button_text && memberArea?.banner_button_link ? (
                                 <a
                                     href={memberArea.banner_button_link}
                                     className="flex items-center gap-2 bg-white text-black px-8 py-3 rounded font-bold hover:bg-gray-200 transition-colors"
+                                    style={{ backgroundColor: memberArea.primary_color, color: '#fff' }}
                                 >
                                     {memberArea.banner_button_text}
                                 </a>
@@ -142,8 +143,9 @@ export const MemberDashboard = () => {
                                     <button
                                         onClick={() => handleItemClick({ content: featuredContent })}
                                         className="flex items-center gap-2 bg-white text-black px-8 py-3 rounded font-bold hover:bg-gray-200 transition-colors"
+                                        style={{ backgroundColor: memberArea?.primary_color, color: '#fff' }}
                                     >
-                                        <Play className="w-5 h-5 fill-black" /> Assistir
+                                        <Play className="w-5 h-5 fill-current" /> Assistir
                                     </button>
                                     <button className="flex items-center gap-2 bg-gray-500/70 text-white px-8 py-3 rounded font-bold hover:bg-gray-500/90 transition-colors backdrop-blur-sm">
                                         <Info className="w-5 h-5" /> Mais Info
@@ -168,6 +170,7 @@ export const MemberDashboard = () => {
                             track={track}
                             onItemClick={handleItemClick}
                             accessGrants={accessGrants}
+                            primaryColor={memberArea?.primary_color}
                         />
                     ))
                 )}

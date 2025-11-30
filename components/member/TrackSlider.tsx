@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { ChevronLeft, ChevronRight, Lock, PlayCircle, Package, FileText, BookOpen } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Lock, PlayCircle, Package, FileText, BookOpen, CheckCircle } from 'lucide-react';
 import { Track, TrackItem, AccessGrant } from '../../types';
 import { ProductSalesModal } from './ProductSalesModal';
 import { useAccessControl } from '../../hooks/useAccessControl';
@@ -8,9 +8,10 @@ interface TrackSliderProps {
     track: Track;
     onItemClick: (item: TrackItem) => void;
     accessGrants?: AccessGrant[];
+    primaryColor?: string;
 }
 
-export const TrackSlider: React.FC<TrackSliderProps> = ({ track, onItemClick, accessGrants = [] }) => {
+export const TrackSlider: React.FC<TrackSliderProps> = ({ track, onItemClick, accessGrants = [], primaryColor }) => {
     const { handleAccess } = useAccessControl(accessGrants);
     const [selectedProduct, setSelectedProduct] = React.useState<any | null>(null);
     const [isModalOpen, setIsModalOpen] = React.useState(false);
@@ -53,6 +54,7 @@ export const TrackSlider: React.FC<TrackSliderProps> = ({ track, onItemClick, ac
                     <button
                         onClick={() => scroll('left')}
                         className="absolute -left-12 top-1/2 -translate-y-1/2 z-10 text-gray-400 hover:text-white p-2 transition-all hidden md:block opacity-0 group-hover:opacity-100 hover:scale-125"
+                        style={{ color: primaryColor }}
                     >
                         <ChevronLeft size={40} strokeWidth={1.5} />
                     </button>
@@ -92,6 +94,7 @@ export const TrackSlider: React.FC<TrackSliderProps> = ({ track, onItemClick, ac
                     <button
                         onClick={() => scroll('right')}
                         className="absolute -right-12 top-1/2 -translate-y-1/2 z-10 text-gray-400 hover:text-white p-2 transition-all hidden md:block opacity-0 group-hover:opacity-100 hover:scale-125"
+                        style={{ color: primaryColor }}
                     >
                         <ChevronRight size={40} strokeWidth={1.5} />
                     </button>
@@ -187,7 +190,8 @@ const TrackItemCard: React.FC<TrackItemCardProps> = ({ item, onClick, accessGran
                 )}
 
                 {isFree && (
-                    <div className="absolute top-2 left-2 bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide shadow-sm">
+                    <div className="absolute top-2 left-2 bg-green-500/20 text-green-500 border border-green-500/20 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wide shadow-sm flex items-center gap-1 backdrop-blur-sm">
+                        <CheckCircle size={10} strokeWidth={3} />
                         Gratuito
                     </div>
                 )}
