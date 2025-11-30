@@ -55,6 +55,7 @@ export interface Product {
   redirect_link?: string;
   is_order_bump?: boolean;
   is_upsell?: boolean;
+  checkout_slug?: string;
 }
 
 export interface Offer {
