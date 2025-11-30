@@ -1879,6 +1879,23 @@ class StorageService {
         }));
       }
 
+      // Helper to map product fields
+      const mapProductFields = (p: any) => {
+        if (!p) return undefined;
+        return {
+          ...p,
+          imageUrl: p.image_url || p.imageUrl
+        };
+      };
+
+      // Map associated_product for all types
+      relatedData = relatedData.map(item => {
+        if (item.associated_product) {
+          item.associated_product = mapProductFields(item.associated_product);
+        }
+        return item;
+      });
+
       // Merge
       console.log(`[getTrackWithItems] Related Data Found: ${relatedData.length}`);
       populatedItems.push(...items.map((item: any) => {
