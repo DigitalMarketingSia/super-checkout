@@ -71,8 +71,13 @@ export const TrackSlider: React.FC<TrackSliderProps> = ({ track, onItemClick, ac
                                 handleAccess(item, {
                                     onAccess: () => onItemClick(item),
                                     onSalesModal: (product) => {
-                                        setSelectedProduct(product || item.product);
-                                        setIsModalOpen(true);
+                                        const productToSell = product || item.product;
+                                        if (productToSell) {
+                                            setSelectedProduct(productToSell);
+                                            setIsModalOpen(true);
+                                        } else {
+                                            alert('Conteúdo exclusivo para assinantes.');
+                                        }
                                     }
                                 });
                             }}
@@ -153,7 +158,7 @@ const TrackItemCard: React.FC<TrackItemCardProps> = ({ item, onClick, accessGran
     const isLocked = React.useMemo(() => {
         if (!item) return false;
         const action = checkAccess(item);
-        return action !== 'ACCESS';
+        return action === 'SALES_MODAL';
     }, [item, accessGrants, checkAccess]);
 
 
