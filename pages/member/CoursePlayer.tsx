@@ -229,7 +229,7 @@ export const CoursePlayer = () => {
                 {currentLesson.gallery && currentLesson.gallery.length > 0 && (
                     <div className="pt-8 border-t border-white/5">
                         <h3 className="text-xl font-bold text-white mb-6">Galeria de Recursos</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {currentLesson.gallery.map((resource) => (
                                 <div key={resource.id} className="bg-[#1a1e26] rounded-xl overflow-hidden border border-white/5 hover:border-white/10 transition-all group">
                                     <div className="aspect-video w-full bg-black/20 relative overflow-hidden">
@@ -322,7 +322,11 @@ export const CoursePlayer = () => {
                     <>
                         <div className="p-4 flex items-center justify-between sticky top-0 bg-[#0f131a]/95 backdrop-blur-sm z-20">
                             <h2 className="font-bold truncate pr-4 text-sm uppercase tracking-wider text-gray-400">{content?.title || 'Carregando...'}</h2>
-                            <button onClick={() => setSidebarOpen(false)} className="p-2 text-gray-400 hover:text-white transition-colors">
+                            <button
+                                onClick={() => setSidebarOpen(false)}
+                                className="p-2 text-white hover:bg-white/10 rounded-lg transition-colors"
+                                style={{ backgroundColor: primaryColor }}
+                            >
                                 <PanelLeftClose className="w-5 h-5" />
                             </button>
                         </div>
@@ -442,6 +446,7 @@ export const CoursePlayer = () => {
                             <button
                                 onClick={() => navigate(slug ? `/app/${slug}` : '/app')}
                                 className="flex items-center justify-center gap-2 w-full py-4 font-medium text-sm transition-all bg-white/5 hover:bg-white/10 text-white"
+                                style={{ backgroundColor: primaryColor }}
                             >
                                 <Home className="w-4 h-4" /> Ir para Vitrine
                             </button>
@@ -451,8 +456,9 @@ export const CoursePlayer = () => {
                     <div className="flex flex-col items-center py-6 space-y-6">
                         <button
                             onClick={() => setSidebarOpen(true)}
-                            className="p-3 text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition-all"
+                            className="p-3 text-white hover:bg-white/10 rounded-xl transition-all"
                             title="Expandir menu"
+                            style={{ backgroundColor: primaryColor }}
                         >
                             <PanelLeftOpen className="w-6 h-6" />
                         </button>
@@ -470,8 +476,9 @@ export const CoursePlayer = () => {
 
                         <button
                             onClick={() => navigate(slug ? `/app/${slug}` : '/app')}
-                            className="p-3 text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition-all"
+                            className="p-3 text-white hover:bg-white/10 rounded-xl transition-all"
                             title="Ir para Vitrine"
+                            style={{ backgroundColor: primaryColor }}
                         >
                             <Home className="w-6 h-6" />
                         </button>
@@ -485,7 +492,8 @@ export const CoursePlayer = () => {
                 {!sidebarOpen && (
                     <button
                         onClick={() => setSidebarOpen(true)}
-                        className="absolute top-6 left-6 z-30 p-2 text-gray-400 hover:text-white md:hidden bg-black/50 rounded-lg backdrop-blur-sm transition-colors"
+                        className="absolute top-6 left-6 z-30 p-2 text-white md:hidden rounded-lg backdrop-blur-sm transition-colors"
+                        style={{ backgroundColor: primaryColor }}
                     >
                         <PanelLeftOpen className="w-6 h-6" />
                     </button>
