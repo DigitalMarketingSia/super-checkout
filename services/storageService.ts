@@ -1477,7 +1477,8 @@ class StorageService {
         is_free: lesson.is_free,
         duration: lesson.duration,
         image_url: lesson.image_url,
-        gallery: lesson.gallery
+        gallery: lesson.gallery,
+        content_order: lesson.content_order
       })
       .eq('id', lesson.id)
       .select()
