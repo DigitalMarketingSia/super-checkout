@@ -30,6 +30,7 @@ import { MemberSignup } from './pages/member/MemberSignup';
 import { MemberAreaWrapper } from './pages/member/MemberAreaWrapper';
 import { MemberProducts } from './pages/member/MemberProducts';
 import { MemberFAQ } from './pages/member/MemberFAQ';
+import { MemberProfile } from './pages/member/MemberProfile';
 import { ThemeProvider } from './context/ThemeContext';
 
 import { storage } from './services/storageService';
@@ -206,6 +207,7 @@ const DomainDispatcher = () => {
         <Route path="my-list" element={<MemberDashboard />} />
         <Route path="new" element={<MemberDashboard />} />
         <Route path="content/:id" element={<ContentModules />} />
+        <Route path="profile" element={<MemberProfile />} />
       </Route>
 
       {/* Course Player (Fullscreen - Outside Wrapper) */}
