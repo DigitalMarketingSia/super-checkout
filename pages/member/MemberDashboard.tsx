@@ -65,6 +65,27 @@ export const MemberDashboard = () => {
                 const appLink = memberArea ? `/app/${memberArea.slug}` : '/app';
                 console.log('Navigating to:', appLink);
                 if (item.content) {
+                    navigate(`${appLink}/content/${item.content.id}`);
+                } else if (item.module) {
+                    navigate(`${appLink}/course/${item.module.content_id}`);
+                } else if (item.lesson) {
+                    // Navigate to Course Player with Content ID and Lesson ID
+                    const module = Array.isArray(item.lesson.module) ? item.lesson.module[0] : item.lesson.module;
+                    const contentId = module?.content_id;
+
+                    console.log('Lesson Navigation:', { lesson: item.lesson, module, contentId });
+
+                    if (contentId) {
+                        navigate(`${appLink}/course/${contentId}?lesson_id=${item.lesson.id}`);
+                    } else {
+                        console.error('Content ID not found for lesson', item.lesson);
+                        alert('Erro ao navegar: Conteúdo da aula não encontrado.');
+                    }
+                }
+            },
+            onSalesModal: (product) => {
+                console.log('Sales modal triggered', product);
+                if (product) {
                     setSelectedProduct(product);
                     setIsModalOpen(true);
                 } else {
