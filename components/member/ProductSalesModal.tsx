@@ -11,15 +11,26 @@ interface ProductSalesModalProps {
 export const ProductSalesModal: React.FC<ProductSalesModalProps> = ({ isOpen, onClose, product }) => {
     if (!isOpen || !product) return null;
 
-    const handleBuy = () => {
+    const handleBuy = async () => {
+        // Get current user to pass to checkout (cross-domain support)
+        const { paymentService } = await import('../../services/paymentService'); // Just to ensure services are loaded if needed, but we use storage
+        const { storage } = await import('../../services/storageService');
+        const user = await storage.getUser();
+
+        const appendUserParam = (url: string) => {
+            if (!user) return url;
+            const separator = url.includes('?') ? '&' : '?';
+            return `${url}${separator}u=${user.id}`;
+        };
+
         if (product.redirect_link) {
-            window.open(product.redirect_link, '_blank');
+            window.open(appendUserParam(product.redirect_link), '_blank');
         } else if (product.checkout_url) {
-            window.open(product.checkout_url, '_blank');
+            window.open(appendUserParam(product.checkout_url), '_blank');
         } else if (product.checkout_slug) {
             // Fallback to relative URL
             const checkoutUrl = `/checkout/${product.checkout_slug}`;
-            window.open(checkoutUrl, '_blank');
+            window.open(appendUserParam(checkoutUrl), '_blank');
         }
     };
 

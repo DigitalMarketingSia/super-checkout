@@ -159,11 +159,19 @@ export const PublicCheckout = ({ checkoutId: propId }: { checkoutId?: string }) 
    useEffect(() => {
       const load = async () => {
          try {
-            // 0. Check for Logged In User
+            // 0. Check for Logged In User (Session or URL Param)
             const user = await storage.getUser();
             if (user) {
                setUserId(user.id);
-               console.log('[PublicCheckout] User logged in:', user.id);
+               console.log('[PublicCheckout] User logged in (session):', user.id);
+            } else {
+               // Check URL for cross-domain user ID
+               const urlParams = new URLSearchParams(window.location.search);
+               const urlUserId = urlParams.get('u');
+               if (urlUserId) {
+                  setUserId(urlUserId);
+                  console.log('[PublicCheckout] User ID from URL:', urlUserId);
+               }
             }
 
             // 1. Get Checkout (Public)
