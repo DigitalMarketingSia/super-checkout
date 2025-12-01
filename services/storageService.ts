@@ -1881,7 +1881,7 @@ class StorageService {
       } else if (track.type === 'modules') {
         const { data } = await supabase
           .from('modules')
-          .select('*, content:contents(product_contents(products(*, checkouts:member_area_checkout_id(id, custom_url_slug, domain_id, domains:domain_id(domain)))))')
+          .select('*, content:contents(*, product_contents(products(*, checkouts:member_area_checkout_id(id, custom_url_slug, domain_id, domains:domain_id(domain)))))')
           .in('id', itemIds);
 
         relatedData = (data || []).map((m: any) => ({
@@ -1891,7 +1891,7 @@ class StorageService {
       } else if (track.type === 'lessons') {
         const { data } = await supabase
           .from('lessons')
-          .select('*, module:modules(content:contents(product_contents(products(*, checkouts:member_area_checkout_id(id, custom_url_slug, domain_id, domains:domain_id(domain))))))')
+          .select('*, module:modules(*, content:contents(*, product_contents(products(*, checkouts:member_area_checkout_id(id, custom_url_slug, domain_id, domains:domain_id(domain))))))')
           .in('id', itemIds);
 
         relatedData = (data || []).map((l: any) => {
