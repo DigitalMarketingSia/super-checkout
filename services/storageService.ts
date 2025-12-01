@@ -1894,10 +1894,17 @@ class StorageService {
           .select('*, module:modules(content:contents(product_contents(products(*, checkouts:member_area_checkout_id(id, custom_url_slug, domain_id, domains:domain_id(domain))))))')
           .in('id', itemIds);
 
-        relatedData = (data || []).map((l: any) => ({
-          ...l,
-          associated_product: l.module?.content?.product_contents?.[0]?.products
-        }));
+        relatedData = (data || []).map((l: any) => {
+          const module = Array.isArray(l.module) ? l.module[0] : l.module;
+          const content = module && Array.isArray(module.content) ? module.content[0] : module?.content;
+          const product = content?.product_contents?.[0]?.products;
+
+          return {
+            ...l,
+            module: module ? { ...module, content } : undefined,
+            associated_product: product
+          };
+        });
       }
 
       // Helper to map product fields
