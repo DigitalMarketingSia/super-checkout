@@ -116,13 +116,13 @@ export const MemberProfile = () => {
                                             </div>
                                             <p className="text-gray-400 text-sm flex items-center gap-1">
                                                 <Calendar className="w-3 h-3" />
-                                                Acesso liberado em: {new Date(grant.created_at).toLocaleDateString()}
+                                                Acesso liberado em: {new Date(grant.granted_at).toLocaleDateString()}
                                             </p>
                                         </div>
                                         <div className="flex items-center gap-3">
                                             <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${grant.status === 'active'
-                                                    ? 'bg-green-500/10 text-green-500 border border-green-500/20'
-                                                    : 'bg-red-500/10 text-red-500 border border-red-500/20'
+                                                ? 'bg-green-500/10 text-green-500 border border-green-500/20'
+                                                : 'bg-red-500/10 text-red-500 border border-red-500/20'
                                                 }`}>
                                                 {grant.status === 'active' ? 'Ativo' : 'Inativo'}
                                             </span>
