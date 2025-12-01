@@ -495,9 +495,9 @@ export const Webhooks = () => {
 
                   <div className="bg-black/40 rounded-xl p-4 border border-white/10 flex items-center justify-between gap-4">
                      <code className="text-primary-light font-mono text-sm break-all">
-                        https://api.supercheckout.app/v1/webhooks/incoming/{'{integration_id}'}
+                        {typeof window !== 'undefined' ? window.location.origin : 'https://api.supercheckout.app'}/api/v1/webhooks/incoming/{'{integration_id}'}
                      </code>
-                     <Button size="sm" variant="secondary" onClick={() => copyToClipboard('https://api.supercheckout.app/v1/webhooks/incoming/')}>
+                     <Button size="sm" variant="secondary" onClick={() => copyToClipboard(`${typeof window !== 'undefined' ? window.location.origin : 'https://api.supercheckout.app'}/api/v1/webhooks/incoming/`)}>
                         <Copy className="w-4 h-4 mr-2" /> Copiar
                      </Button>
                   </div>
@@ -509,7 +509,7 @@ export const Webhooks = () => {
                         <Terminal className="w-4 h-4 text-green-500" /> Exemplo cURL
                      </h3>
                      <pre className="bg-black/30 p-4 rounded-lg text-xs text-gray-400 font-mono overflow-x-auto custom-scrollbar">
-                        {`curl -X POST https://api.supercheckout.app/v1/webhooks/incoming/123 \\
+                        {`curl -X POST ${typeof window !== 'undefined' ? window.location.origin : 'https://api.supercheckout.app'}/api/v1/webhooks/incoming/123 \\
 -H "Content-Type: application/json" \\
 -H "Authorization: Bearer YOUR_API_KEY" \\
 -d '{
