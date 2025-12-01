@@ -48,6 +48,14 @@ export const useAccessControl = (accessGrants: AccessGrant[] = []): UseAccessCon
             const module = item.lesson.module;
             const content = module?.content;
             
+            console.log('Access Check (Lesson TrackItem):', {
+                lessonFree: item.lesson.is_free,
+                moduleFree: module?.is_free,
+                contentFree: content?.is_free,
+                module,
+                content
+            });
+
             isFree = item.lesson.is_free || module?.is_free || content?.is_free || false;
             
             // Try to get contentId from context if available
