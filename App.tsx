@@ -33,6 +33,7 @@ import { MemberProducts } from './pages/member/MemberProducts';
 import { MemberFAQ } from './pages/member/MemberFAQ';
 import { MemberProfile } from './pages/member/MemberProfile';
 import { ThemeProvider } from './context/ThemeContext';
+import { LicenseGuard } from './components/LicenseGuard';
 
 import { storage } from './services/storageService';
 
@@ -226,7 +227,9 @@ const App = () => {
     <AuthProvider>
       <ThemeProvider>
         <BrowserRouter>
-          <DomainDispatcher />
+          <LicenseGuard>
+            <DomainDispatcher />
+          </LicenseGuard>
         </BrowserRouter>
       </ThemeProvider>
     </AuthProvider>
