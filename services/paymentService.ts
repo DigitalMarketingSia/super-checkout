@@ -221,6 +221,7 @@ class PaymentService {
         description: `Pedido #${order.id}`,
         installments: 1,
         payment_method_id: paymentMethodId,
+        external_reference: order.customer_user_id, // Link payment to user ID for robust webhook handling
         payer: {
           email: order.customer_email,
           first_name: order.customer_name.split(' ')[0],
