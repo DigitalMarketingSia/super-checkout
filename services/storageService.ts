@@ -1244,7 +1244,12 @@ class StorageService {
       return {
         ...c,
         modules_count: c.modules_count?.[0]?.count || 0,
-        associated_product: product ? { ...product, checkout_slug: checkoutSlug, checkout_url: checkoutUrl } : undefined
+        associated_product: product ? {
+          ...product,
+          imageUrl: product.image_url,
+          checkout_slug: checkoutSlug,
+          checkout_url: checkoutUrl
+        } : undefined
       };
     }) as Content[];
   }

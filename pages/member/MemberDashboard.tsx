@@ -70,7 +70,16 @@ export const MemberDashboard = () => {
                 } else if (item.module) {
                     navigate(`${appLink}/course/${item.module.content_id}`);
                 } else if (item.lesson) {
-                    navigate(`${appLink}/course/${item.lesson.module_id}`);
+                    // Navigate to Course Player with Content ID and Lesson ID
+                    // We need the content_id. Assuming item.lesson.module.content_id is available.
+                    // If not available directly, we might need to rely on what we have.
+                    // But getTrackWithItems fetches module->content.
+                    const contentId = item.lesson.module?.content_id;
+                    if (contentId) {
+                        navigate(`${appLink}/course/${contentId}?lesson_id=${item.lesson.id}`);
+                    } else {
+                        console.error('Content ID not found for lesson', item.lesson);
+                    }
                 }
             },
             onSalesModal: (product) => {
