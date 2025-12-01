@@ -250,6 +250,7 @@ export interface Module {
   image_horizontal_url?: string;
   is_free?: boolean;
   associated_product?: Product;
+  content?: Content;
 }
 
 export interface LessonResource {

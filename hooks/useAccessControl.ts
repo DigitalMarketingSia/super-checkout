@@ -45,13 +45,17 @@ export const useAccessControl = (accessGrants: AccessGrant[] = []): UseAccessCon
             contentId = item.module.content_id;
         } else if ('lesson' in item && item.lesson) {
             // It's a TrackItem with lesson
-            isFree = item.lesson.is_free || false;
+            const module = item.lesson.module;
+            const content = module?.content;
+            
+            isFree = item.lesson.is_free || module?.is_free || content?.is_free || false;
+            
             // Try to get contentId from context if available
             if (context?.content) {
                 contentId = context.content.id;
-            } else if (item.lesson.module?.content_id) {
+            } else if (module?.content_id) {
                 // Fallback: Check if lesson has module populated with content_id
-                contentId = item.lesson.module.content_id;
+                contentId = module.content_id;
             }
         } else if ('is_free' in item) {
             // Direct Content/Module/Lesson object
