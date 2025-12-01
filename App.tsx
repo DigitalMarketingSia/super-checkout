@@ -12,6 +12,7 @@ import { Domains } from './pages/admin/Domains';
 import { Settings } from './pages/admin/Settings';
 import { Orders } from './pages/admin/Orders';
 import { Webhooks } from './pages/admin/Webhooks';
+import { Licenses } from './pages/admin/Licenses';
 import { Marketing } from './pages/Marketing';
 import { IntegrationsHub } from './pages/IntegrationsHub';
 import { MemberAreas } from './pages/admin/MemberAreas';
@@ -187,6 +188,7 @@ const DomainDispatcher = () => {
       <Route path="/admin/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
       <Route path="/admin/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
       <Route path="/admin/webhooks" element={<ProtectedRoute><Webhooks /></ProtectedRoute>} />
+      <Route path="/admin/licenses" element={<ProtectedRoute><Licenses /></ProtectedRoute>} />
       <Route path="/admin/marketing" element={<ProtectedRoute><Marketing /></ProtectedRoute>} />
       <Route path="/admin/integrations" element={<ProtectedRoute><IntegrationsHub /></ProtectedRoute>} />
       <Route path="/admin/members" element={<ProtectedRoute><MemberAreas /></ProtectedRoute>} />

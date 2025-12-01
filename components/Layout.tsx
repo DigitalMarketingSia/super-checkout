@@ -21,7 +21,8 @@ import {
   Mail,
   Plug,
   Users,
-  BookOpen
+  BookOpen,
+  Key
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -42,6 +43,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     { path: '/admin/orders', icon: Tag, label: 'Pedidos' },
     { path: '/admin/marketing', icon: Mail, label: 'Marketing & E-mail' },
     { path: '/admin/integrations', icon: Plug, label: 'Integrações' },
+    { path: '/admin/licenses', icon: Key, label: 'Licenças' },
   ];
 
   return (
