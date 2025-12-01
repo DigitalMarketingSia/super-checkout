@@ -108,17 +108,22 @@ export const CoursePlayer = () => {
     // Check access when currentLesson changes (for direct URL access)
     useEffect(() => {
         if (!loading && currentLesson) {
+            // Find the module for the current lesson
+            const currentModule = modules.find(m => m.lessons?.some(l => l.id === currentLesson.id));
+
             handleAccess(currentLesson, {
                 onAccess: () => { }, // Do nothing, already here
                 onSalesModal: (product) => {
                     setSelectedProduct(product);
                     setIsModalOpen(true);
                 }
-            }, { content: content || undefined });
+            }, { content: content || undefined, module: currentModule });
         }
-    }, [currentLesson, loading, accessGrants, content]);
+    }, [currentLesson, loading, accessGrants, content, modules]);
 
     const handleLessonSelect = (lesson: Lesson) => {
+        const currentModule = modules.find(m => m.lessons?.some(l => l.id === lesson.id));
+
         handleAccess(lesson, {
             onAccess: () => {
                 setCurrentLesson(lesson);
@@ -132,7 +137,7 @@ export const CoursePlayer = () => {
                 setSelectedProduct(product);
                 setIsModalOpen(true);
             }
-        }, { content: content || undefined });
+        }, { content: content || undefined, module: currentModule });
     };
 
     const toggleModule = (moduleId: string) => {

@@ -5,14 +5,14 @@ import { AccessGrant, Content, Module, Lesson, Product, TrackItem } from '../typ
 export type AccessAction = 'ACCESS' | 'LOGIN' | 'SALES_MODAL';
 
 interface UseAccessControlResult {
-    checkAccess: (item: TrackItem | Content | Module | Lesson | Product, context?: { content?: Content }) => AccessAction;
+    checkAccess: (item: TrackItem | Content | Module | Lesson | Product, context?: { content?: Content; module?: Module }) => AccessAction;
     handleAccess: (
         item: TrackItem | Content | Module | Lesson | Product,
         callbacks: {
             onAccess: () => void;
             onSalesModal: (product?: Product) => void;
         },
-        context?: { content?: Content }
+        context?: { content?: Content; module?: Module }
     ) => void;
 }
 
@@ -23,7 +23,7 @@ export const useAccessControl = (accessGrants: AccessGrant[] = []): UseAccessCon
 
     const checkAccess = (
         item: TrackItem | Content | Module | Lesson | Product,
-        context?: { content?: Content }
+        context?: { content?: Content; module?: Module }
     ): AccessAction => {
         // Normalize item to check properties
         let isFree = false;
@@ -47,7 +47,7 @@ export const useAccessControl = (accessGrants: AccessGrant[] = []): UseAccessCon
             // It's a TrackItem with lesson
             const module = item.lesson.module;
             const content = module?.content;
-            
+
             console.log('Access Check (Lesson TrackItem):', {
                 lessonFree: item.lesson.is_free,
                 moduleFree: module?.is_free,
@@ -57,7 +57,7 @@ export const useAccessControl = (accessGrants: AccessGrant[] = []): UseAccessCon
             });
 
             isFree = item.lesson.is_free || module?.is_free || content?.is_free || false;
-            
+
             // Try to get contentId from context if available
             if (context?.content) {
                 contentId = context.content.id;
@@ -67,7 +67,12 @@ export const useAccessControl = (accessGrants: AccessGrant[] = []): UseAccessCon
             }
         } else if ('is_free' in item) {
             // Direct Content/Module/Lesson object
-            isFree = (item as any).is_free || false;
+            const directFree = (item as any).is_free || false;
+            const contextContentFree = context?.content?.is_free || false;
+            const contextModuleFree = context?.module?.is_free || false;
+
+            isFree = directFree || contextContentFree || contextModuleFree;
+
             if ('content_id' in item) contentId = (item as any).content_id;
             if ('id' in item && !('content_id' in item) && !('video_url' in item)) contentId = (item as any).id; // Content object
 
@@ -123,7 +128,7 @@ export const useAccessControl = (accessGrants: AccessGrant[] = []): UseAccessCon
             onAccess: () => void;
             onSalesModal: (product?: Product) => void;
         },
-        context?: { content?: Content }
+        context?: { content?: Content; module?: Module }
     ) => {
         const action = checkAccess(item, context);
 
