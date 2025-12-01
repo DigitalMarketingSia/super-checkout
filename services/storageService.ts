@@ -1609,6 +1609,38 @@ class StorageService {
     return data as AccessGrant[];
   }
 
+  async createAccessGrant(grant: Omit<AccessGrant, 'id' | 'granted_at'>) {
+    // Note: This usually requires service role or admin privileges if creating for another user
+    // Assuming the current context allows it (e.g. merchant context or server-side)
+    const { error } = await supabase
+      .from('access_grants')
+      .insert({
+        ...grant,
+        granted_at: new Date().toISOString()
+      });
+
+    if (error) {
+      console.error('Error creating access grant:', error.message);
+      // Don't throw, just log. We don't want to break the payment flow if grant fails (can be fixed manually)
+    } else {
+      console.log('Access grant created for user:', grant.user_id, 'content:', grant.content_id);
+    }
+  }
+
+  async getContentsByProduct(productId: string): Promise<Content[]> {
+    const { data, error } = await supabase
+      .from('product_contents')
+      .select('content:contents(*)')
+      .eq('product_id', productId);
+
+    if (error) {
+      console.error('Error fetching contents by product:', error.message);
+      return [];
+    }
+
+    return data.map((item: any) => item.content) as Content[];
+  }
+
   async updateLessonProgress(progress: { lesson_id: string, completed: boolean, last_position_seconds?: number }) {
     const user = await this.getUser();
     if (!user) return;

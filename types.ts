@@ -152,6 +152,7 @@ export interface Order {
   payment_method: 'credit_card' | 'pix' | 'boleto'; // Added for CRM
   items?: OrderItem[]; // Added for details
   created_at: string;
+  customer_user_id?: string; // ID of the user who purchased (for access grants)
 }
 
 export interface Payment {

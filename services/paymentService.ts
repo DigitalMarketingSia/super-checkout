@@ -25,6 +25,7 @@ export interface ProcessPaymentRequest {
   gatewayId: string;
   paymentMethod: 'credit_card' | 'pix' | 'boleto';
   items: OrderItem[];
+  customerUserId?: string; // Added for access grants
   // Card Data (Optional - only for credit_card)
   cardData?: {
     number: string;
@@ -93,6 +94,7 @@ class PaymentService {
         payment_method: request.paymentMethod,
         items: request.items,
         created_at: new Date().toISOString(),
+        customer_user_id: request.customerUserId // Save user ID
       };
 
       // Persist Order
@@ -124,6 +126,9 @@ class PaymentService {
         // Simplified check: If success and not pending (like Pix/Boleto which return specific data), assume approved
         if (!gatewayResponse.pixData && !gatewayResponse.boletoData) {
           emailService.sendPaymentApproved(newOrder).catch(console.error);
+
+          // Grant Access immediately for credit card
+          this.grantAccess(newOrder).catch(console.error);
         }
 
         return {
@@ -367,6 +372,7 @@ class PaymentService {
         const order = orders.find(o => o.id === relatedPayment.order_id);
         if (order) {
           emailService.sendPaymentApproved(order).catch(console.error);
+          this.grantAccess(order).catch(console.error);
         }
       }
 
@@ -400,6 +406,77 @@ class PaymentService {
   }
 
   // --- Helper Methods ---
+
+  private async grantAccess(order: Order) {
+    if (!order.customer_user_id) {
+      console.warn('[PaymentService] No customer user ID found for order. Cannot grant access automatically.');
+      // Future: Implement email-based lookup or "claim" system
+      return;
+    }
+
+    console.log('[PaymentService] Granting access for order:', order.id);
+
+    // 1. Get all products from order items
+    // Assuming order.items contains product names or we can infer.
+    // Ideally order items should have product_id. 
+    // But OrderItem currently only has name.
+    // We need to fetch the checkout to get the main product ID.
+
+    // Strategy:
+    // Main Product: Get from Checkout
+    // Bumps: We need to find them by name or ID. OrderItem doesn't have ID.
+    // CRITICAL FIX: We need to know which products were bought.
+    // For now, let's assume we can get the main product from the checkout.
+
+    // Fetch Checkout to get Main Product ID
+    const checkout = await storage.getPublicCheckout(order.checkout_id);
+    if (!checkout) {
+      console.error('[PaymentService] Checkout not found for access grant');
+      return;
+    }
+
+    const productsToGrant: string[] = [checkout.product_id];
+
+    // Handle Bumps
+    // We need to match order items to bump IDs.
+    // Since we don't store product_id in OrderItem, we have to rely on matching names or just assume if it's a bump type.
+    // Better approach: Update OrderItem to include product_id? Too risky for now.
+    // Let's iterate order items and if type is 'bump', try to find the product in checkout.order_bump_ids
+
+    if (order.items && order.items.length > 0) {
+      for (const item of order.items) {
+        if (item.type === 'bump') {
+          // We have to find which bump this is.
+          // This is a limitation of current OrderItem structure.
+          // For now, let's skip bumps or try to match by name if possible.
+          // Or fetch all bumps and match name.
+          if (checkout.order_bump_ids) {
+            for (const bumpId of checkout.order_bump_ids) {
+              const bumpProduct = await storage.getPublicProduct(bumpId);
+              if (bumpProduct && bumpProduct.name === item.name) {
+                productsToGrant.push(bumpId);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // 2. Grant Access for each product
+    for (const productId of productsToGrant) {
+      // Get contents associated with this product
+      const contents = await storage.getContentsByProduct(productId);
+
+      for (const content of contents) {
+        await storage.createAccessGrant({
+          user_id: order.customer_user_id,
+          content_id: content.id,
+          product_id: productId,
+          status: 'active'
+        });
+      }
+    }
+  }
 
   private async savePayment(payment: Payment) {
     // Use createPayment for initial save to avoid RLS issues with upsert

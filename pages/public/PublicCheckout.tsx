@@ -152,10 +152,20 @@ export const PublicCheckout = ({ checkoutId: propId }: { checkoutId?: string }) 
 
    const currentCardStyle = cardBrandConfig[cardBrand];
 
+   // User State
+   const [userId, setUserId] = useState<string | undefined>(undefined);
+
    // Load Data
    useEffect(() => {
       const load = async () => {
          try {
+            // 0. Check for Logged In User
+            const user = await storage.getUser();
+            if (user) {
+               setUserId(user.id);
+               console.log('[PublicCheckout] User logged in:', user.id);
+            }
+
             // 1. Get Checkout (Public)
             const checkout = await storage.getPublicCheckout(id!);
 
@@ -417,6 +427,7 @@ export const PublicCheckout = ({ checkoutId: propId }: { checkoutId?: string }) 
             gatewayId: data.gateway.id,
             paymentMethod: paymentMethod,
             items: items,
+            customerUserId: userId, // Pass logged-in user ID
             // Pass Card Data if Credit Card
             cardData: paymentMethod === 'credit_card' ? {
                number: customer.cardNumber,
