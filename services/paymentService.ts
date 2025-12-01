@@ -69,11 +69,10 @@ class PaymentService {
     try {
       console.log('[PaymentService] processPayment started');
       // 1. Validate Gateway
-      const gateways = await storage.getGateways();
-      console.log('[PaymentService] Gateways fetched', gateways.length);
-      const gateway = gateways.find(g => g.id === request.gatewayId && g.active);
+      const gateway = await storage.getPublicGateway(request.gatewayId);
+      console.log('[PaymentService] Gateway fetched:', gateway ? 'Found' : 'Not Found');
 
-      if (!gateway) {
+      if (!gateway || !gateway.active) {
         return { success: false, message: 'Payment Gateway unavailable' };
       }
 
