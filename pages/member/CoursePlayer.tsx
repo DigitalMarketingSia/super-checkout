@@ -111,6 +111,13 @@ export const CoursePlayer = () => {
             // Find the module for the current lesson
             const currentModule = modules.find(m => m.lessons?.some(l => l.id === currentLesson.id));
 
+            console.log('CoursePlayer Access Check:', {
+                lesson: currentLesson,
+                module: currentModule,
+                content: content,
+                grants: accessGrants
+            });
+
             handleAccess(currentLesson, {
                 onAccess: () => { }, // Do nothing, already here
                 onSalesModal: (product) => {
