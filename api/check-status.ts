@@ -174,22 +174,76 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${supabaseKey}`
                     },
-                    body: JSON.stringify({
-                        to: order.customer_email,
-                        subject: `Pagamento Aprovado - Acesso Liberado!`,
-                        html
-                    })
-                });
-            }
+                })
+            });
         }
 
-        return res.status(200).json({
-            status: newStatus,
-            mpStatus: mpStatus
-        });
+        // 6. Grant Access (Server-Side) - Redundancy for Polling
+        if (newStatus === 'paid' && order.customer_user_id) {
+            try {
+                console.log(`[CheckStatus] Granting access for Order ${order.id} to User ${order.customer_user_id}`);
 
-    } catch (error: any) {
-        console.error('[CheckStatus] Error:', error);
-        return res.status(500).json({ error: error.message });
+                // A. Get Checkout to find Product
+                const checkoutRes = await fetch(`${supabaseUrl}/rest/v1/checkouts?id=eq.${order.checkout_id}&select=product_id,order_bump_ids`, {
+                    headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
+                });
+
+                if (checkoutRes.ok) {
+                    const checkouts = await checkoutRes.json();
+                    const checkout = checkouts[0];
+
+                    if (checkout) {
+                        const productsToGrant = [checkout.product_id];
+
+                        // Handle Bumps (simplified)
+                        // TODO: Robust Bump Matching
+
+                        for (const productId of productsToGrant) {
+                            // B. Get Contents for Product
+                            const pcRes = await fetch(`${supabaseUrl}/rest/v1/product_contents?product_id=eq.${productId}&select=content_id`, {
+                                headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
+                            });
+
+                            if (pcRes.ok) {
+                                const productContents = await pcRes.json();
+
+                                for (const pc of productContents) {
+                                    // C. Create Access Grant
+                                    await fetch(`${supabaseUrl}/rest/v1/access_grants`, {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'apikey': supabaseKey,
+                                            'Authorization': `Bearer ${supabaseKey}`,
+                                            'Prefer': 'return=minimal'
+                                        },
+                                        body: JSON.stringify({
+                                            user_id: order.customer_user_id,
+                                            content_id: pc.content_id,
+                                            product_id: productId,
+                                            status: 'active',
+                                            granted_at: new Date().toISOString()
+                                        })
+                                    });
+                                }
+                            }
+                        }
+                        console.log(`[CheckStatus] Access granted successfully`);
+                    }
+                }
+            } catch (grantError: any) {
+                console.error('[CheckStatus] Error granting access:', grantError);
+            }
+        }
     }
+
+        return res.status(200).json({
+        status: newStatus,
+        mpStatus: mpStatus
+    });
+
+} catch (error: any) {
+    console.error('[CheckStatus] Error:', error);
+    return res.status(500).json({ error: error.message });
+}
 }
