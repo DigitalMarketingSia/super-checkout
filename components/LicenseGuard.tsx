@@ -11,17 +11,12 @@ export const LicenseGuard: React.FC<LicenseGuardProps> = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     // Configuration
-    const LICENSE_KEY = process.env.NEXT_PUBLIC_LICENSE_KEY;
-    // In a real scenario, this URL is hardcoded to YOUR central server
-    // For testing, we use the current origin or a specific env var
-    const LICENSING_SERVER = process.env.NEXT_PUBLIC_LICENSING_SERVER_URL || 'https://super-checkout.vercel.app';
+    const LICENSE_KEY = import.meta.env.VITE_LICENSE_KEY;
+    const LICENSING_SERVER = import.meta.env.VITE_LICENSING_SERVER_URL || 'https://super-checkout.vercel.app';
 
     useEffect(() => {
         const validateLicense = async () => {
             // If no license key is present, we might be in SaaS mode OR unconfigured Self-Hosted
-            // For this transition, if NO key is set, we assume SaaS (allow access)
-            // OR we show a "Setup Required" screen. 
-            // Let's assume: If env var is missing, it's SaaS (Pass).
             if (!LICENSE_KEY) {
                 console.log('No license key found. Assuming SaaS mode.');
                 setIsValid(true);
@@ -53,9 +48,6 @@ export const LicenseGuard: React.FC<LicenseGuardProps> = ({ children }) => {
                 }
             } catch (error) {
                 console.error('License validation error:', error);
-                // Fail open or closed? 
-                // For security: Fail Closed. For UX: Fail Open (maybe retry).
-                // Let's Fail Closed for now to demonstrate protection.
                 setIsValid(false);
                 setMessage('Erro ao conectar ao servidor de licenças.');
             } finally {
