@@ -108,7 +108,7 @@ class StorageService {
       price_fake: p.price_fake,
       sku: p.sku,
       category: p.category,
-      redirect_link: p.redirect_link,
+
       is_order_bump: p.is_order_bump,
       is_upsell: p.is_upsell,
       visible_in_member_area: p.visible_in_member_area,
@@ -1746,7 +1746,7 @@ class StorageService {
         logo_url: area.logo_url,
         primary_color: area.primary_color,
         favicon_url: area.favicon_url,
-        favicon_url: area.favicon_url,
+
         layout_mode: area.layout_mode,
         card_style: area.card_style,
         login_image_url: area.login_image_url,
