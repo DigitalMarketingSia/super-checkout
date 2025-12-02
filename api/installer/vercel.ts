@@ -14,7 +14,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method === 'OPTIONS') return res.status(200).end();
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-    const { action, code, licenseKey } = req.body;
+    const { action, code, licenseKey, supabaseUrl, supabaseAnonKey, supabaseServiceKey } = req.body;
 
     // 1. Validate License
     if (!licenseKey) return res.status(400).json({ error: 'Missing license key' });
@@ -69,18 +69,59 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 },
                 body: JSON.stringify({
                     name: 'super-checkout-instance',
-                    framework: 'vite'
+                    framework: 'vite',
+                    gitRepository: {
+                        type: 'github',
+                        repo: 'DigitalMarketingSia/super-checkout'
+                    }
                 })
             });
 
             const projectData = await createRes.json();
             if (!createRes.ok) throw new Error(projectData.error?.message || 'Failed to create project');
 
+            // 4. Set Environment Variables
+            const envVars = [
+                { key: 'VITE_SUPABASE_URL', value: supabaseUrl, type: 'plain', target: ['production', 'preview', 'development'] },
+                { key: 'VITE_SUPABASE_ANON_KEY', value: supabaseAnonKey, type: 'plain', target: ['production', 'preview', 'development'] },
+                { key: 'SUPABASE_SERVICE_ROLE_KEY', value: supabaseServiceKey, type: 'plain', target: ['production', 'preview', 'development'] },
+                { key: 'VITE_LICENSE_KEY', value: licenseKey, type: 'plain', target: ['production', 'preview', 'development'] }
+            ];
+
+            for (const env of envVars) {
+                await fetch(`https://api.vercel.com/v9/projects/${projectData.id}/env${teamId ? `?teamId=${teamId}` : ''}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(env)
+                });
+            }
+
+            // 5. Trigger Deployment
+            await fetch(`https://api.vercel.com/v13/deployments${teamId ? `?teamId=${teamId}` : ''}`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    name: 'super-checkout-instance',
+                    project: projectData.id,
+                    gitSource: {
+                        type: 'github',
+                        repoId: projectData.link?.repoId || 'DigitalMarketingSia/super-checkout',
+                        ref: 'main'
+                    }
+                })
+            });
+
             return res.status(200).json({
                 success: true,
                 projectName: projectData.name,
                 projectId: projectData.id,
-                projectUrl: projectData.link
+                projectUrl: `https://${projectData.name}.vercel.app`
             });
         }
 
