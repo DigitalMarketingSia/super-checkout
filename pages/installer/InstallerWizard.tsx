@@ -133,10 +133,9 @@ export default function InstallerWizard() {
 
             addLog(`Projeto criado: ${data.projectRef}`);
 
-            // Store keys for Vercel step
+            // Store URL for next steps
             localStorage.setItem('installer_supabase_url', `https://${data.projectRef}.supabase.co`);
-            localStorage.setItem('installer_supabase_anon_key', data.anonKey);
-            localStorage.setItem('installer_supabase_service_key', data.serviceKey);
+            // Note: Keys will be entered manually in the next step
 
             addLog('Rodando migrações do banco de dados (isso pode levar um minuto)...');
 
@@ -166,7 +165,10 @@ export default function InstallerWizard() {
 
             addLog('Schema do banco de dados aplicado com sucesso!');
             setSupabaseConnected(true);
+
+            // Transition to Manual Key Entry Step
             setCurrentStep('supabase_keys');
+            addLog('Aguardando entrada manual das chaves de API...');
         } catch (error: any) {
             console.error(error);
             addLog(`Erro: ${error.message}`);
@@ -175,8 +177,6 @@ export default function InstallerWizard() {
             setIsLoading(false);
         }
     };
-
-
 
     const handleKeysSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -341,6 +341,8 @@ export default function InstallerWizard() {
                 handleSupabaseCallback(code);
             } else if (state === 'vercel') {
                 handleVercelCallback(code);
+            } else if (state === 'github') {
+                handleGitHubCallback(code);
             }
         }
     }, []);

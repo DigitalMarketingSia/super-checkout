@@ -2,7 +2,178 @@ import { createClient } from '@supabase/supabase-js';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { Buffer } from 'node:buffer';
 
-// Supabase client will be initialized inside handler to prevent startup crashes
+// Schema SQL embedded directly to avoid bundling/import issues
+const schemaSql = `
+-- Enable UUID extension
+create extension if not exists "uuid-ossp";
+
+-- Create profiles table
+create table if not exists public.profiles (
+  id uuid references auth.users on delete cascade not null primary key,
+  email text unique not null,
+  full_name text,
+  avatar_url text,
+  role text default 'member' check (role in ('admin', 'member')),
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Enable RLS on profiles
+alter table public.profiles enable row level security;
+
+-- Create profiles policies
+create policy "Public profiles are viewable by everyone."
+  on public.profiles for select
+  using ( true );
+
+create policy "Users can insert their own profile."
+  on public.profiles for insert
+  with check ( auth.uid() = id );
+
+create policy "Users can update own profile."
+  on public.profiles for update
+  using ( auth.uid() = id );
+
+-- Create products table
+create table if not exists public.products (
+  id uuid default uuid_generate_v4() primary key,
+  name text not null,
+  description text,
+  price decimal(10,2) not null,
+  currency text default 'BRL',
+  image_url text,
+  active boolean default true,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Enable RLS on products
+alter table public.products enable row level security;
+
+-- Create products policies
+create policy "Products are viewable by everyone."
+  on public.products for select
+  using ( true );
+
+create policy "Only admins can insert products."
+  on public.products for insert
+  using ( exists ( select 1 from public.profiles where id = auth.uid() and role = 'admin' ) );
+
+create policy "Only admins can update products."
+  on public.products for update
+  using ( exists ( select 1 from public.profiles where id = auth.uid() and role = 'admin' ) );
+
+create policy "Only admins can delete products."
+  on public.products for delete
+  using ( exists ( select 1 from public.profiles where id = auth.uid() and role = 'admin' ) );
+
+-- Create checkouts table
+create table if not exists public.checkouts (
+  id uuid default uuid_generate_v4() primary key,
+  product_id uuid references public.products(id) on delete cascade not null,
+  name text not null,
+  slug text unique not null,
+  theme jsonb default '{}'::jsonb,
+  settings jsonb default '{}'::jsonb,
+  active boolean default true,
+  views integer default 0,
+  sales integer default 0,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Enable RLS on checkouts
+alter table public.checkouts enable row level security;
+
+-- Create checkouts policies
+create policy "Checkouts are viewable by everyone."
+  on public.checkouts for select
+  using ( true );
+
+create policy "Only admins can insert checkouts."
+  on public.checkouts for insert
+  using ( exists ( select 1 from public.profiles where id = auth.uid() and role = 'admin' ) );
+
+create policy "Only admins can update checkouts."
+  on public.checkouts for update
+  using ( exists ( select 1 from public.profiles where id = auth.uid() and role = 'admin' ) );
+
+create policy "Only admins can delete checkouts."
+  on public.checkouts for delete
+  using ( exists ( select 1 from public.profiles where id = auth.uid() and role = 'admin' ) );
+
+-- Create orders table
+create table if not exists public.orders (
+  id uuid default uuid_generate_v4() primary key,
+  checkout_id uuid references public.checkouts(id) on delete set null,
+  product_id uuid references public.products(id) on delete set null,
+  customer_email text not null,
+  customer_name text,
+  customer_phone text,
+  amount decimal(10,2) not null,
+  currency text default 'BRL',
+  status text default 'pending' check (status in ('pending', 'paid', 'failed', 'refunded')),
+  payment_method text,
+  payment_id text,
+  metadata jsonb default '{}'::jsonb,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Enable RLS on orders
+alter table public.orders enable row level security;
+
+-- Create orders policies
+create policy "Admins can view all orders."
+  on public.orders for select
+  using ( exists ( select 1 from public.profiles where id = auth.uid() and role = 'admin' ) );
+
+create policy "Users can view their own orders."
+  on public.orders for select
+  using ( customer_email = (select email from auth.users where id = auth.uid()) );
+
+create policy "Public can insert orders (webhook/checkout)."
+  on public.orders for insert
+  using ( true );
+
+create policy "Only admins can update orders."
+  on public.orders for update
+  using ( exists ( select 1 from public.profiles where id = auth.uid() and role = 'admin' ) );
+
+-- Create licenses table (for self-hosted validation)
+create table if not exists public.licenses (
+  id uuid default uuid_generate_v4() primary key,
+  key text unique not null,
+  status text default 'active' check (status in ('active', 'inactive', 'suspended')),
+  plan text default 'pro',
+  valid_until timestamp with time zone,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Enable RLS on licenses
+alter table public.licenses enable row level security;
+
+-- Create licenses policies
+create policy "Only admins can view licenses."
+  on public.licenses for select
+  using ( exists ( select 1 from public.profiles where id = auth.uid() and role = 'admin' ) );
+
+-- Function to handle new user signup
+create or replace function public.handle_new_user()
+returns trigger as $$
+begin
+  insert into public.profiles (id, email, full_name, avatar_url, role)
+  values (new.id, new.email, new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'avatar_url', 'member');
+  return new;
+end;
+$$ language plpgsql security definer;
+
+-- Trigger for new user signup
+create or replace trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute procedure public.handle_new_user();
+`;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     try {
@@ -90,15 +261,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     },
                     body: JSON.stringify({
                         name: `Super Checkout ${Math.floor(Math.random() * 10000)}`,
-                        organization_id: tokenData.organization_id, // You might need to fetch orgs first if not provided
+                        organization_id: tokenData.organization_id,
                         db_pass: dbPass,
                         region: 'us-east-1',
                         plan: 'free'
                     })
                 });
-
-                // Note: If org_id is missing, we might need an extra step to list orgs and pick one.
-                // For now, assuming user picks or we pick first.
 
                 // Safe JSON parsing
                 const createContentType = createRes.headers.get('content-type');
@@ -109,6 +277,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     const textError = await createRes.text();
                     throw new Error(`Project creation failed (${createRes.status}): ${textError.substring(0, 200)}`);
                 }
+
                 if (!createRes.ok) {
                     // If org_id missing, try to fetch it
                     if (projectData.message?.includes('organization_id')) {
@@ -116,6 +285,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                         const orgsRes = await fetch('https://api.supabase.com/v1/organizations', {
                             headers: { 'Authorization': `Bearer ${accessToken}` }
                         });
+
+                        // Safe JSON parsing for orgs
                         const orgsContentType = orgsRes.headers.get('content-type');
                         let orgs: any;
                         if (orgsContentType && orgsContentType.includes('application/json')) {
@@ -123,8 +294,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                         } else {
                             throw new Error('Failed to fetch organizations');
                         }
+
                         if (orgs.length > 0) {
-                            // Retry with first org
                             // Retry with first org
                             const dbPassRetry = generateStrongPassword();
                             const retryRes = await fetch('https://api.supabase.com/v1/projects', {
@@ -141,6 +312,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                                     plan: 'free'
                                 })
                             });
+
+                            // Safe JSON parsing for retry
                             const retryContentType = retryRes.headers.get('content-type');
                             let retryData: any;
                             if (retryContentType && retryContentType.includes('application/json')) {
@@ -149,8 +322,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                                 const textError = await retryRes.text();
                                 throw new Error(`Project creation retry failed (${retryRes.status}): ${textError.substring(0, 200)}`);
                             }
+
                             if (!retryRes.ok) throw new Error(retryData.message || 'Failed to create project');
 
+                            // SUCCESS - Return without fetching keys
                             return res.status(200).json({
                                 success: true,
                                 projectRef: retryData.id,
@@ -162,6 +337,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     throw new Error(projectData.message || 'Failed to create project');
                 }
 
+                // SUCCESS - Return without fetching keys
                 return res.status(200).json({
                     success: true,
                     projectRef: projectData.id,
@@ -176,25 +352,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     return res.status(400).json({ error: 'Missing projectRef or accessToken' });
                 }
 
-                // Load schema dynamically to avoid function size limits
-                const fs = await import('fs/promises');
-                const path = await import('path');
-                const schemaPath = path.join(process.cwd(), 'api', 'installer', 'schema.ts');
-                const schemaContent = await fs.readFile(schemaPath, 'utf-8');
-
-                // Extract the SQL string from the TypeScript file
-                const match = schemaContent.match(/export const schemaSql = `([\s\S]*?)`;/);
-                if (!match) {
-                    throw new Error('Failed to extract schema SQL from schema.ts');
-                }
-                const schemaSql = match[1];
-
                 // Retry logic for API calls (Supabase might be provisioning)
                 let retries = 3;
                 while (retries > 0) {
                     try {
                         // Run SQL via Supabase Management API
-                        // POST https://api.supabase.com/v1/projects/{ref}/query
                         const queryRes = await fetch(`https://api.supabase.com/v1/projects/${projectRef}/query`, {
                             method: 'POST',
                             headers: {
