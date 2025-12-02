@@ -1,6 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { Client } from 'pg';
 import { schemaSql } from './schema';
 
 // Supabase client will be initialized inside handler to prevent startup crashes
@@ -165,6 +164,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             // Connection string for the NEW project
             // Format: postgres://postgres:[password]@db.[ref].supabase.co:5432/postgres
             const connectionString = `postgres://postgres:${dbPass}@db.${projectRef}.supabase.co:5432/postgres`;
+
+            // Dynamic import to avoid startup crashes if pg is not used or has issues
+            const { Client } = await import('pg');
 
             const client = new Client({
                 connectionString,
