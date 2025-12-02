@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Check, ChevronRight, Database, Globe, Key, Server, ShieldCheck, Terminal } from 'lucide-react';
 
 type Step = 'license' | 'supabase' | 'vercel' | 'config' | 'deploy';
@@ -9,7 +9,7 @@ export default function InstallerWizard() {
     const [isLoading, setIsLoading] = useState(false);
     const [logs, setLogs] = useState<string[]>([]);
 
-    // Mock State for demonstration
+    // Mock State for demonstration (in real app, these would be derived from successful API calls)
     const [supabaseConnected, setSupabaseConnected] = useState(false);
     const [vercelConnected, setVercelConnected] = useState(false);
 
@@ -18,7 +18,7 @@ export default function InstallerWizard() {
     const handleLicenseSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
-        setLogs([]); // Clear previous logs
+        setLogs([]);
 
         // BYPASS: Localhost Mock
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
@@ -27,6 +27,7 @@ export default function InstallerWizard() {
                 addLog('Licença validada com sucesso! (Mock)');
                 setIsLoading(false);
                 setCurrentStep('supabase');
+                localStorage.setItem('installer_license_key', licenseKey);
             }, 1500);
             return;
         }
@@ -45,7 +46,6 @@ export default function InstallerWizard() {
                     const errorData = await response.json();
                     errorMsg = errorData.message || errorMsg;
                 } catch (e) {
-                    // Response was probably HTML (Vercel error page)
                     console.error('Non-JSON response:', e);
                 }
                 throw new Error(errorMsg);
@@ -75,20 +75,77 @@ export default function InstallerWizard() {
 
     const handleSupabaseConnect = () => {
         setIsLoading(true);
-        setTimeout(() => {
+        const clientId = process.env.NEXT_PUBLIC_SUPABASE_CLIENT_ID || 'mock_client_id';
+        const redirectUri = `${window.location.origin}/installer`;
+        const state = 'supabase';
+
+        window.location.href = `https://api.supabase.com/v1/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&state=${state}`;
+    };
+
+    const handleSupabaseCallback = async (code: string) => {
+        setIsLoading(true);
+        addLog('Supabase connected! Creating project...');
+
+        try {
+            const res = await fetch('/api/installer/supabase', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'create_project',
+                    code,
+                    licenseKey: localStorage.getItem('installer_license_key')
+                })
+            });
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to create Supabase project');
+
+            addLog(`Project created: ${data.projectRef}`);
             setSupabaseConnected(true);
-            setIsLoading(false);
             setCurrentStep('vercel');
-        }, 1500);
+        } catch (error: any) {
+            console.error(error);
+            addLog(`Error: ${error.message}`);
+            alert(`Supabase Error: ${error.message}`);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleVercelConnect = () => {
         setIsLoading(true);
-        setTimeout(() => {
+        const clientId = process.env.NEXT_PUBLIC_VERCEL_CLIENT_ID || 'mock_client_id';
+        const redirectUri = `${window.location.origin}/installer`;
+        const state = 'vercel';
+        window.location.href = `https://vercel.com/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&state=${state}`;
+    };
+
+    const handleVercelCallback = async (code: string) => {
+        setIsLoading(true);
+        addLog('Vercel connected! Creating project...');
+        try {
+            const res = await fetch('/api/installer/vercel', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'create_project',
+                    code,
+                    licenseKey: localStorage.getItem('installer_license_key')
+                })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to create Vercel project');
+
+            addLog(`Project created: ${data.projectName}`);
             setVercelConnected(true);
-            setIsLoading(false);
             setCurrentStep('config');
-        }, 1500);
+        } catch (error: any) {
+            console.error(error);
+            addLog(`Error: ${error.message}`);
+            alert(`Vercel Error: ${error.message}`);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleDeploy = () => {
@@ -109,6 +166,36 @@ export default function InstallerWizard() {
             }
         }, 1000);
     };
+
+    // Load state and check for callbacks (Placed at bottom to access handlers)
+    useEffect(() => {
+        const savedKey = localStorage.getItem('installer_license_key');
+        if (savedKey) setLicenseKey(savedKey);
+
+        const savedStep = localStorage.getItem('installer_step') as Step;
+        if (savedStep) setCurrentStep(savedStep);
+
+        const params = new URLSearchParams(window.location.search);
+        const code = params.get('code');
+        const state = params.get('state');
+
+        if (code && state) {
+            // Clear params
+            window.history.replaceState({}, '', '/installer');
+
+            if (state === 'supabase') {
+                handleSupabaseCallback(code);
+            } else if (state === 'vercel') {
+                handleVercelCallback(code);
+            }
+        }
+    }, []);
+
+    // Save state changes
+    useEffect(() => {
+        if (licenseKey) localStorage.setItem('installer_license_key', licenseKey);
+        if (currentStep) localStorage.setItem('installer_step', currentStep);
+    }, [licenseKey, currentStep]);
 
     return (
         <div className="min-h-screen bg-[#0F0F13] text-white font-sans flex flex-col">
