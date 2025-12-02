@@ -73,6 +73,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 const accessToken = tokenData.access_token;
 
                 // 3. Create Project
+                const dbPass = generateStrongPassword();
                 const createRes = await fetch('https://api.supabase.com/v1/projects', {
                     method: 'POST',
                     headers: {
@@ -82,7 +83,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     body: JSON.stringify({
                         name: `Super Checkout ${Math.floor(Math.random() * 10000)}`,
                         organization_id: tokenData.organization_id, // You might need to fetch orgs first if not provided
-                        db_pass: generateStrongPassword(),
+                        db_pass: dbPass,
                         region: 'us-east-1',
                         plan: 'free'
                     })
@@ -102,6 +103,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                         const orgs = await orgsRes.json();
                         if (orgs.length > 0) {
                             // Retry with first org
+                            // Retry with first org
+                            const dbPassRetry = generateStrongPassword();
                             const retryRes = await fetch('https://api.supabase.com/v1/projects', {
                                 method: 'POST',
                                 headers: {
@@ -111,7 +114,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                                 body: JSON.stringify({
                                     name: `Super Checkout ${Math.floor(Math.random() * 10000)}`,
                                     organization_id: orgs[0].id,
-                                    db_pass: generateStrongPassword(),
+                                    db_pass: dbPassRetry,
                                     region: 'us-east-1',
                                     plan: 'free'
                                 })
@@ -131,7 +134,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                             return res.status(200).json({
                                 success: true,
                                 projectRef: retryData.id,
-                                dbPass: retryData.db_pass,
+                                dbPass: dbPassRetry,
                                 anonKey,
                                 serviceKey
                             });
@@ -152,7 +155,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 return res.status(200).json({
                     success: true,
                     projectRef: projectData.id,
-                    dbPass: projectData.db_pass,
+                    dbPass: dbPass,
                     anonKey,
                     serviceKey
                 });
