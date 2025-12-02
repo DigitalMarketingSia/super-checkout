@@ -148,28 +148,53 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     return res.status(400).json({ error: 'Missing projectRef or accessToken' });
                 }
 
-                try {
-                    // Run SQL via Supabase Management API
-                    // POST https://api.supabase.com/v1/projects/{ref}/query
-                    const queryRes = await fetch(`https://api.supabase.com/v1/projects/${projectRef}/query`, {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${accessToken}`,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ query: schemaSql })
-                    });
+                // Retry logic for API calls (Supabase might be provisioning)
+                let retries = 3;
+                while (retries > 0) {
+                    try {
+                        // Run SQL via Supabase Management API
+                        // POST https://api.supabase.com/v1/projects/{ref}/query
+                        const queryRes = await fetch(`https://api.supabase.com/v1/projects/${projectRef}/query`, {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${accessToken}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ query: schemaSql })
+                        });
 
-                    if (!queryRes.ok) {
-                        const errorData = await queryRes.json();
-                        throw new Error(errorData.error?.message || errorData.message || 'Failed to execute SQL query');
+                        if (!queryRes.ok) {
+                            const contentType = queryRes.headers.get('content-type');
+                            let errorMessage = 'Failed to execute SQL query';
+
+                            if (contentType && contentType.includes('application/json')) {
+                                const errorData = await queryRes.json();
+                                errorMessage = errorData.error?.message || errorData.message || errorMessage;
+                            } else {
+                                const textError = await queryRes.text();
+                                errorMessage = `API Error (${queryRes.status}): ${textError.substring(0, 200)}`;
+                            }
+
+                            // If 5xx error, throw to trigger retry
+                            if (queryRes.status >= 500) {
+                                throw new Error(errorMessage);
+                            }
+
+                            // If 4xx error, it's likely permanent (e.g. syntax), so stop retrying
+                            throw new Error(`Permanent Error: ${errorMessage}`);
+                        }
+
+                        return res.status(200).json({ success: true, message: 'Migrations applied successfully' });
+
+                    } catch (dbError: any) {
+                        console.error(`Migration Attempt Failed (retries left: ${retries}):`, dbError.message);
+                        retries--;
+                        if (retries === 0) {
+                            throw new Error(`Migration failed after multiple attempts: ${dbError.message}`);
+                        }
+                        // Wait 2 seconds before retrying
+                        await new Promise(resolve => setTimeout(resolve, 2000));
                     }
-
-                    return res.status(200).json({ success: true, message: 'Migrations applied successfully' });
-
-                } catch (dbError: any) {
-                    console.error('Migration Error:', dbError);
-                    throw new Error(`Migration failed: ${dbError.message}`);
                 }
             }
 
