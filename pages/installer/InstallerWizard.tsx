@@ -94,7 +94,7 @@ export default function InstallerWizard() {
         const state = 'supabase';
 
         const scopes = encodeURIComponent('projects:read projects:write secrets:read secrets:write');
-        window.location.href = `https://api.supabase.com/v1/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scopes}&state=${state}&prompt=consent`;
+        window.location.href = `https://api.supabase.com/v1/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scopes}&state=${state}`;
     };
 
     const handleSupabaseCallback = async (code: string) => {
