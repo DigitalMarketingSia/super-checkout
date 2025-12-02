@@ -3,10 +3,8 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { Client } from 'pg';
 import { schemaSql } from './schema';
 
-// This would be your "Central" Supabase instance that manages the installer
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.VITE_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+// Supabase client will be initialized inside handler to prevent startup crashes
+
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     // CORS
@@ -19,6 +17,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
     const { action, code, licenseKey, projectRef, dbPass } = req.body;
+
+    // 0. Initialize Supabase (Admin Context)
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.VITE_SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+        console.error('Missing Supabase Environment Variables');
+        return res.status(500).json({ error: 'Server configuration error: Missing Supabase keys' });
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // 1. Validate License
     if (!licenseKey) return res.status(400).json({ error: 'Missing license key' });
