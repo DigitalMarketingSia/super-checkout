@@ -93,7 +93,7 @@ export default function InstallerWizard() {
         const redirectUri = `${window.location.origin}/installer`;
         const state = 'supabase';
 
-        window.location.href = `https://api.supabase.com/v1/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&state=${state}`;
+        window.location.href = `https://api.supabase.com/v1/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=all&state=${state}`;
     };
 
     const handleSupabaseCallback = async (code: string) => {
@@ -439,7 +439,14 @@ export default function InstallerWizard() {
                                     disabled={isLoading}
                                     className="w-full bg-[#3ECF8E] hover:bg-[#3ECF8E]/90 text-black font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg shadow-[#3ECF8E]/20 hover:shadow-[#3ECF8E]/40 hover:-translate-y-0.5"
                                 >
-                                    {isLoading ? 'Conectando...' : 'Conectar com Supabase'}
+                                    {isLoading ? (
+                                        <>
+                                            <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                                            Conectando...
+                                        </>
+                                    ) : (
+                                        'Conectar com Supabase'
+                                    )}
                                 </button>
                                 <p className="text-xs text-center text-gray-500">
                                     Criaremos um novo projeto chamado "Super Checkout"
