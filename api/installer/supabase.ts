@@ -178,9 +178,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     ssl: { rejectUnauthorized: false } // Supabase requires SSL, but self-signed certs might need this
                 });
 
-                try {
-                    await client.connect();
+                // Retry logic for DNS propagation
+                let retries = 10;
+                while (retries > 0) {
+                    try {
+                        await client.connect();
+                        break; // Connected successfully
+                    } catch (err: any) {
+                        console.log(`Connection failed (retries left: ${retries}):`, err.message);
+                        retries--;
+                        if (retries === 0) {
+                            await client.end().catch(() => { });
+                            throw new Error(`Failed to connect to database after multiple attempts: ${err.message}`);
+                        }
+                        // Wait 5 seconds before retrying
+                        await new Promise(resolve => setTimeout(resolve, 5000));
+                    }
+                }
 
+                try {
                     // Dynamic import of schema to prevent startup issues
                     const { schemaSql } = await import('./schema');
 
