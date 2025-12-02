@@ -172,6 +172,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        return res.status(500).json({ error: error.message });
-                    }
-                }
+                        'Authorization': `Bearer ${supabaseKey}`
+                    },
+                    body: JSON.stringify({
+                        to: order.customer_email,
+                        subject: 'Acesso Liberado!',
+                        html: html
+                    })
+                });
+            }
+        }
+
+        return res.status(200).json({ status: newStatus });
+
+    } catch (error: any) {
+        console.error('Check Status Error:', error);
+        return res.status(500).json({ error: error.message });
+    }
+}
