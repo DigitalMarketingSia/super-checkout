@@ -2,11 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { Check, ChevronRight, Database, Globe, Key, Server, ShieldCheck, Terminal, AlertCircle, ExternalLink, Github } from 'lucide-react';
 import { AlertModal } from '../../components/ui/Modal';
 
-type Step = 'license' | 'supabase' | 'github' | 'vercel' | 'config' | 'deploy' | 'success';
+type Step = 'license' | 'supabase' | 'supabase_keys' | 'github' | 'vercel' | 'config' | 'deploy' | 'success';
 
 export default function InstallerWizard() {
     const [currentStep, setCurrentStep] = useState<Step>('license');
     const [licenseKey, setLicenseKey] = useState('');
+    const [anonKey, setAnonKey] = useState('');
+    const [serviceKey, setServiceKey] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [logs, setLogs] = useState<string[]>([]);
 
@@ -148,7 +150,7 @@ export default function InstallerWizard() {
 
             addLog('Schema do banco de dados aplicado com sucesso!');
             setSupabaseConnected(true);
-            setCurrentStep('github');
+            setCurrentStep('supabase_keys');
         } catch (error: any) {
             console.error(error);
             addLog(`Erro: ${error.message}`);
@@ -159,6 +161,26 @@ export default function InstallerWizard() {
     };
 
 
+
+    const handleKeysSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!anonKey || !serviceKey) {
+            showAlert('Campos Obrigatórios', 'Por favor, preencha ambas as chaves (Anon e Service Role).', 'error');
+            return;
+        }
+
+        // Basic validation
+        if (!anonKey.startsWith('eyJ') || !serviceKey.startsWith('eyJ')) {
+            showAlert('Chaves Inválidas', 'As chaves devem começar com "eyJ" (formato JWT).', 'error');
+            return;
+        }
+
+        localStorage.setItem('installer_supabase_anon_key', anonKey);
+        localStorage.setItem('installer_supabase_service_key', serviceKey);
+
+        addLog('Chaves de API salvas com sucesso!');
+        setCurrentStep('github');
+    };
 
     const handleGitHubConnect = () => {
         setIsLoading(true);
@@ -358,7 +380,7 @@ export default function InstallerWizard() {
                         </div>
                         <ChevronRight className="w-4 h-4 text-white/20" />
                         <div className={`flex items-center gap-2 transition-colors ${['supabase', 'github', 'vercel'].includes(currentStep) ? 'text-primary' : ''}`}>
-                            <div className={`w-6 h-6 rounded-full border flex items-center justify-center text-xs ${['supabase', 'github', 'vercel'].includes(currentStep) ? 'border-primary bg-primary/10' : 'border-gray-600'}`}>2</div>
+                            <div className={`w-6 h-6 rounded-full border flex items-center justify-center text-xs ${['supabase', 'supabase_keys', 'github', 'vercel'].includes(currentStep) ? 'border-primary bg-primary/10' : 'border-gray-600'}`}>2</div>
                             <span className="hidden sm:inline">Conectar</span>
                         </div>
                         <ChevronRight className="w-4 h-4 text-white/20" />
@@ -460,6 +482,63 @@ export default function InstallerWizard() {
                                     Criaremos um novo projeto chamado "Super Checkout"
                                 </p>
                             </div>
+                        </div>
+                    )}
+
+                    {/* Step 2.5: Manual Keys */}
+                    {currentStep === 'supabase_keys' && (
+                        <div className="glass-panel border border-white/10 bg-white/5 backdrop-blur-xl rounded-2xl p-8 shadow-2xl animate-in fade-in slide-in-from-bottom-4">
+                            <div className="w-12 h-12 bg-[#3ECF8E]/20 rounded-xl flex items-center justify-center mb-6 text-[#3ECF8E] shadow-lg shadow-[#3ECF8E]/10">
+                                <Key className="w-6 h-6" />
+                            </div>
+                            <h1 className="text-2xl font-bold mb-2 text-white">Configurar Chaves de API</h1>
+                            <p className="text-gray-400 mb-6">
+                                O projeto foi criado! Por segurança, o Supabase não nos entrega as chaves automaticamente.
+                                <br />
+                                Por favor, copie-as do painel do Supabase e cole abaixo.
+                            </p>
+
+                            <div className="bg-black/40 rounded-xl p-4 mb-6 border border-white/5 text-sm text-gray-300">
+                                <p className="mb-2 font-bold text-white">Como encontrar as chaves:</p>
+                                <ol className="list-decimal list-inside space-y-1 ml-1">
+                                    <li>Acesse seu <a href="https://supabase.com/dashboard/projects" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Dashboard do Supabase</a>.</li>
+                                    <li>Entre no projeto <strong>Super Checkout</strong> (recém criado).</li>
+                                    <li>Vá em <strong>Project Settings</strong> (ícone de engrenagem) &gt; <strong>API</strong>.</li>
+                                    <li>Copie a <code>anon public</code> e a <code>service_role</code>.</li>
+                                </ol>
+                            </div>
+
+                            <form onSubmit={handleKeysSubmit} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-300 mb-1.5">Anon Public Key</label>
+                                    <input
+                                        type="text"
+                                        value={anonKey}
+                                        onChange={e => setAnonKey(e.target.value)}
+                                        placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-gray-600 focus:outline-none focus:border-[#3ECF8E] focus:ring-1 focus:ring-[#3ECF8E]/50 transition-all font-mono text-xs"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-300 mb-1.5">Service Role Key (Secret)</label>
+                                    <input
+                                        type="text"
+                                        value={serviceKey}
+                                        onChange={e => setServiceKey(e.target.value)}
+                                        placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-gray-600 focus:outline-none focus:border-[#3ECF8E] focus:ring-1 focus:ring-[#3ECF8E]/50 transition-all font-mono text-xs"
+                                        required
+                                    />
+                                </div>
+                                <button
+                                    type="submit"
+                                    className="w-full bg-[#3ECF8E] hover:bg-[#3ECF8E]/90 text-black font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#3ECF8E]/20 hover:shadow-[#3ECF8E]/40 hover:-translate-y-0.5 mt-2"
+                                >
+                                    Salvar e Continuar
+                                    <ChevronRight className="w-4 h-4" />
+                                </button>
+                            </form>
                         </div>
                     )}
 

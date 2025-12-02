@@ -122,21 +122,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                             const retryData = await retryRes.json();
                             if (!retryRes.ok) throw new Error(retryData.message || 'Failed to create project');
 
-                            // Fetch API Keys
-                            const keysRes = await fetch(`https://api.supabase.com/v1/projects/${retryData.id}/api-keys`, {
-                                headers: { 'Authorization': `Bearer ${accessToken}` }
-                            });
-                            const keysData = await keysRes.json();
-                            if (!Array.isArray(keysData)) throw new Error('Failed to retrieve API keys: ' + JSON.stringify(keysData));
-                            const anonKey = keysData.find((k: any) => k.name === 'anon')?.api_key;
-                            const serviceKey = keysData.find((k: any) => k.name === 'service_role')?.api_key;
-
                             return res.status(200).json({
                                 success: true,
                                 projectRef: retryData.id,
                                 dbPass: dbPassRetry,
-                                anonKey,
-                                serviceKey,
                                 accessToken // Return token for migrations
                             });
                         }
@@ -144,21 +133,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     throw new Error(projectData.message || 'Failed to create project');
                 }
 
-                // Fetch API Keys
-                const keysRes = await fetch(`https://api.supabase.com/v1/projects/${projectData.id}/api-keys`, {
-                    headers: { 'Authorization': `Bearer ${accessToken}` }
-                });
-                const keysData = await keysRes.json();
-                if (!Array.isArray(keysData)) throw new Error('Failed to retrieve API keys: ' + JSON.stringify(keysData));
-                const anonKey = keysData.find((k: any) => k.name === 'anon')?.api_key;
-                const serviceKey = keysData.find((k: any) => k.name === 'service_role')?.api_key;
-
                 return res.status(200).json({
                     success: true,
                     projectRef: projectData.id,
                     dbPass: dbPass,
-                    anonKey,
-                    serviceKey,
                     accessToken // Return token for migrations
                 });
             }
