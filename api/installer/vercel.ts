@@ -14,7 +14,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method === 'OPTIONS') return res.status(200).end();
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-    const { action, code, licenseKey, supabaseUrl, supabaseAnonKey, supabaseServiceKey } = req.body;
+    const { action, code, licenseKey, supabaseUrl, supabaseAnonKey, supabaseServiceKey, githubRepo } = req.body;
 
     // 1. Validate License
     if (!licenseKey) return res.status(400).json({ error: 'Missing license key' });
@@ -72,7 +72,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     framework: 'vite',
                     gitRepository: {
                         type: 'github',
-                        repo: 'DigitalMarketingSia/super-checkout'
+                        repo: githubRepo || 'DigitalMarketingSia/super-checkout' // Use mirrored repo or fallback
                     }
                 })
             });
@@ -111,7 +111,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     project: projectData.id,
                     gitSource: {
                         type: 'github',
-                        repoId: projectData.link?.repoId || 'DigitalMarketingSia/super-checkout',
+                        repoId: projectData.link?.repoId, // Vercel should auto-link if gitRepository was set
+                        repo: githubRepo || 'DigitalMarketingSia/super-checkout',
                         ref: 'main'
                     }
                 })
