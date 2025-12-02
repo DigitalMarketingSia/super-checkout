@@ -352,65 +352,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (action === 'run_migrations') {
         if (!projectRef || !dbPass) {
           return res.status(400).json({ error: 'Missing projectRef or dbPass' });
+          return res.status(500).json({ error: error.message });
         }
-
-        // Use PG driver for direct connection
-        const connectionString = `postgres://postgres:${dbPass}@db.${projectRef}.supabase.co:5432/postgres`;
-
-        // Retry logic for DNS propagation (up to 20 attempts ~ 1 minute)
-        let retries = 20;
-        let lastError: any;
-
-        while (retries > 0) {
-          let client: any = null;
-          try {
-            console.log(`Connecting to database (Attempt ${21 - retries}/20)...`);
-            client = new Client({
-              connectionString,
-              connectionTimeoutMillis: 5000 // 5s timeout
-            });
-
-            await client.connect();
-            console.log('Connected! Running migrations...');
-
-            await client.query(schemaSql);
-            console.log('Migrations applied successfully.');
-
-            await client.end();
-            return res.status(200).json({ success: true, message: 'Migrations applied successfully' });
-
-          } catch (dbError: any) {
-            console.error(`Migration Attempt Failed (retries left: ${retries}):`, dbError.message);
-            lastError = dbError;
-
-            // Close client if open
-            if (client) {
-              try { await client.end(); } catch (e) { }
-            }
-
-            retries--;
-            if (retries === 0) break;
-
-            // Wait 3 seconds before retrying
-            await new Promise(resolve => setTimeout(resolve, 3000));
-          }
-        }
-
-        throw new Error(`Migration failed after multiple attempts: ${lastError?.message || 'Unknown error'}`);
+      } catch (error: any) {
+        console.error('Supabase API Critical Error:', error);
+        return res.status(500).json({ error: error.message || 'Critical Server Error' });
       }
-
-      return res.status(400).json({ error: 'Invalid action' });
-
-    } catch (error: any) {
-      console.error('Supabase API Error:', error);
-      return res.status(500).json({ error: error.message });
     }
-  } catch (error: any) {
-    console.error('Supabase API Critical Error:', error);
-    return res.status(500).json({ error: error.message || 'Critical Server Error' });
-  }
-}
 
 function generateStrongPassword() {
-  return Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8) + 'A1!';
-}
+      return Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8) + 'A1!';
+    }
