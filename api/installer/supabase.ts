@@ -124,6 +124,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                                 headers: { 'Authorization': `Bearer ${accessToken}` }
                             });
                             const keysData = await keysRes.json();
+                            if (!Array.isArray(keysData)) throw new Error('Failed to retrieve API keys: ' + JSON.stringify(keysData));
                             const anonKey = keysData.find((k: any) => k.name === 'anon')?.api_key;
                             const serviceKey = keysData.find((k: any) => k.name === 'service_role')?.api_key;
 
@@ -144,6 +145,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     headers: { 'Authorization': `Bearer ${accessToken}` }
                 });
                 const keysData = await keysRes.json();
+                if (!Array.isArray(keysData)) throw new Error('Failed to retrieve API keys: ' + JSON.stringify(keysData));
                 const anonKey = keysData.find((k: any) => k.name === 'anon')?.api_key;
                 const serviceKey = keysData.find((k: any) => k.name === 'service_role')?.api_key;
 
