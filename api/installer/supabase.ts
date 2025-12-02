@@ -68,7 +68,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     })
                 });
 
-                const tokenData = await tokenRes.json();
+                // Safe JSON parsing
+                const contentType = tokenRes.headers.get('content-type');
+                let tokenData: any;
+                if (contentType && contentType.includes('application/json')) {
+                    tokenData = await tokenRes.json();
+                } else {
+                    const textError = await tokenRes.text();
+                    throw new Error(`OAuth token exchange failed (${tokenRes.status}): ${textError.substring(0, 200)}`);
+                }
                 if (!tokenRes.ok) throw new Error(tokenData.error_description || 'Failed to exchange token');
 
                 const accessToken = tokenData.access_token;
@@ -93,7 +101,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 // Note: If org_id is missing, we might need an extra step to list orgs and pick one.
                 // For now, assuming user picks or we pick first.
 
-                const projectData = await createRes.json();
+                // Safe JSON parsing
+                const createContentType = createRes.headers.get('content-type');
+                let projectData: any;
+                if (createContentType && createContentType.includes('application/json')) {
+                    projectData = await createRes.json();
+                } else {
+                    const textError = await createRes.text();
+                    throw new Error(`Project creation failed (${createRes.status}): ${textError.substring(0, 200)}`);
+                }
                 if (!createRes.ok) {
                     // If org_id missing, try to fetch it
                     if (projectData.message?.includes('organization_id')) {
@@ -101,7 +117,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                         const orgsRes = await fetch('https://api.supabase.com/v1/organizations', {
                             headers: { 'Authorization': `Bearer ${accessToken}` }
                         });
-                        const orgs = await orgsRes.json();
+                        const orgsContentType = orgsRes.headers.get('content-type');
+                        let orgs: any;
+                        if (orgsContentType && orgsContentType.includes('application/json')) {
+                            orgs = await orgsRes.json();
+                        } else {
+                            throw new Error('Failed to fetch organizations');
+                        }
                         if (orgs.length > 0) {
                             // Retry with first org
                             // Retry with first org
@@ -120,7 +142,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                                     plan: 'free'
                                 })
                             });
-                            const retryData = await retryRes.json();
+                            const retryContentType = retryRes.headers.get('content-type');
+                            let retryData: any;
+                            if (retryContentType && retryContentType.includes('application/json')) {
+                                retryData = await retryRes.json();
+                            } else {
+                                const textError = await retryRes.text();
+                                throw new Error(`Project creation retry failed (${retryRes.status}): ${textError.substring(0, 200)}`);
+                            }
                             if (!retryRes.ok) throw new Error(retryData.message || 'Failed to create project');
 
                             return res.status(200).json({
