@@ -80,7 +80,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        name: 'Super Checkout',
+                        name: `Super Checkout ${Math.floor(Math.random() * 10000)}`,
                         organization_id: tokenData.organization_id, // You might need to fetch orgs first if not provided
                         db_pass: generateStrongPassword(),
                         region: 'us-east-1',
@@ -109,7 +109,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                                     'Content-Type': 'application/json'
                                 },
                                 body: JSON.stringify({
-                                    name: 'Super Checkout',
+                                    name: `Super Checkout ${Math.floor(Math.random() * 10000)}`,
                                     organization_id: orgs[0].id,
                                     db_pass: generateStrongPassword(),
                                     region: 'us-east-1',
