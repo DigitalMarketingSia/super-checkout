@@ -1,7 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { Buffer } from 'node:buffer';
-import { schemaSql } from './schema';
 
 // Supabase client will be initialized inside handler to prevent startup crashes
 
@@ -176,6 +175,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 if (!projectRef || !accessToken) {
                     return res.status(400).json({ error: 'Missing projectRef or accessToken' });
                 }
+
+                // Load schema dynamically to avoid function size limits
+                const fs = await import('fs/promises');
+                const path = await import('path');
+                const schemaPath = path.join(process.cwd(), 'api', 'installer', 'schema.ts');
+                const schemaContent = await fs.readFile(schemaPath, 'utf-8');
+
+                // Extract the SQL string from the TypeScript file
+                const match = schemaContent.match(/export const schemaSql = `([\s\S]*?)`;/);
+                if (!match) {
+                    throw new Error('Failed to extract schema SQL from schema.ts');
+                }
+                const schemaSql = match[1];
 
                 // Retry logic for API calls (Supabase might be provisioning)
                 let retries = 3;
