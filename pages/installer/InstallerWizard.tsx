@@ -120,7 +120,15 @@ export default function InstallerWizard() {
                 })
             });
 
-            const data = await res.json();
+            // Safe JSON parsing
+            let data: any;
+            const contentType = res.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+                data = await res.json();
+            } else {
+                const textError = await res.text();
+                throw new Error(`Erro na API (${res.status}): ${textError.substring(0, 200)}`);
+            }
             if (!res.ok) throw new Error(data.error || 'Falha ao criar projeto Supabase');
 
             addLog(`Projeto criado: ${data.projectRef}`);
@@ -145,7 +153,15 @@ export default function InstallerWizard() {
                 })
             });
 
-            const migrationData = await migrationRes.json();
+            // Safe JSON parsing
+            let migrationData: any;
+            const migrationContentType = migrationRes.headers.get('content-type');
+            if (migrationContentType && migrationContentType.includes('application/json')) {
+                migrationData = await migrationRes.json();
+            } else {
+                const textError = await migrationRes.text();
+                throw new Error(`Erro na migração (${migrationRes.status}): ${textError.substring(0, 200)}`);
+            }
             if (!migrationRes.ok) throw new Error(migrationData.error || 'Falha ao rodar migrações');
 
             addLog('Schema do banco de dados aplicado com sucesso!');
