@@ -38,6 +38,19 @@ export default function InstallerWizard() {
                 body: JSON.stringify({ key: licenseKey, domain: window.location.hostname })
             });
 
+            if (!response.ok) {
+                const status = response.status;
+                let errorMsg = `Server Error (${status})`;
+                try {
+                    const errorData = await response.json();
+                    errorMsg = errorData.message || errorMsg;
+                } catch (e) {
+                    // Response was probably HTML (Vercel error page)
+                    console.error('Non-JSON response:', e);
+                }
+                throw new Error(errorMsg);
+            }
+
             const data = await response.json();
 
             if (data.valid) {
@@ -51,10 +64,11 @@ export default function InstallerWizard() {
                 alert(`Erro: ${data.message}`);
                 setIsLoading(false);
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error('Validation error:', error);
-            addLog('Error connecting to validation server.');
-            alert('Erro ao conectar ao servidor de validação.');
+            const msg = error.message || 'Error connecting to validation server.';
+            addLog(`Error: ${msg}`);
+            alert(`Erro: ${msg}`);
             setIsLoading(false);
         }
     };
