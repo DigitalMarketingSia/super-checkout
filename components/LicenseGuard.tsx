@@ -38,6 +38,12 @@ export const LicenseGuard: React.FC<LicenseGuardProps> = ({ children }) => {
                     }),
                 });
 
+                if (!response.ok) {
+                    const text = await response.text();
+                    console.error('License server error:', response.status, text);
+                    throw new Error(`Server error: ${response.status}`);
+                }
+
                 const data = await response.json();
 
                 if (data.valid) {
@@ -46,10 +52,20 @@ export const LicenseGuard: React.FC<LicenseGuardProps> = ({ children }) => {
                     setIsValid(false);
                     setMessage(data.message || 'Licença inválida.');
                 }
-            } catch (error) {
+            } catch (error: any) {
                 console.error('License validation error:', error);
+
+                // FALLBACK: If we are on localhost and the server is down/unreachable, allow access for development
+                if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                    console.warn('License server unreachable. Enabling Dev Mode bypass.');
+                    setIsValid(true);
+                    setMessage('Modo de Desenvolvimento (Servidor Offline)');
+                    return;
+                }
+
                 setIsValid(false);
-                setMessage('Erro ao conectar ao servidor de licenças.');
+                // Show more detailed error for debugging
+                setMessage(`Erro ao conectar ao servidor de licenças: ${error.message || 'Unknown error'}`);
             } finally {
                 setLoading(false);
             }

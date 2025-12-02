@@ -43,8 +43,12 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     { path: '/admin/orders', icon: Tag, label: 'Pedidos' },
     { path: '/admin/marketing', icon: Mail, label: 'Marketing & E-mail' },
     { path: '/admin/integrations', icon: Plug, label: 'Integrações' },
-    { path: '/admin/licenses', icon: Key, label: 'Licenças' },
   ];
+
+  // Only show Licenses to the specific admin email
+  if (user?.email === 'contato.jeandamin@gmail.com') {
+    navItems.push({ path: '/admin/licenses', icon: Key, label: 'Licenças' });
+  }
 
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-dark-bg text-gray-900 dark:text-dark-textMain overflow-hidden font-sans">

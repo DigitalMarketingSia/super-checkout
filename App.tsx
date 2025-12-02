@@ -34,6 +34,7 @@ import { MemberFAQ } from './pages/member/MemberFAQ';
 import { MemberProfile } from './pages/member/MemberProfile';
 import { ThemeProvider } from './context/ThemeContext';
 import { LicenseGuard } from './components/LicenseGuard';
+import InstallerWizard from './pages/installer/InstallerWizard';
 
 import { storage } from './services/storageService';
 
@@ -177,6 +178,7 @@ const DomainDispatcher = () => {
       <Route path="/pagamento/pix/:orderId" element={<PixPayment />} />
       <Route path="/thank-you/:orderId" element={<ThankYou />} />
       <Route path="/c/:id" element={<PublicCheckout />} />
+      <Route path="/installer" element={<InstallerWizard />} />
 
       {/* Admin Routes (Protected) */}
       <Route path="/admin" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
