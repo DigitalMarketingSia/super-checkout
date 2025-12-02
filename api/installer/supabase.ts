@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { Buffer } from 'node:buffer';
+import { schemaSql } from './schema';
 
 // Supabase client will be initialized inside handler to prevent startup crashes
 
@@ -148,9 +149,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 }
 
                 try {
-                    // Dynamic import of schema
-                    const { schemaSql } = await import('./schema');
-
                     // Run SQL via Supabase Management API
                     // POST https://api.supabase.com/v1/projects/{ref}/query
                     const queryRes = await fetch(`https://api.supabase.com/v1/projects/${projectRef}/query`, {
