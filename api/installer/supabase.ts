@@ -173,8 +173,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 // Dynamic import to avoid startup crashes if pg is not used or has issues
                 const { Client } = await import('pg');
 
-                // Retry logic for DNS propagation
-                let retries = 10;
+                // Retry logic for DNS propagation (up to 2.5 minutes)
+                let retries = 30;
                 let client: any;
 
                 while (retries > 0) {
