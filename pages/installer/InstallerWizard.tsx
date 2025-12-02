@@ -93,9 +93,14 @@ export default function InstallerWizard() {
         const redirectUri = `${window.location.origin}/installer`;
         const state = 'supabase';
 
-        // Try comma-separated scopes as space might not be parsing correctly for all permissions
-        const scopes = 'projects:read,projects:write,secrets:read,secrets:write';
-        window.location.href = `https://api.supabase.com/v1/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scopes}&state=${state}`;
+        const params = new URLSearchParams({
+            client_id: clientId,
+            redirect_uri: redirectUri,
+            response_type: 'code',
+            scope: 'projects:read projects:write secrets:read secrets:write',
+            state: state
+        });
+        window.location.href = `https://api.supabase.com/v1/oauth/authorize?${params.toString()}`;
     };
 
     const handleSupabaseCallback = async (code: string) => {
