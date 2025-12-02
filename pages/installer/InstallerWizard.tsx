@@ -75,7 +75,7 @@ export default function InstallerWizard() {
 
     const handleSupabaseConnect = () => {
         setIsLoading(true);
-        const clientId = process.env.NEXT_PUBLIC_SUPABASE_CLIENT_ID || 'mock_client_id';
+        const clientId = import.meta.env.VITE_SUPABASE_CLIENT_ID || process.env.NEXT_PUBLIC_SUPABASE_CLIENT_ID || 'mock_client_id';
         const redirectUri = `${window.location.origin}/installer`;
         const state = 'supabase';
 
@@ -114,7 +114,7 @@ export default function InstallerWizard() {
 
     const handleVercelConnect = () => {
         setIsLoading(true);
-        const clientId = process.env.NEXT_PUBLIC_VERCEL_CLIENT_ID || 'mock_client_id';
+        const clientId = import.meta.env.VITE_VERCEL_CLIENT_ID || process.env.NEXT_PUBLIC_VERCEL_CLIENT_ID || 'mock_client_id';
         const redirectUri = `${window.location.origin}/installer`;
         const state = 'vercel';
         window.location.href = `https://vercel.com/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&state=${state}`;
