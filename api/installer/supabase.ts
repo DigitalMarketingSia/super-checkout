@@ -173,22 +173,25 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 // Dynamic import to avoid startup crashes if pg is not used or has issues
                 const { Client } = await import('pg');
 
-                const client = new Client({
-                    connectionString,
-                    ssl: { rejectUnauthorized: false } // Supabase requires SSL, but self-signed certs might need this
-                });
-
                 // Retry logic for DNS propagation
                 let retries = 10;
+                let client: any;
+
                 while (retries > 0) {
                     try {
+                        client = new Client({
+                            connectionString,
+                            ssl: { rejectUnauthorized: false }
+                        });
                         await client.connect();
                         break; // Connected successfully
                     } catch (err: any) {
                         console.log(`Connection failed (retries left: ${retries}):`, err.message);
+                        if (client) {
+                            await client.end().catch(() => { });
+                        }
                         retries--;
                         if (retries === 0) {
-                            await client.end().catch(() => { });
                             throw new Error(`Failed to connect to database after multiple attempts: ${err.message}`);
                         }
                         // Wait 5 seconds before retrying
@@ -208,7 +211,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     return res.status(200).json({ success: true, message: 'Migrations applied successfully' });
                 } catch (dbError: any) {
                     console.error('Database Migration Error:', dbError);
-                    await client.end().catch(() => { }); // Ensure close
+                    if (client) {
+                        await client.end().catch(() => { }); // Ensure close
+                    }
                     throw new Error(`Migration failed: ${dbError.message}`);
                 }
             }
