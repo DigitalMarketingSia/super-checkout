@@ -1,5 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { Client } from 'pg';
+import { schemaSql } from './schema';
 
 // This would be your "Central" Supabase instance that manages the installer
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.VITE_SUPABASE_URL!;
@@ -16,7 +18,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method === 'OPTIONS') return res.status(200).end();
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-    const { action, code, licenseKey } = req.body;
+    const { action, code, licenseKey, projectRef, dbPass } = req.body;
 
     // 1. Validate License
     if (!licenseKey) return res.status(400).json({ error: 'Missing license key' });
@@ -124,6 +126,36 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 projectRef: projectData.id,
                 dbPass: projectData.db_pass
             });
+        }
+
+        if (action === 'run_migrations') {
+            if (!projectRef || !dbPass) {
+                return res.status(400).json({ error: 'Missing projectRef or dbPass' });
+            }
+
+            // Connection string for the NEW project
+            // Format: postgres://postgres:[password]@db.[ref].supabase.co:5432/postgres
+            const connectionString = `postgres://postgres:${dbPass}@db.${projectRef}.supabase.co:5432/postgres`;
+
+            const client = new Client({
+                connectionString,
+                ssl: { rejectUnauthorized: false } // Supabase requires SSL, but self-signed certs might need this
+            });
+
+            try {
+                await client.connect();
+
+                // Run the schema SQL
+                await client.query(schemaSql);
+
+                await client.end();
+
+                return res.status(200).json({ success: true, message: 'Migrations applied successfully' });
+            } catch (dbError: any) {
+                console.error('Database Migration Error:', dbError);
+                await client.end().catch(() => { }); // Ensure close
+                throw new Error(`Migration failed: ${dbError.message}`);
+            }
         }
 
         return res.status(400).json({ error: 'Invalid action' });

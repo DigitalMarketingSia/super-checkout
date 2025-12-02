@@ -101,6 +101,24 @@ export default function InstallerWizard() {
             if (!res.ok) throw new Error(data.error || 'Failed to create Supabase project');
 
             addLog(`Project created: ${data.projectRef}`);
+            addLog('Running database migrations (this may take a minute)...');
+
+            // Run Migrations
+            const migrationRes = await fetch('/api/installer/supabase', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'run_migrations',
+                    projectRef: data.projectRef,
+                    dbPass: data.dbPass,
+                    licenseKey: localStorage.getItem('installer_license_key')
+                })
+            });
+
+            const migrationData = await migrationRes.json();
+            if (!migrationRes.ok) throw new Error(migrationData.error || 'Failed to run migrations');
+
+            addLog('Database schema applied successfully!');
             setSupabaseConnected(true);
             setCurrentStep('vercel');
         } catch (error: any) {
