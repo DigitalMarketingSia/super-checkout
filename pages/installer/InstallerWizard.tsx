@@ -138,6 +138,7 @@ export default function InstallerWizard() {
                     action: 'run_migrations',
                     projectRef: data.projectRef,
                     dbPass: data.dbPass,
+                    accessToken: data.accessToken, // Pass token for Management API
                     licenseKey: localStorage.getItem('installer_license_key')
                 })
             });

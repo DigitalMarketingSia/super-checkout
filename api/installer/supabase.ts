@@ -136,7 +136,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                                 projectRef: retryData.id,
                                 dbPass: dbPassRetry,
                                 anonKey,
-                                serviceKey
+                                serviceKey,
+                                accessToken // Return token for migrations
                             });
                         }
                     }
@@ -157,63 +158,41 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     projectRef: projectData.id,
                     dbPass: dbPass,
                     anonKey,
-                    serviceKey
+                    serviceKey,
+                    accessToken // Return token for migrations
                 });
             }
 
             if (action === 'run_migrations') {
-                if (!projectRef || !dbPass) {
-                    return res.status(400).json({ error: 'Missing projectRef or dbPass' });
-                }
-
-                // Connection string for the NEW project
-                // Format: postgres://postgres:[password]@db.[ref].supabase.co:5432/postgres
-                const connectionString = `postgres://postgres:${dbPass}@db.${projectRef}.supabase.co:5432/postgres`;
-
-                // Dynamic import to avoid startup crashes if pg is not used or has issues
-                const { Client } = await import('pg');
-
-                // Retry logic for DNS propagation (up to 2.5 minutes)
-                let retries = 30;
-                let client: any;
-
-                while (retries > 0) {
-                    try {
-                        client = new Client({
-                            connectionString,
-                            ssl: { rejectUnauthorized: false }
-                        });
-                        await client.connect();
-                        break; // Connected successfully
-                    } catch (err: any) {
-                        console.log(`Connection failed (retries left: ${retries}):`, err.message);
-                        if (client) {
-                            await client.end().catch(() => { });
-                        }
-                        retries--;
-                        if (retries === 0) {
-                            throw new Error(`Failed to connect to database after multiple attempts: ${err.message}`);
-                        }
-                        // Wait 5 seconds before retrying
-                        await new Promise(resolve => setTimeout(resolve, 5000));
-                    }
+                const { accessToken } = req.body;
+                if (!projectRef || !accessToken) {
+                    return res.status(400).json({ error: 'Missing projectRef or accessToken' });
                 }
 
                 try {
-                    // Dynamic import of schema to prevent startup issues
+                    // Dynamic import of schema
                     const { schemaSql } = await import('./schema');
 
-                    // Run the schema SQL
-                    await client.query(schemaSql);
+                    // Run SQL via Supabase Management API
+                    // POST https://api.supabase.com/v1/projects/{ref}/query
+                    const queryRes = await fetch(`https://api.supabase.com/v1/projects/${projectRef}/query`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${accessToken}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ query: schemaSql })
+                    });
 
-                    await client.end();
+                    if (!queryRes.ok) {
+                        const errorData = await queryRes.json();
+                        throw new Error(errorData.error?.message || errorData.message || 'Failed to execute SQL query');
+                    }
 
                     return res.status(200).json({ success: true, message: 'Migrations applied successfully' });
+
                 } catch (dbError: any) {
-                    console.error('Database Migration Error:', dbError);
-                    if (client) {
-                        await client.end().catch(() => { }); // Ensure close
-                    }
+                    console.error('Migration Error:', dbError);
                     throw new Error(`Migration failed: ${dbError.message}`);
                 }
             }
