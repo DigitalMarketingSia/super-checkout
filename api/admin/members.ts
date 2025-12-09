@@ -234,6 +234,44 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 return res.status(200).json({ success: true, message: `Email ${type} triggered` });
             }
 
+            // --- DELETE USER ---
+            if (action === 'delete') {
+                const { userId, email } = data;
+                let targetId = userId;
+
+                if (!targetId && email) {
+                    // Start by looking up by email if no ID
+                    const { data: uData } = await supabaseAdmin.from('profiles').select('id').eq('email', email).single();
+                    if (uData) targetId = uData.id;
+                    else {
+                        // Try auth lookup? admin.listUsers is expensive, assume ID provided or profile exists.
+                        // But here we have zombie users (auth exists, profile doesn't).
+                        // We can't easily lookup ID by email in Admin API efficiently without ListUsers.
+                        // But for cleanup, let's just require ID or try delete if we have it.
+                        // Actually I can use storageService approach or just `listUsers`.
+                        // For now, assume ID is passed or we fail.
+                        // WAIT: If I want to fix the user's issue "on the fly", I should allow deleting by email?
+                        // `getUserByEmail` isn't a direct method on `auth.admin` in v2? It is `listUsers` with filter? No.
+                        // Let's rely on ID. But wait, I don't have the ID easily if profile is gone.
+                        // I can Find it via SQL then pass it.
+                    }
+                }
+
+                if (!targetId) return res.status(400).json({ error: 'UserId required' });
+
+                // 1. Delete from Auth (Cascade should handle profile? No, usually other way around or manual)
+                const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(targetId);
+                if (deleteError) {
+                    console.error('Error deleting auth user:', deleteError);
+                    return res.status(400).json({ error: deleteError.message });
+                }
+
+                // 2. Delete from Profiles (Manually to be safe if cascade missing)
+                await supabaseAdmin.from('profiles').delete().eq('id', targetId);
+
+                return res.status(200).json({ success: true });
+            }
+
             return res.status(400).json({ error: 'Invalid action' });
         }
 
