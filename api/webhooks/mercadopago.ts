@@ -335,108 +335,106 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                         }
                     }
                 }
-            }
-                    }
-
-    }
-                }
+            } catch (emailError: any) {
+                console.error('[Webhook] Error in email sending flow:', emailError);
+                await logToSupabase('webhook.error_email_flow', { error: emailError.message }, false);
             }
         }
 
-// 7. Ensure User Exists & Grant Access
-// If order doesn't have a user_id, we try to find or create one now.
-if (order && !order.customer_user_id && order.customer_email) {
-    try {
-        console.log(`[Webhook] Order ${order.id} has no user_id. Checking if user exists for ${order.customer_email}`);
+        // 7. Ensure User Exists & Grant Access
+        // If order doesn't have a user_id, we try to find or create one now.
+        if (order && !order.customer_user_id && order.customer_email) {
+            try {
+                console.log(`[Webhook] Order ${order.id} has no user_id. Checking if user exists for ${order.customer_email}`);
 
-        // A. Check if user exists in Auth
-        const { data: { users }, error: userSearchError } = await fetch(`${supabaseUrl}/auth/v1/admin/users`, {
-            headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
-        }).then(r => r.json()).catch(() => ({ data: { users: [] } }));
-        // Note: The above raw fetch is tricky for admin list users without proper client. 
-        // Better to use a direct rpc or just try to create and catch error, 
-        // OR use the 'listUsers' if we had the admin client initialized.
-        // Since we are using raw fetch for everything else, let's try 'createUser' directly. 
-        // If it fails with "Email already registered", we assume they exist.
-
-        let userId = null;
-        let isNewUser = false;
-        let password = null;
-
-        // Attempt to create user
-        const tempPassword = Math.random().toString(36).slice(-12) + "A1!"; // Simple logic
-
-        const createUserRes = await fetch(`${supabaseUrl}/auth/v1/admin/users`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'apikey': supabaseKey,
-                'Authorization': `Bearer ${supabaseKey}`
-            },
-            body: JSON.stringify({
-                email: order.customer_email,
-                password: tempPassword,
-                email_confirm: true,
-                user_metadata: {
-                    name: order.customer_name
-                }
-            })
-        });
-
-        if (createUserRes.ok) {
-            const newUser = await createUserRes.json();
-            userId = newUser.id || newUser.user?.id; // Depends on API version
-            isNewUser = true;
-            password = tempPassword;
-            console.log(`[Webhook] Created new user ${userId}`);
-            await logToSupabase('webhook.user_created', { userId, email: order.customer_email }, true);
-        } else {
-            const errorText = await createUserRes.text();
-            if (errorText.includes('already registered')) {
-                console.log('[Webhook] User already exists, looking up ID...');
-                // We need to get the ID. Since we can't easily search via raw REST auth admin without proper setup,
-                // we will try to look at 'profiles' table if it exists (which we created!)
-                // or use the 'rpc' to get user id by email if we had one.
-
-                // Fallback: Query 'profiles' public table for this email
-                const profileRes = await fetch(`${supabaseUrl}/rest/v1/profiles?email=eq.${order.customer_email}&select=id`, {
+                // A. Check if user exists in Auth
+                const { data: { users }, error: userSearchError } = await fetch(`${supabaseUrl}/auth/v1/admin/users`, {
                     headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
+                }).then(r => r.json()).catch(() => ({ data: { users: [] } }));
+                // Note: The above raw fetch is tricky for admin list users without proper client. 
+                // Better to use a direct rpc or just try to create and catch error, 
+                // OR use the 'listUsers' if we had the admin client initialized.
+                // Since we are using raw fetch for everything else, let's try 'createUser' directly. 
+                // If it fails with "Email already registered", we assume they exist.
+
+                let userId = null;
+                let isNewUser = false;
+                let password = null;
+
+                // Attempt to create user
+                const tempPassword = Math.random().toString(36).slice(-12) + "A1!"; // Simple logic
+
+                const createUserRes = await fetch(`${supabaseUrl}/auth/v1/admin/users`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': supabaseKey,
+                        'Authorization': `Bearer ${supabaseKey}`
+                    },
+                    body: JSON.stringify({
+                        email: order.customer_email,
+                        password: tempPassword,
+                        email_confirm: true,
+                        user_metadata: {
+                            name: order.customer_name
+                        }
+                    })
                 });
-                const profiles = await profileRes.json();
-                if (profiles && profiles.length > 0) {
-                    userId = profiles[0].id;
-                    console.log(`[Webhook] Found existing user ID via profiles: ${userId}`);
+
+                if (createUserRes.ok) {
+                    const newUser = await createUserRes.json();
+                    userId = newUser.id || newUser.user?.id; // Depends on API version
+                    isNewUser = true;
+                    password = tempPassword;
+                    console.log(`[Webhook] Created new user ${userId}`);
+                    await logToSupabase('webhook.user_created', { userId, email: order.customer_email }, true);
                 } else {
-                    // Critical: User exists in Auth but not in Profiles? 
-                    // We should probably rely on the auth user search properly in a real backend.
-                    // For now, let's assume we can't find them if not in profiles.
-                    console.warn('[Webhook] User exists in Auth but not found in Profiles.');
+                    const errorText = await createUserRes.text();
+                    if (errorText.includes('already registered')) {
+                        console.log('[Webhook] User already exists, looking up ID...');
+                        // We need to get the ID. Since we can't easily search via raw REST auth admin without proper setup,
+                        // we will try to look at 'profiles' table if it exists (which we created!)
+                        // or use the 'rpc' to get user id by email if we had one.
+
+                        // Fallback: Query 'profiles' public table for this email
+                        const profileRes = await fetch(`${supabaseUrl}/rest/v1/profiles?email=eq.${order.customer_email}&select=id`, {
+                            headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
+                        });
+                        const profiles = await profileRes.json();
+                        if (profiles && profiles.length > 0) {
+                            userId = profiles[0].id;
+                            console.log(`[Webhook] Found existing user ID via profiles: ${userId}`);
+                        } else {
+                            // Critical: User exists in Auth but not in Profiles? 
+                            // We should probably rely on the auth user search properly in a real backend.
+                            // For now, let's assume we can't find them if not in profiles.
+                            console.warn('[Webhook] User exists in Auth but not found in Profiles.');
+                        }
+                    } else {
+                        console.error('[Webhook] Failed to create user:', errorText);
+                        throw new Error(`Failed to create user: ${errorText}`);
+                    }
                 }
-            } else {
-                console.error('[Webhook] Failed to create user:', errorText);
-                throw new Error(`Failed to create user: ${errorText}`);
-            }
-        }
 
-        if (userId) {
-            // Update Order with new User ID
-            await fetch(`${supabaseUrl}/rest/v1/orders?id=eq.${order.id}`, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'apikey': supabaseKey,
-                    'Authorization': `Bearer ${supabaseKey}`,
-                    'Prefer': 'return=minimal'
-                },
-                body: JSON.stringify({ customer_user_id: userId })
-            });
+                if (userId) {
+                    // Update Order with new User ID
+                    await fetch(`${supabaseUrl}/rest/v1/orders?id=eq.${order.id}`, {
+                        method: 'PATCH',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'apikey': supabaseKey,
+                            'Authorization': `Bearer ${supabaseKey}`,
+                            'Prefer': 'return=minimal'
+                        },
+                        body: JSON.stringify({ customer_user_id: userId })
+                    });
 
-            // Update local order object for next steps
-            order.customer_user_id = userId;
+                    // Update local order object for next steps
+                    order.customer_user_id = userId;
 
-            // If New User, Send Welcome Email (Password)
-            if (isNewUser && password) {
-                const welcomeHtml = `
+                    // If New User, Send Welcome Email (Password)
+                    if (isNewUser && password) {
+                        const welcomeHtml = `
                             <h1>Bem-vindo à Área de Membros!</h1>
                             <p>Sua conta foi criada com sucesso.</p>
                             <p><strong>Email:</strong> ${order.customer_email}</p>
@@ -445,107 +443,101 @@ if (order && !order.customer_user_id && order.customer_email) {
                             <a href="https://your-platform-url.com/login">Acessar Plataforma</a>
                          `;
 
-                // Send Welcome Email
-                await fetch(`${supabaseUrl}/functions/v1/send-email`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${supabaseKey}` },
-                    body: JSON.stringify({
-                        to: order.customer_email,
-                        subject: 'Seus dados de acesso',
-                        html: welcomeHtml
-                    })
-                });
-            }
-        }
-
-    } catch (err: any) {
-        console.error('[Webhook] Error ensuring user exists:', err);
-        await logToSupabase('webhook.error_user_creation', { error: err.message }, false);
-    }
-}
-
-// 8. Grant Access (using updated order.customer_user_id)
-if (order && order.customer_user_id) {
-    try {
-        console.log(`[Webhook] Granting access for Order ${order.id} to User ${order.customer_user_id}`);
-
-        // A. Get Checkout to find Product
-        const checkoutRes = await fetch(`${supabaseUrl}/rest/v1/checkouts?id=eq.${order.checkout_id}&select=product_id,order_bump_ids`, {
-            headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
-        });
-
-        if (checkoutRes.ok) {
-            const checkouts = await checkoutRes.json();
-            const checkout = checkouts[0];
-
-            if (checkout) {
-                const productsToGrant = [checkout.product_id];
-
-                // Handle Bumps (simplified: if order has items with type 'bump', try to match)
-                // ideally we should match items to product IDs, but for now let's grant main product + all bumps if present in order
-                // A safer way is to just grant the main product for now, or iterate bumps.
-                // Let's stick to Main Product to ensure core value is delivered.
-                // TODO: Robust Bump Matching
-
-                for (const productId of productsToGrant) {
-                    // B. Get Contents for Product
-                    // We need to query product_contents
-                    const pcRes = await fetch(`${supabaseUrl}/rest/v1/product_contents?product_id=eq.${productId}&select=content_id`, {
-                        headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
-                    });
-
-                    if (pcRes.ok) {
-                        const productContents = await pcRes.json();
-
-                        for (const pc of productContents) {
-                            // C. Create Access Grant
-                            const grantRes = await fetch(`${supabaseUrl}/rest/v1/access_grants`, {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'apikey': supabaseKey,
-                                    'Authorization': `Bearer ${supabaseKey}`,
-                                    'Prefer': 'return=minimal'
-                                },
-                                body: JSON.stringify({
-                                    user_id: order.customer_user_id,
-                                    content_id: pc.content_id,
-                                    product_id: productId,
-                                    status: 'active',
-                                    granted_at: new Date().toISOString()
-                                })
-                            });
-
-                            if (!grantRes.ok) {
-                                console.error(`[Webhook] Failed to create grant for content ${pc.content_id}:`, await grantRes.text());
-                            } else {
-                                console.log(`[Webhook] Access granted for content ${pc.content_id}`);
-                            }
-                        }
+                        // Send Welcome Email
+                        await fetch(`${supabaseUrl}/functions/v1/send-email`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${supabaseKey}` },
+                            body: JSON.stringify({
+                                to: order.customer_email,
+                                subject: 'Seus dados de acesso',
+                                html: welcomeHtml
+                            })
+                        });
                     }
                 }
 
-                await logToSupabase('webhook.access_granted', { orderId: order.id, userId: order.customer_user_id }, true, paymentRecord.gateway_id);
+            } catch (err: any) {
+                console.error('[Webhook] Error ensuring user exists:', err);
+                await logToSupabase('webhook.error_user_creation', { error: err.message }, false);
             }
         }
-    } catch (grantError: any) {
-        console.error('[Webhook] Error granting access:', grantError);
-        await logToSupabase('webhook.error_granting_access', { error: grantError.message }, false);
-    }
-} else {
-    console.warn('[Webhook] No customer_user_id in order, skipping access grant');
-    await logToSupabase('webhook.warning_no_user_id', { orderId: paymentRecord.order_id }, false);
-}
-    }
-            } catch (emailError: any) {
-    console.error('[Webhook] Error in email sending flow:', emailError);
-    await logToSupabase('webhook.error_email_flow', { error: emailError.message }, false);
-}
-        }
 
+        // 8. Grant Access (using updated order.customer_user_id)
+        if (order && order.customer_user_id) {
+            try {
+                console.log(`[Webhook] Granting access for Order ${order.id} to User ${order.customer_user_id}`);
+
+                // A. Get Checkout to find Product
+                const checkoutRes = await fetch(`${supabaseUrl}/rest/v1/checkouts?id=eq.${order.checkout_id}&select=product_id,order_bump_ids`, {
+                    headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
+                });
+
+                if (checkoutRes.ok) {
+                    const checkouts = await checkoutRes.json();
+                    const checkout = checkouts[0];
+
+                    if (checkout) {
+                        const productsToGrant = [checkout.product_id];
+
+                        // Handle Bumps (simplified: if order has items with type 'bump', try to match)
+                        // ideally we should match items to product IDs, but for now let's grant main product + all bumps if present in order
+                        // A safer way is to just grant the main product for now, or iterate bumps.
+                        // Let's stick to Main Product to ensure core value is delivered.
+                        // TODO: Robust Bump Matching
+
+                        for (const productId of productsToGrant) {
+                            // B. Get Contents for Product
+                            // We need to query product_contents
+                            const pcRes = await fetch(`${supabaseUrl}/rest/v1/product_contents?product_id=eq.${productId}&select=content_id`, {
+                                headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
+                            });
+
+                            if (pcRes.ok) {
+                                const productContents = await pcRes.json();
+
+                                for (const pc of productContents) {
+                                    // C. Create Access Grant
+                                    const grantRes = await fetch(`${supabaseUrl}/rest/v1/access_grants`, {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'apikey': supabaseKey,
+                                            'Authorization': `Bearer ${supabaseKey}`,
+                                            'Prefer': 'return=minimal'
+                                        },
+                                        body: JSON.stringify({
+                                            user_id: order.customer_user_id,
+                                            content_id: pc.content_id,
+                                            product_id: productId,
+                                            status: 'active',
+                                            granted_at: new Date().toISOString()
+                                        })
+                                    });
+
+                                    if (!grantRes.ok) {
+                                        console.error(`[Webhook] Failed to create grant for content ${pc.content_id}:`, await grantRes.text());
+                                    } else {
+                                        console.log(`[Webhook] Access granted for content ${pc.content_id}`);
+                                    }
+                                }
+                            }
+                        }
+
+                        await logToSupabase('webhook.access_granted', { orderId: order.id, userId: order.customer_user_id }, true, paymentRecord.gateway_id);
+                    }
+                }
+            } catch (grantError: any) {
+                console.error('[Webhook] Error granting access:', grantError);
+                await logToSupabase('webhook.error_granting_access', { error: grantError.message }, false);
+            }
+        } else {
+            console.warn('[Webhook] No customer_user_id in order, skipping access grant');
+            await logToSupabase('webhook.warning_no_user_id', { orderId: paymentRecord.order_id }, false);
+        }
+    }
 return res.status(200).json({ success: true });
 
-    } catch (error: any) {
+} catch (error: any) {
     console.error('[Webhook] Critical Error:', error);
     // Try to log the critical error if possible
     try {

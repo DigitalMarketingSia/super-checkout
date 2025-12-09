@@ -1,4 +1,4 @@
-export const schemaSql = \`-- Super Checkout - Consolidated Database Schema
+export const schemaSql = `-- Super Checkout - Consolidated Database Schema
 -- Generated for Self-Hosted Installer
 
 -- ==========================================
@@ -358,4 +358,4 @@ INSERT INTO storage.buckets (id, name, public) VALUES ('contents', 'contents', t
 CREATE POLICY "Public Access Contents" ON storage.objects FOR SELECT USING ( bucket_id = 'contents' );
 CREATE POLICY "Authenticated Upload Contents" ON storage.objects FOR INSERT WITH CHECK ( bucket_id = 'contents' AND auth.role() = 'authenticated' );
 CREATE POLICY "Authenticated Update Contents" ON storage.objects FOR UPDATE USING ( bucket_id = 'contents' AND auth.role() = 'authenticated' );
-\`;
+`;

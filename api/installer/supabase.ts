@@ -352,14 +352,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (action === 'run_migrations') {
         if (!projectRef || !dbPass) {
           return res.status(400).json({ error: 'Missing projectRef or dbPass' });
-          return res.status(500).json({ error: error.message });
         }
-      } catch (error: any) {
-        console.error('Supabase API Critical Error:', error);
-        return res.status(500).json({ error: error.message || 'Critical Server Error' });
       }
+    } catch (error: any) {
+      console.error('Supabase API Critical Error:', error);
+      return res.status(500).json({ error: error.message || 'Critical Server Error' });
     }
+  } catch (outerError: any) {
+    console.error('Handler Critical Error:', outerError);
+    return res.status(500).json({ error: outerError.message || 'Internal Server Error' });
+  }
+}
 
 function generateStrongPassword() {
-      return Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8) + 'A1!';
-    }
+  return Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-8) + 'A1!';
+}

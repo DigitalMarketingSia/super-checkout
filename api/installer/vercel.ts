@@ -91,9 +91,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
             // 4. Set Environment Variables
             const envVars = [
-                { key: 'VITE_SUPABASE_URL', value: supabaseUrl, type: 'plain', target: ['production', 'preview', 'development'] },
+                { key: 'VITE_SUPABASE_URL', value: reqSupabaseUrl, type: 'plain', target: ['production', 'preview', 'development'] },
                 { key: 'VITE_SUPABASE_ANON_KEY', value: supabaseAnonKey, type: 'plain', target: ['production', 'preview', 'development'] },
-                { key: 'SUPABASE_SERVICE_ROLE_KEY', value: supabaseServiceKey, type: 'plain', target: ['production', 'preview', 'development'] },
+                { key: 'SUPABASE_SERVICE_ROLE_KEY', value: reqSupabaseServiceKey, type: 'plain', target: ['production', 'preview', 'development'] },
                 { key: 'VITE_LICENSE_KEY', value: licenseKey, type: 'plain', target: ['production', 'preview', 'development'] }
             ];
 
