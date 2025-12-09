@@ -242,18 +242,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 if (!targetId && email) {
                     // Start by looking up by email if no ID
                     const { data: uData } = await supabaseAdmin.from('profiles').select('id').eq('email', email).single();
-                    if (uData) targetId = uData.id;
-                    else {
-                        // Try auth lookup? admin.listUsers is expensive, assume ID provided or profile exists.
-                        // But here we have zombie users (auth exists, profile doesn't).
-                        // We can't easily lookup ID by email in Admin API efficiently without ListUsers.
-                        // But for cleanup, let's just require ID or try delete if we have it.
-                        // Actually I can use storageService approach or just `listUsers`.
-                        // For now, assume ID is passed or we fail.
-                        // WAIT: If I want to fix the user's issue "on the fly", I should allow deleting by email?
-                        // `getUserByEmail` isn't a direct method on `auth.admin` in v2? It is `listUsers` with filter? No.
-                        // Let's rely on ID. But wait, I don't have the ID easily if profile is gone.
-                        // I can Find it via SQL then pass it.
+                    if (uData) {
+                        targetId = uData.id;
+                    } else {
+                        // Profile missing (zombie user). Search in Auth directly.
+                        // Note: listUsers is paginated, but for specific lookup we can try.
+                        // Better approach if available: getUserById (needs id).
+                        // Since we only have email, we must list.
+                        const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers({
+                            page: 1,
+                            perPage: 1000 // Reasonable limit to find the user
+                        });
+
+                        if (!listError && users) {
+                            const found = users.find(u => u.email?.toLowerCase() === email.toLowerCase());
+                            if (found) targetId = found.id;
+                        }
                     }
                 }
 
