@@ -182,22 +182,22 @@ const DomainDispatcher = () => {
       <Route path="/installer" element={<InstallerWizard />} />
 
       {/* Admin Routes (Protected) */}
-      <Route path="/admin" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-      <Route path="/admin/products" element={<ProtectedRoute><Products /></ProtectedRoute>} />
-      <Route path="/admin/offers" element={<ProtectedRoute><Offers /></ProtectedRoute>} />
-      <Route path="/admin/checkouts" element={<ProtectedRoute><Checkouts /></ProtectedRoute>} />
-      <Route path="/admin/checkouts/edit/:id" element={<ProtectedRoute><CheckoutEditor /></ProtectedRoute>} />
-      <Route path="/admin/gateways" element={<ProtectedRoute><Gateways /></ProtectedRoute>} />
-      <Route path="/admin/domains" element={<ProtectedRoute><Domains /></ProtectedRoute>} />
-      <Route path="/admin/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-      <Route path="/admin/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
-      <Route path="/admin/webhooks" element={<ProtectedRoute><Webhooks /></ProtectedRoute>} />
-      <Route path="/admin/licenses" element={<ProtectedRoute><Licenses /></ProtectedRoute>} />
-      <Route path="/admin/marketing" element={<ProtectedRoute><Marketing /></ProtectedRoute>} />
-      <Route path="/admin/integrations" element={<ProtectedRoute><IntegrationsHub /></ProtectedRoute>} />
-      <Route path="/admin/members" element={<ProtectedRoute><MemberAreas /></ProtectedRoute>} />
-      <Route path="/admin/members/:id" element={<ProtectedRoute><MemberAreaDashboard /></ProtectedRoute>} />
-      <Route path="/admin/contents/:id" element={<ProtectedRoute><ContentEditor /></ProtectedRoute>} />
+      <Route path="/admin" element={<AdminRoute><Dashboard /></AdminRoute>} />
+      <Route path="/admin/products" element={<AdminRoute><Products /></AdminRoute>} />
+      <Route path="/admin/offers" element={<AdminRoute><Offers /></AdminRoute>} />
+      <Route path="/admin/checkouts" element={<AdminRoute><Checkouts /></AdminRoute>} />
+      <Route path="/admin/checkouts/edit/:id" element={<AdminRoute><CheckoutEditor /></AdminRoute>} />
+      <Route path="/admin/gateways" element={<AdminRoute><Gateways /></AdminRoute>} />
+      <Route path="/admin/domains" element={<AdminRoute><Domains /></AdminRoute>} />
+      <Route path="/admin/settings" element={<AdminRoute><Settings /></AdminRoute>} />
+      <Route path="/admin/orders" element={<AdminRoute><Orders /></AdminRoute>} />
+      <Route path="/admin/webhooks" element={<AdminRoute><Webhooks /></AdminRoute>} />
+      <Route path="/admin/licenses" element={<AdminRoute><Licenses /></AdminRoute>} />
+      <Route path="/admin/marketing" element={<AdminRoute><Marketing /></AdminRoute>} />
+      <Route path="/admin/integrations" element={<AdminRoute><IntegrationsHub /></AdminRoute>} />
+      <Route path="/admin/members" element={<AdminRoute><MemberAreas /></AdminRoute>} />
+      <Route path="/admin/members/:id" element={<AdminRoute><MemberAreaDashboard /></AdminRoute>} />
+      <Route path="/admin/contents/:id" element={<AdminRoute><ContentEditor /></AdminRoute>} />
 
 
       {/* Member Area Public Routes */}

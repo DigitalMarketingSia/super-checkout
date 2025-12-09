@@ -24,12 +24,36 @@ export const Login = () => {
 
     try {
       if (mode === 'login') {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data: { user }, error: signInError } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
-        if (error) throw error;
-        navigate('/admin');
+        if (signInError) throw signInError;
+
+        if (user) {
+          // Fetch Profile to check role
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+
+          if (profile?.role === 'admin') {
+            navigate('/admin');
+          } else {
+            // Member login at root? Try to find where to go or show message
+            // Ideally we find their first accessible member area
+            // For now, redirect to a generic page or just show success and tell them to use their link
+            // But wait, if they have a link /app/teste, they should be logging in THERE (MemberLogin.tsx).
+            // If they log in here, they might be confused.
+            // Let's redirect to a "Hub" or just "app" and let App.tsx handle it?
+            // App.tsx has no generic /app route.
+            // Let's redirect to /admin so the AdminRoute showing "Access Denied" does its job explaining "Use your link".
+            // This is the safest "quick fix" that aligns with the user's request "User could not access admin".
+            // The AdminRoute page has the text: "Se você é um aluno/membro, por favor utilize o link de acesso enviado para seu e-mail."
+            navigate('/admin');
+          }
+        }
       } else if (mode === 'signup') {
         const { error } = await supabase.auth.signUp({
           email,
