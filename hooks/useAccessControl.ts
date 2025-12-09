@@ -36,6 +36,7 @@ export const useAccessControl = (accessGrants: AccessGrant[] = []): UseAccessCon
         let isFree = false;
         let productId: string | undefined;
         let contentId: string | undefined;
+        let associatedProductId: string | undefined; // NEW: Track associated product
         let product: Product | undefined;
 
         if ('product' in item && item.product) {
@@ -46,28 +47,26 @@ export const useAccessControl = (accessGrants: AccessGrant[] = []): UseAccessCon
             // It's a TrackItem with content
             isFree = item.content.is_free || false;
             contentId = item.content.id;
+            associatedProductId = item.content.associated_product?.id;
         } else if ('module' in item && item.module) {
             // It's a TrackItem with module
             isFree = item.module.is_free || false;
             contentId = item.module.content_id;
+            associatedProductId = item.module.associated_product?.id;
         } else if ('lesson' in item && item.lesson) {
             // It's a TrackItem with lesson
             const module = item.lesson.module;
             const content = module?.content;
 
-            console.log('Access Check (Lesson TrackItem):', {
-                lessonFree: item.lesson.is_free,
-                moduleFree: module?.is_free,
-                contentFree: content?.is_free,
-                module,
-                content
-            });
-
             isFree = item.lesson.is_free || module?.is_free || content?.is_free || false;
+
+            // Try to get associated product from any level
+            associatedProductId = item.lesson.associated_product?.id || module?.associated_product?.id || content?.associated_product?.id;
 
             // Try to get contentId from context if available
             if (context?.content) {
                 contentId = context.content.id;
+                if (!associatedProductId) associatedProductId = context.content.associated_product?.id;
             } else if (module?.content_id) {
                 // Fallback: Check if lesson has module populated with content_id
                 contentId = module.content_id;
@@ -83,10 +82,14 @@ export const useAccessControl = (accessGrants: AccessGrant[] = []): UseAccessCon
             if ('content_id' in item) contentId = (item as any).content_id;
             if ('id' in item && !('content_id' in item) && !('video_url' in item)) contentId = (item as any).id; // Content object
 
+            // Try to get associated product
+            associatedProductId = (item as any).associated_product?.id;
+
             // If it's a Lesson (has video_url or content_text) and we have context
             if (('video_url' in item || 'content_text' in item)) {
                 if (context?.content) {
                     contentId = context.content.id;
+                    if (!associatedProductId) associatedProductId = context.content.associated_product?.id;
                 } else if ((item as Lesson).module?.content_id) {
                     contentId = (item as Lesson).module?.content_id;
                 }
@@ -112,13 +115,23 @@ export const useAccessControl = (accessGrants: AccessGrant[] = []): UseAccessCon
             return 'SALES_MODAL';
         }
 
-        // If it's content/module, check if we have access via any product or direct content grant
-        if (contentId) {
-            const hasAccess = accessGrants.some(g =>
-                (g.content_id === contentId && g.status === 'active')
-            );
+        // If it's content/module, check if we have access via any product OR direct content grant
+        if (contentId || associatedProductId) {
+            // Check 1: Direct Content Grant
+            if (contentId) {
+                const hasDirectAccess = accessGrants.some(g =>
+                    (g.content_id === contentId && g.status === 'active')
+                );
+                if (hasDirectAccess) return 'ACCESS';
+            }
 
-            if (hasAccess) return 'ACCESS';
+            // Check 2: Associated Product Grant (CRITICAL FIX)
+            if (associatedProductId) {
+                const hasProductAccess = accessGrants.some(g =>
+                    g.product_id === associatedProductId && g.status === 'active'
+                );
+                if (hasProductAccess) return 'ACCESS';
+            }
 
             // If user is logged in but doesn't have access -> Sales Modal
             // If user is NOT logged in -> Sales Modal (per requirement)
