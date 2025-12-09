@@ -3,6 +3,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 
 // Initialize Supabase Admin Client
+// Force deploy fix admin role
 const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://vixlzrmhqsbzjhpgfwdn.supabase.co';
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -274,6 +275,46 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 await supabaseAdmin.from('profiles').delete().eq('id', targetId);
 
                 return res.status(200).json({ success: true });
+            }
+
+            // --- PROMOTE TO ADMIN (FIX) ---
+            if (action === 'promote_admin') {
+                const { email } = data;
+                if (!email) return res.status(400).json({ error: 'Email required' });
+
+                console.log('Promoting user to admin:', email);
+
+                // 1. Find User in Auth
+                const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers({
+                    page: 1,
+                    perPage: 1000
+                });
+
+                if (listError || !users) {
+                    console.error('List users error:', listError);
+                    return res.status(500).json({ error: 'Failed to find user in auth' });
+                }
+
+                const user = users.find(u => u.email?.toLowerCase() === email.toLowerCase());
+
+                if (!user) return res.status(404).json({ error: 'User not found in Auth system' });
+
+                // 2. Upsert Profile as Admin
+                const { error: upsertError } = await supabaseAdmin
+                    .from('profiles')
+                    .upsert({
+                        id: user.id,
+                        email: user.email,
+                        role: 'admin',
+                        updated_at: new Date().toISOString()
+                    });
+
+                if (upsertError) {
+                    console.error('Upsert profile error:', upsertError);
+                    return res.status(500).json({ error: upsertError.message });
+                }
+
+                return res.status(200).json({ success: true, userId: user.id });
             }
 
             return res.status(400).json({ error: 'Invalid action' });
