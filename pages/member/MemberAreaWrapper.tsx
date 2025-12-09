@@ -13,17 +13,19 @@ export const MemberAreaWrapper: React.FC = () => {
 
     useEffect(() => {
         const loadMemberArea = async () => {
+            console.log('[Wrapper] Loading Member Area for slug:', slug);
             if (!slug) return;
             try {
                 const area = await storage.getMemberAreaBySlug(slug);
+                console.log('[Wrapper] Found area:', area);
                 if (area) {
                     setMemberArea(area);
                 } else {
-                    console.error('Member Area not found');
+                    console.error('[Wrapper] Member Area not found for slug:', slug);
                     navigate('/app'); // Redirect if not found
                 }
             } catch (error) {
-                console.error('Error loading member area:', error);
+                console.error('[Wrapper] Error loading member area:', error);
             } finally {
                 setLoading(false);
             }

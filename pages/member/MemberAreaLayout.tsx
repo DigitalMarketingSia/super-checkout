@@ -10,6 +10,7 @@ interface MemberAreaLayoutProps {
 }
 
 export const MemberAreaLayout: React.FC<MemberAreaLayoutProps> = ({ children, memberArea }) => {
+    console.log('[Layout] Rendering with memberArea:', memberArea ? memberArea.name : 'null');
     const { user, signOut } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
