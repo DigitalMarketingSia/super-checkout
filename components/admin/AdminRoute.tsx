@@ -15,7 +15,11 @@ export const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }
         return <Navigate to="/login" replace />;
     }
 
-    if (profile?.role !== 'admin') {
+    // Emergency Bypass for Owner
+    const ownerEmail = 'contato.jeandamin@gmail.com';
+    const isOwner = user.email === ownerEmail;
+
+    if (profile?.role !== 'admin' && !isOwner) {
         console.warn('AdminRoute: Unauthorized access attempt by user:', user.email, 'Role:', profile?.role);
         // Ideally redirect to a "Unauthorized" page or their member home if known.
         // For now, let's render a generic forbidden message to avoid infinite loops if we redirected to root (which might redirect back here).
