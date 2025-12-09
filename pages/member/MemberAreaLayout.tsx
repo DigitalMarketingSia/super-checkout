@@ -97,7 +97,7 @@ export const MemberAreaLayout: React.FC<MemberAreaLayoutProps> = ({ children, me
                             <img src={memberArea.logo_url} alt={memberArea.name} className="h-8 object-contain" />
                         ) : (
                             <div className="text-red-600 font-bold text-2xl tracking-tighter">
-                                {memberArea?.name?.toUpperCase() || 'NETFLIX'} <span className="text-white text-xs font-normal tracking-normal opacity-70">ACADEMY</span>
+                                {memberArea?.name?.toUpperCase() || 'MEMBER'} <span className="text-white text-xs font-normal tracking-normal opacity-70">AREA</span>
                             </div>
                         )}
                     </Link>
@@ -241,7 +241,7 @@ export const MemberAreaLayout: React.FC<MemberAreaLayoutProps> = ({ children, me
                             >
                                 <ul className="space-y-1 pl-4">
                                     {/* Custom Links */}
-                                    {memberArea?.custom_links?.filter(l => l.active).map(link => (
+                                    {(memberArea?.custom_links || []).filter(l => l.active).map(link => (
                                         <li key={link.id}>
                                             <a
                                                 href={link.url}

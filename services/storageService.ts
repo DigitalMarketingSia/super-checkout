@@ -712,6 +712,20 @@ class StorageService {
     };
   }
 
+  async getMemberAreaBySlug(slug: string): Promise<MemberArea | null> {
+    const { data, error } = await supabase
+      .from('member_areas')
+      .select('*')
+      .eq('slug', slug)
+      .single();
+
+    if (error) {
+      console.error('Error fetching member area:', error.message);
+      return null;
+    }
+    return data as MemberArea;
+  }
+
   async getPublicGateway(id: string): Promise<Gateway | null> {
     const { data, error } = await supabase
       .from('gateways')

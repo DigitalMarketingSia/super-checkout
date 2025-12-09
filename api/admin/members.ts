@@ -59,6 +59,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
                 const userId = userData.user.id;
 
+                // 1.5Force Role to 'member' (Safety Check)
+                // This prevents the user from accidentally getting 'admin' role if the trigger defaults incorrectly or if they are the first user (though normally only 1st user is admin via manual update).
+                const { error: roleError } = await supabaseAdmin
+                    .from('profiles')
+                    .update({ role: 'member' })
+                    .eq('id', userId);
+
+                if (roleError) {
+                    console.warn('Failed to enforce member role:', roleError);
+                    // We continue, but this is a warning sign.
+                }
+
                 // 2. Grant Access to Products
                 if (productIds && productIds.length > 0) {
                     // Fetch product contents first to be thorough? 
