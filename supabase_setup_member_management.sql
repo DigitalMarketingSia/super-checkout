@@ -23,10 +23,19 @@ CREATE POLICY "Users can view their own profile" ON public.profiles
 CREATE POLICY "Users can update their own profile" ON public.profiles
   FOR UPDATE USING (auth.uid() = id);
 
-CREATE POLICY "Admins can manage all profiles" ON public.profiles
-  FOR ALL USING (
-    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin')
+-- Helper function to avoid infinite recursion in RLS
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND role = 'admin'
   );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE POLICY "Admins can manage all profiles" ON public.profiles
+  FOR ALL USING ( public.is_admin() );
 
 -- Function to handle new user creation
 CREATE OR REPLACE FUNCTION public.handle_new_user()
