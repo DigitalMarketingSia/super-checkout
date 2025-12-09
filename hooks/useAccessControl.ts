@@ -1,4 +1,5 @@
 // ...
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { AccessGrant, Content, Module, Lesson, Product, TrackItem } from '../types';
 
