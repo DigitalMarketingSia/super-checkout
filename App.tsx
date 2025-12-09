@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 
 import { Dashboard } from './pages/admin/Dashboard';
+import { AdminRoute } from './components/admin/AdminRoute';
 import { Products } from './pages/admin/Products';
 import { Offers } from './pages/admin/Offers';
 import { Checkouts } from './pages/admin/Checkouts';

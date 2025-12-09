@@ -82,18 +82,64 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     }
                 }
 
-                // 3. Send Welcome Email
-                // Using our send-email Edge Function or direct here if we had transport.
-                // We'll verify if the 'send-email' function is available or just mock it.
-                // Ideally, we call specific email logic.
+                // 3. Find Context for Email (Member Area Slug)
+                let memberAreaSlug = '';
+                let memberAreaName = '';
 
+                if (productIds && productIds.length > 0) {
+                    try {
+                        const firstProductId = productIds[0];
+                        // Join: product -> product_contents -> contents -> member_areas
+                        // This is complex in Supabase REST. We'll simplify: 
+                        // Find a content linked to this product, then get its member_area_id.
+
+                        const { data: pcData } = await supabaseAdmin
+                            .from('product_contents')
+                            .select('content_id')
+                            .eq('product_id', firstProductId)
+                            .limit(1)
+                            .single();
+
+                        if (pcData) {
+                            const { data: contentData } = await supabaseAdmin
+                                .from('contents')
+                                .select('member_area_id')
+                                .eq('id', pcData.content_id)
+                                .single();
+
+                            if (contentData) {
+                                const { data: maData } = await supabaseAdmin
+                                    .from('member_areas')
+                                    .select('slug, name')
+                                    .eq('id', contentData.member_area_id)
+                                    .single();
+
+                                if (maData) {
+                                    memberAreaSlug = maData.slug;
+                                    memberAreaName = maData.name;
+                                }
+                            }
+                        }
+                    } catch (err) {
+                        console.warn('Error finding member area context:', err);
+                    }
+                }
+
+                // 4. Send Welcome Email
                 try {
+                    const baseUrl = req.headers.origin || 'https://super-checkout.vercel.app'; // Fallback
+                    const accessUrl = memberAreaSlug
+                        ? `${baseUrl}/app/${memberAreaSlug}/login`
+                        : `${baseUrl}/login`; // Fallback to generic if no slug found (shouldn't happen if properly setup)
+
                     const welcomeHtml = `
-                        <h1>Bem-vindo!</h1>
+                        <h1>Bem-vindo${memberAreaName ? ` ao ${memberAreaName}` : ''}!</h1>
                         <p>Sua conta foi criada manualmente por nossa equipe.</p>
                         <p><strong>Email:</strong> ${email}</p>
                         <p><strong>Senha Temporária:</strong> ${tempPassword}</p>
-                        <p>Recomendamos que altere sua senha após o primeiro acesso.</p>
+                        <p>Para acessar seu conteúdo, clique no botão abaixo:</p>
+                        <a href="${accessUrl}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin-top: 10px;">Acessar Área de Membros</a>
+                        <p style="margin-top: 20px; font-size: 12px; color: #666;">Recomendamos que altere sua senha após o primeiro acesso.</p>
                     `;
 
                     await fetch(`${supabaseUrl}/functions/v1/send-email`, {
@@ -104,17 +150,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                         },
                         body: JSON.stringify({
                             to: email,
-                            subject: 'Acesso Liberado - Boas vindas!',
+                            subject: memberAreaName ? `Acesso Liberado: ${memberAreaName}` : 'Acesso Liberado - Boas vindas!',
                             html: welcomeHtml
                         })
                     });
                 } catch (emailErr) {
-                    // Fallback for development/missing Edge Function
-                    console.warn('[Admin API] Email service unreachable or failed. Logging email content instead:');
-                    console.log(`To: ${email}\nTemp Password: ${tempPassword}`);
-                    // We continue despite email error to ensure user is created
+                    console.warn('[Admin API] Email service unreachable or failed. Logging details:', emailErr);
                 }
 
+                // Return success immediately
                 return res.status(200).json({ success: true, userId });
             }
 
