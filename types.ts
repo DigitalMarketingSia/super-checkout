@@ -289,8 +289,48 @@ export interface AccessGrant {
   granted_at: string;
   status: 'active' | 'revoked' | 'expired';
   content?: Content; // Joined
+  expires_at?: string; // New: Subscription expiration
+  is_subscription?: boolean; // New
+  subscription_provider_id?: string; // New
+  subscription_status?: 'active' | 'past_due' | 'canceled' | 'trialing'; // New
 }
 
+export interface Profile {
+  id: string;
+  email: string;
+  full_name?: string;
+  avatar_url?: string;
+  status: 'active' | 'suspended' | 'disabled';
+  role: 'member' | 'admin' | 'moderator';
+  last_seen_at?: string;
+  created_at: string;
+}
+
+export interface MemberNote {
+  id: string;
+  user_id: string;
+  author_id: string;
+  content: string;
+  created_at: string;
+  author?: Profile; // Joined
+}
+
+export interface MemberTag {
+  id: string;
+  user_id: string;
+  tag: string;
+  created_at: string;
+}
+
+export interface ActivityLog {
+  id: string;
+  user_id: string;
+  event: string;
+  metadata?: any;
+  ip_address?: string;
+  user_agent?: string;
+  created_at: string;
+}
 export interface MemberArea {
   id: string;
   owner_id: string;

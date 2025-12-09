@@ -1,8 +1,8 @@
-import { useNavigate, useOutletContext } from 'react-router-dom';
+// ...
 import { useAuth } from '../context/AuthContext';
 import { AccessGrant, Content, Module, Lesson, Product, TrackItem } from '../types';
 
-export type AccessAction = 'ACCESS' | 'LOGIN' | 'SALES_MODAL';
+export type AccessAction = 'ACCESS' | 'LOGIN' | 'SALES_MODAL' | 'SUSPENDED';
 
 interface UseAccessControlResult {
     checkAccess: (item: TrackItem | Content | Module | Lesson | Product, context?: { content?: Content; module?: Module }) => AccessAction;
@@ -11,13 +11,14 @@ interface UseAccessControlResult {
         callbacks: {
             onAccess: () => void;
             onSalesModal: (product?: Product) => void;
+            onSuspended?: () => void;
         },
         context?: { content?: Content; module?: Module }
     ) => void;
 }
 
 export const useAccessControl = (accessGrants: AccessGrant[] = []): UseAccessControlResult => {
-    const { user } = useAuth();
+    const { user, profile } = useAuth();
     const navigate = useNavigate();
     const { memberArea } = useOutletContext<{ memberArea: any }>() || {};
 
@@ -25,6 +26,11 @@ export const useAccessControl = (accessGrants: AccessGrant[] = []): UseAccessCon
         item: TrackItem | Content | Module | Lesson | Product,
         context?: { content?: Content; module?: Module }
     ): AccessAction => {
+        // 0. Global Suspension Check
+        if (profile?.status === 'suspended') {
+            return 'SUSPENDED';
+        }
+
         // Normalize item to check properties
         let isFree = false;
         let productId: string | undefined;
@@ -127,6 +133,7 @@ export const useAccessControl = (accessGrants: AccessGrant[] = []): UseAccessCon
         callbacks: {
             onAccess: () => void;
             onSalesModal: (product?: Product) => void;
+            onSuspended?: () => void;
         },
         context?: { content?: Content; module?: Module }
     ) => {
@@ -135,6 +142,12 @@ export const useAccessControl = (accessGrants: AccessGrant[] = []): UseAccessCon
         if (action === 'LOGIN') {
             const appLink = memberArea ? `/app/${memberArea.slug}` : '/app';
             navigate(`${appLink}/login`);
+        } else if (action === 'SUSPENDED') {
+            if (callbacks.onSuspended) {
+                callbacks.onSuspended();
+            } else {
+                alert('Sua conta está suspensa. Entre em contato com o suporte.');
+            }
         } else if (action === 'SALES_MODAL') {
             // Determine which product to show in modal
             let productToSell: Product | undefined;

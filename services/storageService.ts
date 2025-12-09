@@ -12,8 +12,17 @@ export { supabase };
 class StorageService {
 
   async getUser() {
-    const { data: { session } } = await supabase.auth.getSession();
-    return session?.user;
+    // console.log('storageService: getUser called'); 
+    // Small optimization: check valid session first? 
+    // For now just log
+    try {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) console.error('storageService: getUser error', error);
+      return session?.user;
+    } catch (e) {
+      console.error('storageService: getUser exception', e);
+      return null;
+    }
   }
 
   // --- PRODUCTS ---
@@ -1660,20 +1669,26 @@ class StorageService {
 
   // --- MEMBER AREAS ---
 
-  async getMemberAreas(): Promise<MemberArea[]> {
-    const user = await this.getUser();
-    if (!user) return [];
+  async getMemberAreas(userId?: string): Promise<MemberArea[]> {
+    console.log('storageService: getMemberAreas called with userId:', userId);
+
+    // If userId not provided, try to fetch it (but this might hang as observed)
+    const id = userId || (await this.getUser())?.id;
+    console.log('storageService: resolved id', id);
+
+    if (!id) return [];
 
     const { data, error } = await supabase
       .from('member_areas')
       .select('*')
-      .eq('owner_id', user.id)
+      .eq('owner_id', id)
       .order('created_at', { ascending: false });
 
     if (error) {
       console.error('Error fetching member areas:', error.message);
       return [];
     }
+    console.log('storageService: getMemberAreas success, count:', data?.length);
     return data as MemberArea[];
   }
 

@@ -6,24 +6,40 @@ import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { Plus, Users, ExternalLink, Settings, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 
 export const MemberAreas = () => {
     const navigate = useNavigate();
+    const { user } = useAuth(); // Get user from context
     const [loading, setLoading] = useState(true);
     const [areas, setAreas] = useState<MemberArea[]>([]);
 
     useEffect(() => {
-        loadAreas();
-    }, []);
+        if (user) {
+            loadAreas();
+        }
+    }, [user]); // Add user dependency
 
     const loadAreas = async () => {
+        console.log('MemberAreas: loadAreas started');
         setLoading(true);
+
+        // Safety timeout to prevent infinite loading
+        const safetyTimer = setTimeout(() => {
+            console.warn('MemberAreas: loadAreas timed out');
+            setLoading(false);
+        }, 5000);
+
         try {
-            const data = await storage.getMemberAreas();
+            console.log('MemberAreas: calling storage.getMemberAreas() with user', user?.id);
+            // PASS user.id to bypass storage internal getUser call
+            const data = await storage.getMemberAreas(user?.id);
+            console.log('MemberAreas: data received', data);
             setAreas(data);
         } catch (error) {
             console.error('Error loading member areas:', error);
         } finally {
+            clearTimeout(safetyTimer);
             setLoading(false);
         }
     };
