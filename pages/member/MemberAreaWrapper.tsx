@@ -5,8 +5,9 @@ import { storage } from '../../services/storageService';
 import { MemberArea } from '../../types';
 import { Loader2 } from 'lucide-react';
 
-export const MemberAreaWrapper: React.FC = () => {
-    const { slug } = useParams<{ slug: string }>();
+export const MemberAreaWrapper = ({ forcedSlug }: { forcedSlug?: string }) => {
+    const { slug: paramSlug } = useParams<{ slug: string }>();
+    const slug = forcedSlug || paramSlug;
     const navigate = useNavigate();
     const [memberArea, setMemberArea] = useState<MemberArea | null>(null);
     const [loading, setLoading] = useState(true);

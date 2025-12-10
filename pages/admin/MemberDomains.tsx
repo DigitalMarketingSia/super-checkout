@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MemberArea, Domain } from '../../types';
+import { MemberArea, Domain, DomainUsage } from '../../types';
 import { storage } from '../../services/storageService';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
@@ -24,7 +24,7 @@ export const MemberDomains: React.FC<MemberDomainsProps> = ({ area, onSave }) =>
         setLoading(true);
         try {
             const data = await storage.getDomains();
-            setDomains(data.filter(d => d.status === 'active')); // Only allow active domains
+            setDomains(data.filter(d => d.status === 'active' && d.usage === DomainUsage.MEMBER_AREA)); // Only allow active Member Area domains
         } catch (error) {
             console.error('Error loading domains:', error);
         } finally {

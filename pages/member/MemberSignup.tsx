@@ -6,8 +6,9 @@ import { Button } from '../../components/ui/Button';
 import { Lock, ArrowRight, Mail, User } from 'lucide-react';
 import { supabase } from '../../services/supabase';
 
-export const MemberSignup = () => {
-    const { slug } = useParams<{ slug: string }>();
+export const MemberSignup = ({ forcedSlug }: { forcedSlug?: string }) => {
+    const { slug: paramSlug } = useParams<{ slug: string }>();
+    const slug = forcedSlug || paramSlug;
     const navigate = useNavigate();
     const [memberArea, setMemberArea] = useState<MemberArea | null>(null);
     const [loading, setLoading] = useState(true);

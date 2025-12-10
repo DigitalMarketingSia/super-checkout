@@ -740,6 +740,22 @@ class StorageService {
     return data as Gateway;
   }
 
+  async getMemberAreaByDomain(domainId: string): Promise<MemberArea | null> {
+    const { data, error } = await supabase
+      .from('member_areas')
+      .select('*')
+      .eq('domain_id', domainId)
+      .single();
+
+    if (error) {
+      if (error.code !== 'PGRST116') {
+        console.error('Error fetching member area by domain:', error.message);
+      }
+      return null;
+    }
+    return data as MemberArea;
+  }
+
   // --- DOMAINS ---
 
   async getDomains(): Promise<Domain[]> {
@@ -785,7 +801,8 @@ class StorageService {
       status: domain.status,
       type: domain.type,
       checkout_id: domain.checkout_id,
-      slug: domain.slug
+      slug: domain.slug,
+      usage: domain.usage || 'general'
     };
 
     const { data, error } = await supabase

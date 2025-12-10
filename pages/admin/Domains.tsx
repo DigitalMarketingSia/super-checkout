@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Layout } from '../../components/Layout';
 import { storage } from '../../services/storageService';
-import { Domain, DomainStatus, DomainType, Checkout } from '../../types';
+import { Domain, DomainStatus, DomainType, Checkout, DomainUsage } from '../../types';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import {
@@ -17,7 +17,10 @@ import {
   ExternalLink,
   RotateCw,
   X,
-  Trash2
+  Trash2,
+  ShoppingCart,
+  Users,
+  Layout as LayoutIcon
 } from 'lucide-react';
 
 export const Domains = () => {
@@ -35,7 +38,8 @@ export const Domains = () => {
   // Form State
   const [formData, setFormData] = useState({
     domain: '',
-    type: DomainType.CNAME
+    type: DomainType.CNAME,
+    usage: DomainUsage.CHECKOUT
   });
 
   // DNS Records State
@@ -91,7 +95,8 @@ export const Domains = () => {
         domain: formData.domain,
         type: formData.type,
         checkout_id: null,
-        slug: null
+        slug: null,
+        usage: formData.usage
       };
 
       const savedDomain = await storage.createDomain(newDomainData);
@@ -102,7 +107,7 @@ export const Domains = () => {
 
       // Close modal and reset form
       setIsAddModalOpen(false);
-      setFormData({ domain: '', type: DomainType.CNAME });
+      setFormData({ domain: '', type: DomainType.CNAME, usage: DomainUsage.CHECKOUT });
 
       // Open DNS modal immediately to show instructions
       openDnsModal(savedDomain);
@@ -148,7 +153,7 @@ export const Domains = () => {
           d.id === id ? { ...d, status: newStatus } : d
         );
         setDomains(updatedDomains);
-        await storage.saveDomains(updatedDomains.filter(d => d.id === id));
+        // await storage.saveDomains(updatedDomains.filter(d => d.id === id));
       }
 
       // Return records for the modal
@@ -254,6 +259,30 @@ export const Domains = () => {
     }
   };
 
+  const getUsageBadge = (usage: DomainUsage) => {
+    switch (usage) {
+      case DomainUsage.CHECKOUT:
+        return (
+          <span className="flex items-center gap-1.5 bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded text-[10px] font-medium border border-blue-500/20 uppercase tracking-wide">
+            <ShoppingCart className="w-3 h-3" /> Checkout
+          </span>
+        );
+      case DomainUsage.MEMBER_AREA:
+        return (
+          <span className="flex items-center gap-1.5 bg-purple-500/10 text-purple-400 px-2 py-0.5 rounded text-[10px] font-medium border border-purple-500/20 uppercase tracking-wide">
+            <Users className="w-3 h-3" /> Área de Membros
+          </span>
+        );
+      case DomainUsage.GENERAL:
+      default:
+        return (
+          <span className="flex items-center gap-1.5 bg-gray-500/10 text-gray-400 px-2 py-0.5 rounded text-[10px] font-medium border border-gray-500/20 uppercase tracking-wide">
+            <Globe className="w-3 h-3" /> Geral
+          </span>
+        );
+    }
+  };
+
   const systemDomain = 'cname.vercel-dns.com';
 
   return (
@@ -291,12 +320,15 @@ export const Domains = () => {
                     <Globe className="w-6 h-6" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-white flex items-center gap-3">
-                      {domain.domain}
+                    <div className="flex items-center gap-3">
+                      <h3 className="text-lg font-bold text-white">
+                        {domain.domain}
+                      </h3>
                       {getStatusBadge(domain.status)}
-                    </h3>
-                    <div className="flex items-center gap-2 text-sm text-gray-400 mt-1">
-                      <span>Adicionado em {new Date(domain.created_at).toLocaleDateString()}</span>
+                    </div>
+                    <div className="flex items-center gap-3 mt-1">
+                      {getUsageBadge(domain.usage || DomainUsage.GENERAL)}
+                      <span className="text-sm text-gray-500">Adicionado em {new Date(domain.created_at).toLocaleDateString()}</span>
                     </div>
                   </div>
                 </div>
@@ -353,13 +385,64 @@ export const Domains = () => {
                   <AlertTriangle className="w-4 h-4" /> {error}
                 </div>
               )}
+
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1.5">Domínio (ex: pay.meusite.com)</label>
+                <label className="block text-sm font-medium text-gray-300 mb-1.5">Finalidade do Domínio</label>
+                <div className="grid grid-cols-1 gap-3">
+                  <div
+                    className={`p-3 rounded-xl border cursor-pointer transition-all ${formData.usage === DomainUsage.CHECKOUT ? 'bg-blue-500/20 border-blue-500/50' : 'bg-black/30 border-white/10 hover:border-white/20'}`}
+                    onClick={() => setFormData({ ...formData, usage: DomainUsage.CHECKOUT })}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${formData.usage === DomainUsage.CHECKOUT ? 'bg-blue-500 text-white' : 'bg-white/5 text-gray-400'}`}>
+                        <ShoppingCart className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h3 className={`text-sm font-bold ${formData.usage === DomainUsage.CHECKOUT ? 'text-white' : 'text-gray-300'}`}>Para Checkout</h3>
+                        <p className="text-xs text-gray-500">Ex: pay.meusite.com</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div
+                    className={`p-3 rounded-xl border cursor-pointer transition-all ${formData.usage === DomainUsage.MEMBER_AREA ? 'bg-purple-500/20 border-purple-500/50' : 'bg-black/30 border-white/10 hover:border-white/20'}`}
+                    onClick={() => setFormData({ ...formData, usage: DomainUsage.MEMBER_AREA })}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${formData.usage === DomainUsage.MEMBER_AREA ? 'bg-purple-500 text-white' : 'bg-white/5 text-gray-400'}`}>
+                        <Users className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h3 className={`text-sm font-bold ${formData.usage === DomainUsage.MEMBER_AREA ? 'text-white' : 'text-gray-300'}`}>Para Área de Membros</h3>
+                        <p className="text-xs text-gray-500">Ex: membros.meusite.com</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div
+                    className={`p-3 rounded-xl border cursor-pointer transition-all ${formData.usage === DomainUsage.GENERAL ? 'bg-gray-500/20 border-gray-500/50' : 'bg-black/30 border-white/10 hover:border-white/20'}`}
+                    onClick={() => setFormData({ ...formData, usage: DomainUsage.GENERAL })}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${formData.usage === DomainUsage.GENERAL ? 'bg-gray-500 text-white' : 'bg-white/5 text-gray-400'}`}>
+                        <Globe className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h3 className={`text-sm font-bold ${formData.usage === DomainUsage.GENERAL ? 'text-white' : 'text-gray-300'}`}>Uso Geral</h3>
+                        <p className="text-xs text-gray-500">Outros fins</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1.5">Domínio (sem http/https)</label>
                 <input
                   required
                   type="text"
                   className="w-full bg-black/30 border border-purple-500/20 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 outline-none placeholder:text-gray-600"
-                  placeholder="pay.seusite.com"
+                  placeholder={formData.usage === DomainUsage.MEMBER_AREA ? "clube.meusite.com" : "pay.meusite.com"}
                   value={formData.domain}
                   onChange={e => setFormData({ ...formData, domain: e.target.value })}
                 />

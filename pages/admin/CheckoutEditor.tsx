@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Layout } from '../../components/Layout';
 import { storage } from '../../services/storageService';
-import { Checkout, Product, Gateway, Domain, DomainStatus, CheckoutConfig, GatewayProvider } from '../../types';
+import { Checkout, Product, Gateway, Domain, DomainStatus, CheckoutConfig, GatewayProvider, DomainUsage } from '../../types';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import {
@@ -259,11 +259,13 @@ export const CheckoutEditor = () => {
                                        onChange={e => setDomainId(e.target.value)}
                                     >
                                        <option value="">supercheckout.app (Padrão)</option>
-                                       {domains.map(d => (
-                                          <option key={d.id} value={d.id}>
-                                             {d.domain} {d.status !== DomainStatus.ACTIVE ? `(${d.status})` : ''}
-                                          </option>
-                                       ))}
+                                       {domains
+                                          .filter(d => d.usage === DomainUsage.CHECKOUT)
+                                          .map(d => (
+                                             <option key={d.id} value={d.id}>
+                                                {d.domain} {d.status !== DomainStatus.ACTIVE ? `(${d.status})` : ''}
+                                             </option>
+                                          ))}
                                     </select>
                                  </div>
                               </div>

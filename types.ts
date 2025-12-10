@@ -69,6 +69,12 @@ export interface Offer {
   active: boolean;
 }
 
+export enum DomainUsage {
+  GENERAL = 'general',
+  CHECKOUT = 'checkout',
+  MEMBER_AREA = 'member_area'
+}
+
 export interface Domain {
   id: string;
   domain: string; // ex: checkout.meusite.com
@@ -76,6 +82,7 @@ export interface Domain {
   slug?: string; // Slug padrão
   type: DomainType;
   status: DomainStatus;
+  usage: DomainUsage; // New field for domain purpose
   created_at: string;
 }
 

@@ -38,6 +38,7 @@ import { LicenseGuard } from './components/LicenseGuard';
 import InstallerWizard from './pages/installer/InstallerWizard';
 
 import { storage } from './services/storageService';
+import { DomainUsage } from './types';
 
 // Protected Route Wrapper
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -57,6 +58,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 const DomainDispatcher = () => {
   const [loading, setLoading] = useState(true);
   const [customCheckoutId, setCustomCheckoutId] = useState<string | null>(null);
+  const [customMemberAreaSlug, setCustomMemberAreaSlug] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -83,7 +85,6 @@ const DomainDispatcher = () => {
         const domain = await storage.getDomainByHostname(hostname);
         console.log('Domain found:', domain);
 
-
         if (domain) {
           // 1. Check Status
           if (domain.status !== 'active') {
@@ -92,47 +93,74 @@ const DomainDispatcher = () => {
             return;
           }
 
-          // Check for reserved paths (Thank You, Pix, etc)
           const pathname = window.location.pathname;
+
+          // --- CHECKOUT DOMAIN LOGIC ---
+          if (domain.usage === DomainUsage.CHECKOUT) {
+            // Check for reserved paths
+            if (pathname.startsWith('/thank-you') || pathname.startsWith('/pagamento')) {
+              setLoading(false);
+              setCustomCheckoutId('system');
+              return;
+            }
+
+            const slug = pathname.substring(1);
+            const checkout = await storage.getCheckoutByDomainAndSlug(domain.id, slug);
+
+            if (checkout) {
+              setCustomCheckoutId(checkout.id);
+            } else {
+              setError('Checkout não encontrado neste domínio.');
+            }
+            setLoading(false);
+            return;
+          }
+
+          // --- MEMBER AREA DOMAIN LOGIC ---
+          if (domain.usage === DomainUsage.MEMBER_AREA) {
+            const memberArea = await storage.getMemberAreaByDomain(domain.id);
+
+            if (memberArea) {
+              setCustomMemberAreaSlug(memberArea.slug);
+            } else {
+              setError('Nenhuma Área de Membros configurada para este domínio.');
+            }
+            setLoading(false);
+            return;
+          }
+
+          // --- GENERAL DOMAIN LOGIC (Legacy) ---
+          // Fallback logic for General domains: Try checkout, otherwise allow standard routing
+
           if (pathname.startsWith('/thank-you') || pathname.startsWith('/pagamento')) {
-            console.log('Reserved path detected, skipping checkout resolution.');
             setLoading(false);
             setCustomCheckoutId('system');
             return;
           }
 
-          // Extract slug from URL (e.g. /master1 -> master1)
           const slug = pathname.substring(1);
-
-          // New Logic: Find checkout that points to this domain AND slug
           const checkout = await storage.getCheckoutByDomainAndSlug(domain.id, slug);
-          console.log('Checkout found for domain/slug:', checkout);
 
           if (checkout) {
             setCustomCheckoutId(checkout.id);
           } else {
-            // Check if it's a known system route that we should allow
-            // Actually, if we want to allow the domain to be used as a "White Label" admin, 
-            // we should pretty much always allow fall-through if no checkout matches.
-            // The App router will handle 404s for invalid paths.
-
-            console.log('No specific checkout found, allowing standard routing (Admin/Member Area).');
+            // Allow Standard Routing (Admin, etc)
             setLoading(false);
-            // Do NOT set error. Allow <Routes> to render.
           }
+
         } else {
           // Domain points here but not found in DB
           setError('Domínio não configurado no sistema.');
+          setLoading(false);
         }
       } catch (err) {
         console.error('Erro ao verificar domínio:', err);
         setError('Erro ao carregar configuração do domínio.');
-      } finally {
         setLoading(false);
       }
     };
 
-    // Safety timeout to prevent infinite loading
+    // Safety timeout
     const timeoutId = setTimeout(() => {
       setLoading((current) => {
         if (current) {
@@ -169,6 +197,7 @@ const DomainDispatcher = () => {
     );
   }
 
+  // RENDER: Checkout Mode
   if (customCheckoutId) {
     return (
       <Routes>
@@ -176,6 +205,28 @@ const DomainDispatcher = () => {
         <Route path="/:slug" element={<PublicCheckout checkoutId={customCheckoutId} />} />
         <Route path="/pagamento/pix/:orderId" element={<PixPayment />} />
         <Route path="/thank-you/:orderId" element={<ThankYou />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    );
+  }
+
+  // RENDER: Member Area Mode (Custom Domain)
+  if (customMemberAreaSlug) {
+    // Logic for Member Area on Root Domain
+    // We pass the 'forcedSlug' prop to the wrapper (requires update in MemberAreaWrapper)
+    return (
+      <Routes>
+        <Route path="/" element={<MemberAreaWrapper forcedSlug={customMemberAreaSlug} />}>
+          <Route index element={<MemberDashboard />} />
+          <Route path="products" element={<MemberProducts />} />
+          <Route path="faq" element={<MemberFAQ />} />
+          <Route path="my-list" element={<MemberDashboard />} />
+          <Route path="content/:id" element={<ContentModules />} />
+          <Route path="profile" element={<MemberProfile />} />
+        </Route>
+        <Route path="/course/:id" element={<CoursePlayer />} />
+        <Route path="/login" element={<MemberLogin forcedSlug={customMemberAreaSlug} />} />
+        <Route path="/signup" element={<MemberSignup forcedSlug={customMemberAreaSlug} />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     );
@@ -210,12 +261,11 @@ const DomainDispatcher = () => {
       <Route path="/admin/contents/:id" element={<AdminRoute><ContentEditor /></AdminRoute>} />
 
 
-      {/* Member Area Public Routes */}
+      {/* Member Area Public Routes (Standard) */}
       <Route path="/app/:slug/login" element={<MemberLogin />} />
       <Route path="/app/:slug/signup" element={<MemberSignup />} />
 
-      {/* Member Area App Routes with Slug */}
-      {/* Member Area App Routes with Slug */}
+      {/* Member Area App Routes with Slug (Standard) */}
       <Route path="/app/:slug" element={<MemberAreaWrapper />}>
         <Route index element={<MemberDashboard />} />
         <Route path="products" element={<MemberProducts />} />
