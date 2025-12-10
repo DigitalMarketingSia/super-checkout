@@ -14,6 +14,36 @@ interface MemberDetailsModalProps {
     onUpdate?: () => void;
 }
 
+const formatLogEvent = (event: string) => {
+    switch (event) {
+        case 'login': return 'Acesso ao Sistema';
+        case 'status_changed_to_suspended': return 'Conta Suspensa';
+        case 'status_changed_to_active': return 'Conta Ativada';
+        case 'status_changed_to_disabled': return 'Conta Desativada';
+        case 'access_granted': return 'Acesso Concedido';
+        case 'access_revoked': return 'Acesso Revogado';
+        case 'create': return 'Membro Criado';
+        case 'update': return 'Dados Atualizados';
+        case 'delete': return 'Membro Excluído';
+        default: return event.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    }
+};
+
+const formatLogMetadata = (log: ActivityLog) => {
+    const m = log.metadata || {};
+    const parts = [];
+
+    if (m.p === 'admin') parts.push('por Admin');
+    if (m.method) parts.push(`via ${m.method === 'password' ? 'Senha' : m.method}`);
+    if (m.productIds) parts.push(`Produtos: ${Array.isArray(m.productIds) ? m.productIds.length : 1}`);
+    if (m.productId) parts.push(`Produto ID: ${m.productId.slice(0, 8)}...`);
+    if (m.action) parts.push(`Ação: ${m.action}`);
+    if (m.mode === 'direct_db') parts.push('(Modo Recuperação)');
+
+    if (parts.length === 0) return JSON.stringify(m).slice(0, 50);
+    return parts.join(' • ');
+};
+
 export const MemberDetailsModal: React.FC<MemberDetailsModalProps> = ({ member, isOpen, onClose, onUpdate }) => {
     const [activeTab, setActiveTab] = useState('overview');
     const [details, setDetails] = useState<any>(null);
@@ -270,18 +300,21 @@ export const MemberDetailsModal: React.FC<MemberDetailsModalProps> = ({ member, 
                                                 <div className="space-y-4">
                                                     {details?.logs?.slice(0, 5).map((log: ActivityLog) => (
                                                         <div key={log.id} className="flex gap-4 items-start">
-                                                            <div className="mt-1 w-2 h-2 rounded-full bg-gray-300 dark:bg-gray-600 flex-shrink-0" />
+                                                            <div className={`mt-1.5 w-2 h-2 rounded-full flex-shrink-0 ${log.event.includes('suspend') || log.event.includes('revoke') ? 'bg-red-500' :
+                                                                log.event.includes('active') || log.event.includes('grant') ? 'bg-green-500' :
+                                                                    'bg-blue-500'
+                                                                }`} />
                                                             <div>
                                                                 <div className="text-sm font-medium text-gray-900 dark:text-white">
-                                                                    {log.event.replace('_', ' ')}
+                                                                    {formatLogEvent(log.event)}
                                                                 </div>
-                                                                <div className="text-xs text-gray-500">
+                                                                <div className="text-xs text-gray-500 mb-1">
                                                                     {format(new Date(log.created_at), "d 'de' MMMM 'às' HH:mm", { locale: ptBR })}
                                                                 </div>
                                                                 {log.metadata && Object.keys(log.metadata).length > 0 && (
-                                                                    <pre className="mt-1 text-xs bg-gray-50 dark:bg-black/20 p-2 rounded text-gray-600 dark:text-gray-400 overflow-x-auto">
-                                                                        {JSON.stringify(log.metadata, null, 2)}
-                                                                    </pre>
+                                                                    <div className="text-xs text-gray-500 bg-gray-50 dark:bg-white/5 p-1.5 rounded border border-gray-100 dark:border-white/5 inline-block">
+                                                                        {formatLogMetadata(log)}
+                                                                    </div>
                                                                 )}
                                                             </div>
                                                         </div>
