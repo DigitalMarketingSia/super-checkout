@@ -446,16 +446,19 @@ export const MemberDetailsModal: React.FC<MemberDetailsModalProps> = ({ member, 
                                             <div className="relative border-l border-gray-200 dark:border-white/10 ml-3 space-y-8">
                                                 {details?.logs?.map((log: ActivityLog) => (
                                                     <div key={log.id} className="relative pl-8">
-                                                        <span className="absolute -left-[5px] top-1.5 w-2.5 h-2.5 rounded-full bg-gray-300 dark:bg-gray-600 ring-4 ring-white dark:ring-[#1A1A24]" />
+                                                        <span className={`absolute -left-[5px] top-1.5 w-2.5 h-2.5 rounded-full ring-4 ring-white dark:ring-[#1A1A24] ${log.event.includes('suspend') || log.event.includes('revoke') ? 'bg-red-500' :
+                                                                log.event.includes('active') || log.event.includes('grant') ? 'bg-green-500' :
+                                                                    'bg-blue-500'
+                                                            }`} />
                                                         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1">
                                                             <div>
                                                                 <span className="text-sm font-medium text-gray-900 dark:text-white">
-                                                                    {log.event}
+                                                                    {formatLogEvent(log.event)}
                                                                 </span>
-                                                                {log.metadata && (
-                                                                    <p className="text-xs text-gray-500 mt-0.5">
-                                                                        {JSON.stringify(log.metadata)}
-                                                                    </p>
+                                                                {log.metadata && Object.keys(log.metadata).length > 0 && (
+                                                                    <div className="text-xs text-gray-500 mt-0.5">
+                                                                        {formatLogMetadata(log)}
+                                                                    </div>
                                                                 )}
                                                             </div>
                                                             <span className="text-xs text-gray-400 whitespace-nowrap">
