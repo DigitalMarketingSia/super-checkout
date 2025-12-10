@@ -1,8 +1,8 @@
-
 import React, { useState } from 'react';
 import { supabase } from '../services/supabase';
 import { useNavigate } from 'react-router-dom';
 import { CreditCard, Lock, Mail, Loader2, AlertCircle, User, ArrowRight, CheckCircle, ShieldCheck, Coins } from 'lucide-react';
+import { memberService } from '../services/memberService';
 
 export const Login = () => {
   const navigate = useNavigate();
@@ -31,6 +31,10 @@ export const Login = () => {
         if (signInError) throw signInError;
 
         if (user) {
+          // Update last seen & log activity (Fire & Forget)
+          memberService.updateLastSeen(user.id).catch(console.error);
+          memberService.logActivity(user.id, 'login', { method: 'password' }).catch(console.error);
+
           // Fetch Profile to check role
           const { data: profile } = await supabase
             .from('profiles')

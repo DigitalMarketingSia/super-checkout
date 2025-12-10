@@ -242,6 +242,8 @@ export const memberService = {
             if (!response.ok || (contentType && contentType.includes("text/html"))) {
                 throw new Error('API unavailable');
             }
+            // Log success
+            this.logActivity(userId, `status_changed_to_${status}`, { action, p: 'admin' });
         } catch (e) {
             console.warn('Backend API failed, trying direct Supabase update (Local Dev Fallback)', e);
             const { error } = await supabase
@@ -254,6 +256,7 @@ export const memberService = {
                 throw new Error('Falha ao atualizar status via API e Banco de Dados.');
             }
             console.info('Status updated via direct DB access (Local Mode)');
+            this.logActivity(userId, `status_changed_to_${status}`, { mode: 'direct_db' });
         }
     },
 
@@ -264,6 +267,7 @@ export const memberService = {
             body: JSON.stringify({ action: 'delete', userId })
         });
         if (!response.ok) throw new Error(await response.text());
+        // Can't log if deleted, but maybe before?
     },
 
     async grantAccess(userId: string, productIds: string[]) {
@@ -288,6 +292,9 @@ export const memberService = {
             throw error;
         }
         console.log('Access granted successfully:', data);
+
+        // Log activity
+        this.logActivity(userId, 'access_granted', { productIds });
     },
 
     async revokeAccess(userId: string, productId: string) {
@@ -297,6 +304,9 @@ export const memberService = {
             .match({ user_id: userId, product_id: productId });
 
         if (error) throw error;
+
+        // Log activity
+        this.logActivity(userId, 'access_revoked', { productId });
     },
 
     async createMember(email: string, fullName: string, initialProductIds: string[] = []) {
@@ -350,5 +360,24 @@ export const memberService = {
             .eq('id', userId);
 
         if (error) console.error('Error updating last_seen:', error);
+
+        // Log occasional activity? Or maybe just 'login' is enough.
+        // We'll trust explicit logActivity calls for now.
+    },
+
+    async logActivity(userId: string, event: string, metadata: any = {}) {
+        try {
+            const { error } = await supabase
+                .from('activity_logs')
+                .insert({
+                    user_id: userId,
+                    event,
+                    metadata
+                });
+
+            if (error) console.error('Error logging activity:', error);
+        } catch (e) {
+            console.error('Exception logging activity:', e);
+        }
     }
 };
