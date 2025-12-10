@@ -83,20 +83,25 @@ const DomainDispatcher = () => {
         const domain = await storage.getDomainByHostname(hostname);
         console.log('Domain found:', domain);
 
+
         if (domain) {
+          // 1. Check Status
+          if (domain.status !== 'active') {
+            setError('Domínio ainda em verificação. Aguarde a propagação do DNS.');
+            setLoading(false);
+            return;
+          }
+
           // Check for reserved paths (Thank You, Pix, etc)
           const pathname = window.location.pathname;
           if (pathname.startsWith('/thank-you') || pathname.startsWith('/pagamento')) {
             console.log('Reserved path detected, skipping checkout resolution.');
             setLoading(false);
-            // We set a dummy ID to allow rendering the Routes block, 
-            // but the specific routes (ThankYou/Pix) don't use it.
             setCustomCheckoutId('system');
             return;
           }
 
           // Extract slug from URL (e.g. /master1 -> master1)
-          // If root /, slug is empty string
           const slug = pathname.substring(1);
 
           // New Logic: Find checkout that points to this domain AND slug
@@ -106,9 +111,14 @@ const DomainDispatcher = () => {
           if (checkout) {
             setCustomCheckoutId(checkout.id);
           } else {
-            // If we are at root and no checkout found, maybe try to find ANY checkout for this domain?
-            // For now, strict matching.
-            setError('Checkout não encontrado para este endereço.');
+            // Check if it's a known system route that we should allow
+            // Actually, if we want to allow the domain to be used as a "White Label" admin, 
+            // we should pretty much always allow fall-through if no checkout matches.
+            // The App router will handle 404s for invalid paths.
+
+            console.log('No specific checkout found, allowing standard routing (Admin/Member Area).');
+            setLoading(false);
+            // Do NOT set error. Allow <Routes> to render.
           }
         } else {
           // Domain points here but not found in DB

@@ -136,26 +136,45 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     });
             }
         }
-
-        return res.status(200).json({
-            configured: !isMisconfigured,
-            verified: domainData.verified,
-            verification: verificationChallenges,
-            status: isMisconfigured ? 'pending' : 'active',
-            config,
-            verificationChallenges: verificationChallenges,
-            dnsRecords, // New field with the best available records
-            // DEBUG DATA
-            debug_domain: domainData,
-            debug_verify: verifyData || null,
-            debug_config: config,
-            detected_team_id: currentTeamId,
-            ...domainData,
-            misconfigured: isMisconfigured
-        });
-
-    } catch (error: any) {
-        console.error('Error verifying domain:', error);
-        return res.status(500).json({ error: error.message });
     }
+
+        // FALLBACK: If we still have no records, return standard Vercel records
+        if (dnsRecords.length === 0) {
+        dnsRecords.push(
+            {
+                type: 'CNAME',
+                domain: domain,
+                value: 'cname.vercel-dns.com',
+                reason: 'default_cname'
+            },
+            {
+                type: 'A',
+                domain: '@',
+                value: '76.76.21.21',
+                reason: 'default_a'
+            }
+        );
+    }
+
+    return res.status(200).json({
+        configured: !isMisconfigured,
+        verified: domainData.verified,
+        verification: verificationChallenges,
+        status: isMisconfigured ? 'pending' : 'active',
+        config,
+        verificationChallenges: verificationChallenges,
+        dnsRecords, // New field with the best available records
+        // DEBUG DATA
+        debug_domain: domainData,
+        debug_verify: verifyData || null,
+        debug_config: config,
+        detected_team_id: currentTeamId,
+        ...domainData,
+        misconfigured: isMisconfigured
+    });
+
+} catch (error: any) {
+    console.error('Error verifying domain:', error);
+    return res.status(500).json({ error: error.message });
+}
 }

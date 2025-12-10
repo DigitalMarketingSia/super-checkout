@@ -763,7 +763,6 @@ class StorageService {
       .from('domains')
       .select('*')
       .eq('domain', hostname)
-      .eq('status', 'active')
       .single();
 
     if (error) {
