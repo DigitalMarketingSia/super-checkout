@@ -40,44 +40,78 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
                 if (!email) return res.status(400).json({ error: 'Email is required' });
 
-                // 1. Create User
-                // Generate a temporary password
+                let userId = '';
+                let isNewUser = false;
                 const tempPassword = Math.random().toString(36).slice(-12) + "A1!";
 
-                console.log(`[Admin] Creating user ${email}`);
+                console.log(`[Admin] Processing member add for ${email}`);
 
-                const { data: userData, error: createError } = await supabaseAdmin.auth.admin.createUser({
-                    email,
-                    password: tempPassword,
-                    email_confirm: true,
-                    user_metadata: { name: name || email.split('@')[0] }
-                });
+                // 1. Resolve User (Check Profile -> Create Auth -> Recover Auth)
 
-                if (createError) {
-                    console.error('Error creating user:', createError);
-                    return res.status(400).json({ error: createError.message });
-                }
-
-                const userId = userData.user.id;
-
-                // 1.5Force Role to 'member' (Safety Check)
-                // This prevents the user from accidentally getting 'admin' role if the trigger defaults incorrectly or if they are the first user (though normally only 1st user is admin via manual update).
-                const { error: roleError } = await supabaseAdmin
+                // A. Check if user already has a profile
+                const { data: existingProfile } = await supabaseAdmin
                     .from('profiles')
-                    .update({ role: 'member' })
-                    .eq('id', userId);
+                    .select('id')
+                    .ilike('email', email)
+                    .maybeSingle();
 
-                if (roleError) {
-                    console.warn('Failed to enforce member role:', roleError);
-                    // We continue, but this is a warning sign.
+                if (existingProfile) {
+                    console.log(`[Admin] User found in profiles: ${existingProfile.id}`);
+                    userId = existingProfile.id;
+                } else {
+                    // B. Not in profiles, try creating new Auth user
+                    const { data: userData, error: createError } = await supabaseAdmin.auth.admin.createUser({
+                        email,
+                        password: tempPassword,
+                        email_confirm: true,
+                        user_metadata: { name: name || email.split('@')[0] }
+                    });
+
+                    if (createError) {
+                        // C. Handle "Already registered" (Zombie user: In Auth but not Profiles)
+                        if (createError.message?.toLowerCase().includes('already')) {
+                            console.log('[Admin] User exists in Auth but not Profiles. Attempting recovery...');
+
+                            // Try to find them in Auth list (limited scan)
+                            // NOTE: listUsers is not efficient for finding 1 user by email, but necessary here without ID
+                            const { data: { users }, error: listError } = await supabaseAdmin.auth.admin.listUsers({
+                                page: 1,
+                                perPage: 1000
+                            });
+
+                            const foundUser = users?.find(u => u.email?.toLowerCase() === email.toLowerCase());
+
+                            if (foundUser) {
+                                userId = foundUser.id;
+                                console.log(`[Admin] Recovered user ID from Auth: ${userId}`);
+
+                                // Create the missing profile
+                                await supabaseAdmin.from('profiles').insert({
+                                    id: userId,
+                                    email: email,
+                                    full_name: name || email.split('@')[0],
+                                    role: 'member'
+                                });
+                            } else {
+                                console.error('User exists (according to error) but not found in listUsers scan');
+                                return res.status(500).json({ error: 'Usuário já existe no sistema, mas houve erro ao recuperar dados. Contate suporte.' });
+                            }
+                        } else {
+                            console.error('Error creating user:', createError);
+                            return res.status(400).json({ error: createError.message });
+                        }
+                    } else {
+                        // Success creating new user
+                        userId = userData.user.id;
+                        isNewUser = true;
+
+                        // Force role member
+                        await supabaseAdmin.from('profiles').update({ role: 'member' }).eq('id', userId);
+                    }
                 }
 
                 // 2. Grant Access to Products
                 if (productIds && productIds.length > 0) {
-                    // Fetch product contents first to be thorough? 
-                    // Or just insert into access_grants if we are linking to products directly?
-                    // Currently `access_grants` links to `product_id`.
-
                     const grants = productIds.map((pid: string) => ({
                         user_id: userId,
                         product_id: pid,
@@ -87,45 +121,41 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
                     const { error: grantError } = await supabaseAdmin
                         .from('access_grants')
-                        .insert(grants);
+                        .upsert(grants, { onConflict: 'user_id, product_id' }); // Use upsert to be safe
 
                     if (grantError) {
                         console.error('Error granting access:', grantError);
-                        // Don't fail the whole request, but warn
                     }
                 }
 
-                // 3. Find Context for Email (Member Area Slug)
+                // 3. Find Context for Email
                 let memberAreaSlug = '';
                 let memberAreaName = '';
 
+                // Try to infer context from products
                 if (productIds && productIds.length > 0) {
                     try {
-                        const firstProductId = productIds[0];
-                        // Join: product -> product_contents -> contents -> member_areas
-                        // This is complex in Supabase REST. We'll simplify: 
-                        // Find a content linked to this product, then get its member_area_id.
-
+                        // ... (same logic as before, simplified lookup)
                         const { data: pcData } = await supabaseAdmin
                             .from('product_contents')
                             .select('content_id')
-                            .eq('product_id', firstProductId)
+                            .eq('product_id', productIds[0])
                             .limit(1)
-                            .single();
+                            .maybeSingle();
 
                         if (pcData) {
                             const { data: contentData } = await supabaseAdmin
                                 .from('contents')
                                 .select('member_area_id')
                                 .eq('id', pcData.content_id)
-                                .single();
+                                .maybeSingle();
 
                             if (contentData) {
                                 const { data: maData } = await supabaseAdmin
                                     .from('member_areas')
                                     .select('slug, name')
                                     .eq('id', contentData.member_area_id)
-                                    .single();
+                                    .maybeSingle();
 
                                 if (maData) {
                                     memberAreaSlug = maData.slug;
@@ -134,26 +164,46 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                             }
                         }
                     } catch (err) {
-                        console.warn('Error finding member area context:', err);
+                        console.warn('Context lookup failed', err);
                     }
                 }
 
-                // 4. Send Welcome Email
+                // 4. Send Appropriate Email
                 try {
-                    const baseUrl = req.headers.origin || 'https://super-checkout.vercel.app'; // Fallback
+                    const baseUrl = req.headers.origin || 'https://super-checkout.vercel.app';
                     const accessUrl = memberAreaSlug
                         ? `${baseUrl}/app/${memberAreaSlug}/login`
-                        : `${baseUrl}/login`; // Fallback to generic if no slug found (shouldn't happen if properly setup)
+                        : `${baseUrl}/login`;
 
-                    const welcomeHtml = `
-                        <h1>Bem-vindo${memberAreaName ? ` ao ${memberAreaName}` : ''}!</h1>
-                        <p>Sua conta foi criada manualmente por nossa equipe.</p>
-                        <p><strong>Email:</strong> ${email}</p>
-                        <p><strong>Senha Temporária:</strong> ${tempPassword}</p>
-                        <p>Para acessar seu conteúdo, clique no botão abaixo:</p>
-                        <a href="${accessUrl}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin-top: 10px;">Acessar Área de Membros</a>
-                        <p style="margin-top: 20px; font-size: 12px; color: #666;">Recomendamos que altere sua senha após o primeiro acesso.</p>
-                    `;
+                    let emailSubject = '';
+                    let emailHtml = '';
+
+                    if (isNewUser) {
+                        // New User: Send Credentials
+                        emailSubject = memberAreaName ? `Acesso Liberado: ${memberAreaName}` : 'Acesso Liberado - Boas vindas!';
+                        emailHtml = `
+                            <h1>Bem-vindo${memberAreaName ? ` ao ${memberAreaName}` : ''}!</h1>
+                            <p>Sua conta foi criada com sucesso.</p>
+                            <p><strong>Email:</strong> ${email}</p>
+                            <p><strong>Senha Provisória:</strong> ${tempPassword}</p>
+                            <div style="margin: 30px 0;">
+                                <a href="${accessUrl}" style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Acessar Agora</a>
+                            </div>
+                            <p style="font-size: 12px; color: #666;">Recomendamos alterar sua senha após o primeiro acesso.</p>
+                        `;
+                    } else {
+                        // Existing User: Send "New Access" notification (No password)
+                        emailSubject = `Novo acesso liberado${memberAreaName ? `: ${memberAreaName}` : ''}`;
+                        emailHtml = `
+                            <h1>Novo Acesso Liberado!</h1>
+                            <p>Você recebeu acesso a um novo conteúdo${memberAreaName ? ` em <strong>${memberAreaName}</strong>` : ''}.</p>
+                            <p>Como você já possui cadastro, utilize sua senha atual para acessar.</p>
+                            <div style="margin: 30px 0;">
+                                <a href="${accessUrl}" style="background-color: #28a745; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Acessar Área de Membros</a>
+                            </div>
+                            <p><small>Esqueceu sua senha? <a href="${baseUrl}/login">Recupere aqui</a>.</small></p>
+                        `;
+                    }
 
                     await fetch(`${supabaseUrl}/functions/v1/send-email`, {
                         method: 'POST',
@@ -163,16 +213,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                         },
                         body: JSON.stringify({
                             to: email,
-                            subject: memberAreaName ? `Acesso Liberado: ${memberAreaName}` : 'Acesso Liberado - Boas vindas!',
-                            html: welcomeHtml
+                            subject: emailSubject,
+                            html: emailHtml
                         })
                     });
                 } catch (emailErr) {
-                    console.warn('[Admin API] Email service unreachable or failed. Logging details:', emailErr);
+                    console.warn('[Admin API] Email sending failed:', emailErr);
                 }
 
-                // Return success immediately
-                return res.status(200).json({ success: true, userId });
+                return res.status(200).json({ success: true, userId, isNewUser });
             }
 
             // --- SUSPEND / BLOCK ---
