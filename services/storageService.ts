@@ -1717,16 +1717,7 @@ class StorageService {
     return data as MemberArea;
   }
 
-  async getMemberAreaBySlug(slug: string): Promise<MemberArea | null> {
-    const { data, error } = await supabase
-      .from('member_areas')
-      .select('*')
-      .eq('slug', slug)
-      .single();
 
-    if (error) return null;
-    return data as MemberArea;
-  }
 
   async getMemberAreaMembers(areaId: string): Promise<Member[]> {
     const { data, error } = await supabase.rpc('get_member_area_members', { area_id: areaId });
