@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { supabase } from '../services/supabase';
 import { useNavigate } from 'react-router-dom';
-import { CreditCard, Lock, Mail, Loader2, AlertCircle, User, ArrowRight, CheckCircle, ShieldCheck, Coins } from 'lucide-react';
+import { Lock, Mail, Loader2, AlertCircle, User, ArrowRight, CheckCircle, ShieldCheck, Coins, Check } from 'lucide-react';
 import { memberService } from '../services/memberService';
 
 export const Login = () => {
@@ -98,30 +98,31 @@ export const Login = () => {
         </div>
 
         <div className="relative z-10 max-w-lg">
-          <div className="w-16 h-16 bg-gradient-to-br from-primary to-purple-900 rounded-2xl flex items-center justify-center mb-8 shadow-2xl shadow-primary/30">
-            <CreditCard className="w-8 h-8 text-white" />
-          </div>
           <h1 className="text-5xl font-bold mb-6 leading-tight">
-            Tenha seu próprio sistema de checkout <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-400">sem taxas.</span>
+            Seu sistema de checkout <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-400">sem taxas.</span>
           </h1>
-          <p className="text-xl text-gray-400 leading-relaxed mb-8">
-            Liberdade total para escalar seu negócio. Sem comissões por venda, sem bloqueios e com o dinheiro direto na sua conta.
+          <p className="text-2xl text-white font-semibold leading-relaxed mb-8">
+            Liberdade total para escalar seu negócio.
           </p>
 
-          <div className="grid grid-cols-2 gap-6">
-            <div className="bg-white/5 backdrop-blur-sm border border-white/10 p-4 rounded-xl">
-              <div className="flex items-center gap-3 mb-2">
-                <Coins className="w-6 h-6 text-green-400" />
-                <h3 className="text-2xl font-bold text-white">0%</h3>
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center shrink-0">
+                <Check className="w-5 h-5 text-green-400" />
               </div>
-              <p className="text-sm text-gray-400">Taxas por Venda</p>
+              <p className="text-lg text-gray-300">Sem bloqueios</p>
             </div>
-            <div className="bg-white/5 backdrop-blur-sm border border-white/10 p-4 rounded-xl">
-              <div className="flex items-center gap-3 mb-2">
-                <ShieldCheck className="w-6 h-6 text-primary" />
-                <h3 className="text-2xl font-bold text-white">100%</h3>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center shrink-0">
+                <Check className="w-5 h-5 text-green-400" />
               </div>
-              <p className="text-sm text-gray-400">Controle Total</p>
+              <p className="text-lg text-gray-300">Sem comissões por venda</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center shrink-0">
+                <Check className="w-5 h-5 text-green-400" />
+              </div>
+              <p className="text-lg text-gray-300">Dinheiro direto na sua conta</p>
             </div>
           </div>
         </div>

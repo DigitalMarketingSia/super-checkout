@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { memberService } from '../../services/memberService';
 import { Member } from '../../types';
 import { Card } from '../../components/ui/Card';
+import { ConfirmModal } from '../../components/ui/Modal';
 import { Search, User, Mail, Calendar, Shield, MoreVertical, Filter, Download, Plus, PlayCircle, Eye, RefreshCw, Slash, Lock, Trash2 } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { MemberDetailsModal } from '../../components/admin/members/MemberDetailsModal';
@@ -22,6 +23,8 @@ export const MemberAreaMembers: React.FC<MemberAreaMembersProps> = ({ memberArea
     const [selectedMember, setSelectedMember] = useState<any | null>(null);
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
     const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
+    const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; memberId: string | null; memberName: string | null }>({ isOpen: false, memberId: null, memberName: null });
+    const [isDeleting, setIsDeleting] = useState(false);
 
     useEffect(() => {
         loadMembers();
@@ -56,18 +59,18 @@ export const MemberAreaMembers: React.FC<MemberAreaMembersProps> = ({ memberArea
         }
     };
 
-    const handleDelete = async (memberId: string, memberName: string) => {
-        if (!window.confirm(`Tem certeza que deseja excluir o membro "${memberName}"? Esta ação não pode ser desfeita e removerá todos os dados associados.`)) {
-            return;
-        }
-
+    const handleDelete = async () => {
+        if (!deleteModal.memberId) return;
+        setIsDeleting(true);
         try {
-            await memberService.deleteMember(memberId);
-            alert('Membro excluído com sucesso');
+            await memberService.deleteMember(deleteModal.memberId);
+            setDeleteModal({ isOpen: false, memberId: null, memberName: null });
             loadMembers();
         } catch (error) {
             console.error('Error deleting member:', error);
             alert('Erro ao excluir membro');
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -228,7 +231,7 @@ export const MemberAreaMembers: React.FC<MemberAreaMembersProps> = ({ memberArea
                                             </button>
                                             <button
                                                 title="Excluir Membro"
-                                                onClick={() => handleDelete(member.user_id, member.name)}
+                                                onClick={() => setDeleteModal({ isOpen: true, memberId: member.user_id, memberName: member.name })}
                                                 className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
                                             >
                                                 <Trash2 className="w-4 h-4" />
@@ -282,6 +285,17 @@ export const MemberAreaMembers: React.FC<MemberAreaMembersProps> = ({ memberArea
                     loadMembers();
                     setIsAddMemberOpen(false);
                 }}
+            />
+
+            <ConfirmModal
+                isOpen={deleteModal.isOpen}
+                onClose={() => setDeleteModal({ isOpen: false, memberId: null, memberName: null })}
+                onConfirm={handleDelete}
+                title="Excluir Membro"
+                message={`Tem certeza que deseja excluir o membro "${deleteModal.memberName}"? Esta ação não pode ser desfeita e removerá todos os dados associados.`}
+                confirmText="Sim, excluir"
+                variant="danger"
+                loading={isDeleting}
             />
         </div>
     );

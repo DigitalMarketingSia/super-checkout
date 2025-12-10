@@ -337,13 +337,17 @@ export const Domains = () => {
 
       {/* MODAL 1: ADD DOMAIN (Simple) */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="bg-[#0F0F13] w-full max-w-md rounded-2xl shadow-2xl border border-white/10 overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="px-6 py-5 border-b border-white/5 flex justify-between items-center bg-white/5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm">
+          <div className="bg-[#12121A]/80 backdrop-blur-xl w-full max-w-md rounded-2xl shadow-2xl border border-purple-500/20 overflow-hidden animate-in fade-in zoom-in duration-200 relative">
+            {/* Purple glow effects */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/20 rounded-full blur-3xl -mr-16 -mt-16" />
+            <div className="absolute bottom-0 left-0 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl -ml-16 -mb-16" />
+
+            <div className="relative px-6 py-5 border-b border-white/10 flex justify-between items-center bg-white/[0.02]">
               <h2 className="text-lg font-bold text-white">Adicionar Domínio</h2>
               <button onClick={() => setIsAddModalOpen(false)} className="text-gray-500 hover:text-white"><X className="w-5 h-5" /></button>
             </div>
-            <form onSubmit={handleSave} className="p-6 space-y-6">
+            <form onSubmit={handleSave} className="relative p-6 space-y-6">
               {error && (
                 <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-lg text-sm flex items-center gap-2">
                   <AlertTriangle className="w-4 h-4" /> {error}
@@ -354,7 +358,7 @@ export const Domains = () => {
                 <input
                   required
                   type="text"
-                  className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-primary/50 outline-none"
+                  className="w-full bg-black/30 border border-purple-500/20 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 outline-none placeholder:text-gray-600"
                   placeholder="pay.seusite.com"
                   value={formData.domain}
                   onChange={e => setFormData({ ...formData, domain: e.target.value })}
@@ -362,7 +366,7 @@ export const Domains = () => {
               </div>
               <div className="flex justify-end gap-3 pt-2">
                 <Button variant="ghost" onClick={() => setIsAddModalOpen(false)}>Cancelar</Button>
-                <Button onClick={handleSave} disabled={isLoading}>
+                <Button onClick={handleSave} disabled={isLoading} className="bg-purple-600 hover:bg-purple-700 text-white border-none shadow-lg shadow-purple-500/20">
                   {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Adicionar'}
                 </Button>
               </div>

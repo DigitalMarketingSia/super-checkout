@@ -6,17 +6,17 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   size?: 'sm' | 'md' | 'lg';
 }
 
-export const Button: React.FC<ButtonProps> = ({ 
-  children, 
-  variant = 'primary', 
-  isLoading, 
-  className = '', 
+export const Button: React.FC<ButtonProps> = ({
+  children,
+  variant = 'primary',
+  isLoading,
+  className = '',
   disabled,
   size = 'md',
-  ...props 
+  ...props
 }) => {
   const baseStyles = "rounded-xl font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transform active:scale-95";
-  
+
   const sizeStyles = {
     sm: "px-3 py-1.5 text-xs",
     md: "px-4 py-2 text-sm",
@@ -25,14 +25,14 @@ export const Button: React.FC<ButtonProps> = ({
 
   const variants = {
     primary: "bg-primary hover:bg-primary-hover text-white shadow-lg shadow-primary/30 focus:ring-primary border border-transparent",
-    secondary: "bg-gray-800 text-white hover:bg-gray-700 focus:ring-gray-500 dark:bg-white dark:text-gray-900 dark:hover:bg-gray-100",
+    secondary: "bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 hover:text-gray-900 focus:ring-gray-200 dark:bg-white/10 dark:text-white dark:border-transparent dark:hover:bg-white/20",
     danger: "bg-red-500/10 text-red-600 hover:bg-red-500/20 border border-red-500/20 focus:ring-red-500",
     outline: "border border-gray-200 dark:border-dark-border bg-transparent text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-dark-border focus:ring-gray-500",
     ghost: "bg-transparent text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5"
   };
 
   return (
-    <button 
+    <button
       className={`${baseStyles} ${sizeStyles[size]} ${variants[variant]} ${className}`}
       disabled={isLoading || disabled}
       {...props}

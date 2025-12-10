@@ -58,6 +58,27 @@ export const MemberAreaLayout: React.FC<MemberAreaLayoutProps> = ({ children, me
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
+    // Favicon Effect
+    useEffect(() => {
+        if (memberArea?.favicon_url) {
+            const link: HTMLLinkElement = document.querySelector("link[rel*='icon']") || document.createElement('link');
+            const originalHref = link.href;
+
+            link.type = 'image/x-icon';
+            link.rel = 'shortcut icon';
+            link.href = memberArea.favicon_url;
+
+            // Ensure it's in the head if we created it
+            if (!link.parentElement) {
+                document.head.appendChild(link);
+            }
+
+            return () => {
+                link.href = originalHref;
+            };
+        }
+    }, [memberArea?.favicon_url]);
+
     const toggleSection = (id: string) => {
         setExpandedSections(prev =>
             prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]
@@ -332,7 +353,8 @@ export const MemberAreaLayout: React.FC<MemberAreaLayoutProps> = ({ children, me
             </main>
 
             {/* Footer */}
-            <footer className="py-12 px-4 md:px-12 text-center text-gray-500 text-sm bg-black/50 mt-auto">
+            <footer className="py-12 px-4 md:px-12 text-center text-gray-500 text-sm bg-black/50 mt-auto flex items-center justify-center gap-2">
+                <img src="/logo.png" alt="Logo" className="w-4 h-4 object-contain opacity-50" />
                 <p>Copyright © 2025 Create {memberArea?.name || 'Netflix Academy'}</p>
             </footer>
         </div>

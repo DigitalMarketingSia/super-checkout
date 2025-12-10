@@ -133,8 +133,8 @@ export const Dashboard = () => {
     <button
       onClick={() => setPeriod(value)}
       className={`px-6 py-2 rounded-full text-sm font-medium transition-all duration-300 ${period === value
-          ? 'bg-primary text-white shadow-[0_0_15px_rgba(138,43,226,0.5)] border border-primary'
-          : 'bg-white/5 text-gray-400 border border-white/5 hover:border-white/20 hover:text-white'
+        ? 'bg-primary text-white shadow-[0_0_15px_rgba(138,43,226,0.5)] border border-primary'
+        : 'bg-white border-gray-200 text-gray-500 hover:text-gray-900 hover:bg-gray-50 dark:bg-white/5 dark:text-gray-400 dark:border-white/5 dark:hover:border-white/20 dark:hover:text-white'
         }`}
     >
       {label}
@@ -214,7 +214,7 @@ export const Dashboard = () => {
             {stats.successfulOrders > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Pix */}
-                <div className="bg-white/5 dark:bg-white/5 rounded-xl p-4 border border-gray-200 dark:border-white/5 flex items-center justify-between group hover:bg-white/10 dark:hover:bg-white/10 transition-colors">
+                <div className="bg-gray-50 dark:bg-white/5 rounded-xl p-4 border border-gray-200 dark:border-white/5 flex items-center justify-between group hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">
                   <div className="flex items-center gap-3">
                     <QrCode className="w-5 h-5 text-[#10B981]" />
                     <span className="text-gray-900 dark:text-white font-medium">Pix</span>
@@ -222,7 +222,7 @@ export const Dashboard = () => {
                   <span className="text-gray-600 dark:text-gray-400">{stats.paymentMethods.pix}</span>
                 </div>
                 {/* Card */}
-                <div className="bg-white/5 dark:bg-white/5 rounded-xl p-4 border border-gray-200 dark:border-white/5 flex items-center justify-between group hover:bg-white/10 dark:hover:bg-white/10 transition-colors">
+                <div className="bg-gray-50 dark:bg-white/5 rounded-xl p-4 border border-gray-200 dark:border-white/5 flex items-center justify-between group hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">
                   <div className="flex items-center gap-3">
                     <CreditCard className="w-5 h-5 text-primary" />
                     <span className="text-gray-900 dark:text-white font-medium">Cartão</span>
@@ -230,7 +230,7 @@ export const Dashboard = () => {
                   <span className="text-gray-600 dark:text-gray-400">{stats.paymentMethods.card}</span>
                 </div>
                 {/* Boleto */}
-                <div className="bg-white/5 dark:bg-white/5 rounded-xl p-4 border border-gray-200 dark:border-white/5 flex items-center justify-between group hover:bg-white/10 dark:hover:bg-white/10 transition-colors">
+                <div className="bg-gray-50 dark:bg-white/5 rounded-xl p-4 border border-gray-200 dark:border-white/5 flex items-center justify-between group hover:bg-gray-100 dark:hover:bg-white/10 transition-colors">
                   <div className="flex items-center gap-3">
                     <Barcode className="w-5 h-5 text-orange-400" />
                     <span className="text-gray-900 dark:text-white font-medium">Boleto</span>

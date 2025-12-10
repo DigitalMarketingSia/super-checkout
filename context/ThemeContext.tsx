@@ -19,8 +19,14 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [theme]);
 
   const toggleTheme = () => {
-    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+    // Light mode disabled by user request
+    setTheme('dark');
   };
+
+  // Ensure strict dark mode
+  useEffect(() => {
+    if (theme !== 'dark') setTheme('dark');
+  }, [theme]);
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>

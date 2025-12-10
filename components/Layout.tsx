@@ -41,7 +41,6 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     { path: '/admin/domains', icon: Globe, label: 'Domínios' },
     { path: '/admin/checkouts', icon: ShoppingCart, label: 'Checkouts' },
     { path: '/admin/orders', icon: Tag, label: 'Pedidos' },
-    { path: '/admin/marketing', icon: Mail, label: 'Marketing & E-mail' },
     { path: '/admin/integrations', icon: Plug, label: 'Integrações' },
   ];
 
@@ -80,7 +79,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         {/* Toggle Button (Desktop Only - Centered vertically on the border) */}
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="hidden lg:flex absolute -right-4 top-1/2 -translate-y-1/2 w-6 h-12 bg-[#1A1A2E] border border-white/10 rounded-full items-center justify-center z-50 hover:shadow-[0_0_15px_rgba(138,43,226,0.6)] hover:border-primary/50 transition-all duration-300 group"
+          className="hidden lg:flex absolute -right-4 top-1/2 -translate-y-1/2 w-6 h-12 bg-white dark:bg-[#1A1A2E] border border-gray-200 dark:border-white/10 rounded-full items-center justify-center z-50 shadow-sm hover:shadow-md dark:hover:shadow-[0_0_15px_rgba(138,43,226,0.6)] hover:border-primary/50 transition-all duration-300 group"
         >
           {sidebarOpen ? (
             <ChevronLeft className="w-4 h-4 text-gray-400 group-hover:text-white" />
@@ -94,16 +93,12 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
           {/* Show full logo if sidebar is open OR if we are on mobile (menu open) */}
           {(sidebarOpen || mobileMenuOpen) ? (
             <div className="flex items-center gap-2 text-primary font-bold text-xl tracking-tight animate-in fade-in duration-200">
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-purple-900 flex items-center justify-center text-white shadow-lg shadow-primary/20">
-                <CreditCard className="w-4 h-4" />
-              </div>
+              <img src="/logo.png" alt="Super Checkout" className="w-8 h-8 object-contain rounded-md" />
               <span className="dark:text-white">Super Checkout</span>
             </div>
           ) : (
             <div className="w-full flex justify-center">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-purple-900 flex items-center justify-center text-white shadow-lg shadow-primary/20">
-                <CreditCard className="w-5 h-5" />
-              </div>
+              <img src="/logo.png" alt="Super Checkout" className="w-8 h-8 object-contain rounded-md" />
             </div>
           )}
 
@@ -128,7 +123,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 onClick={() => setMobileMenuOpen(false)} // Close menu on mobile click
                 className={`flex items-center px-3 py-3 text-sm font-medium rounded-xl transition-all group relative overflow-hidden ${isActive
                   ? 'text-white bg-primary/20 shadow-[0_0_20px_rgba(138,43,226,0.15)] border border-primary/20'
-                  : 'text-gray-500 hover:text-white hover:bg-white/5'
+                  : 'text-gray-500 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5'
                   }`}
               >
                 {isActive && <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-full" />}
@@ -172,7 +167,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       <main className="flex-1 flex flex-col h-screen overflow-hidden relative bg-gray-50 dark:bg-[#05050A]">
 
         {/* Header */}
-        <header className="h-16 flex items-center justify-between px-4 lg:px-8 z-10 shrink-0 border-b border-white/5 lg:border-none">
+        <header className="h-16 flex items-center justify-between px-4 lg:px-8 z-10 shrink-0 border-b border-gray-200 dark:border-white/5 lg:border-none">
           <div className="flex items-center gap-4">
             <button
               onClick={() => setMobileMenuOpen(true)}
@@ -183,12 +178,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
           </div>
 
           <div className="flex items-center gap-3">
-            <button
-              onClick={toggleTheme}
-              className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
-            >
-              {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-            </button>
+
 
             <button className="p-2 rounded-full text-gray-400 hover:text-white hover:bg-white/5 transition-colors relative">
               <Bell className="w-5 h-5" />

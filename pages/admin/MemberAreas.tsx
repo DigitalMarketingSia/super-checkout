@@ -4,6 +4,7 @@ import { storage } from '../../services/storageService';
 import { MemberArea } from '../../types';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
+import { ConfirmModal } from '../../components/ui/Modal';
 import { Plus, Users, ExternalLink, Settings, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -13,6 +14,8 @@ export const MemberAreas = () => {
     const { user } = useAuth(); // Get user from context
     const [loading, setLoading] = useState(true);
     const [areas, setAreas] = useState<MemberArea[]>([]);
+    const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; areaId: string | null }>({ isOpen: false, areaId: null });
+    const [isDeleting, setIsDeleting] = useState(false);
 
     useEffect(() => {
         if (user) {
@@ -44,13 +47,17 @@ export const MemberAreas = () => {
         }
     };
 
-    const handleDelete = async (id: string) => {
-        if (!confirm('Tem certeza que deseja excluir esta área de membros?')) return;
+    const handleDelete = async () => {
+        if (!deleteModal.areaId) return;
+        setIsDeleting(true);
         try {
-            await storage.deleteMemberArea(id);
-            setAreas(areas.filter(a => a.id !== id));
+            await storage.deleteMemberArea(deleteModal.areaId);
+            setAreas(areas.filter(a => a.id !== deleteModal.areaId));
+            setDeleteModal({ isOpen: false, areaId: null });
         } catch (error) {
             console.error('Error deleting member area:', error);
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -90,7 +97,7 @@ export const MemberAreas = () => {
                                     </div>
                                 )}
                                 <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
-                                    <button onClick={() => handleDelete(area.id)} className="p-2 bg-black/50 text-white rounded-lg hover:bg-red-500/80 transition-colors">
+                                    <button onClick={() => setDeleteModal({ isOpen: true, areaId: area.id })} className="p-2 bg-black/50 text-white rounded-lg hover:bg-red-500/80 transition-colors">
                                         <Trash2 className="w-4 h-4" />
                                     </button>
                                 </div>
@@ -113,6 +120,17 @@ export const MemberAreas = () => {
                     ))}
                 </div>
             )}
+
+            <ConfirmModal
+                isOpen={deleteModal.isOpen}
+                onClose={() => setDeleteModal({ isOpen: false, areaId: null })}
+                onConfirm={handleDelete}
+                title="Excluir Área de Membros"
+                message="Tem certeza que deseja excluir esta área de membros? Esta ação não pode ser desfeita."
+                confirmText="Sim, excluir"
+                variant="danger"
+                loading={isDeleting}
+            />
         </Layout>
     );
 };

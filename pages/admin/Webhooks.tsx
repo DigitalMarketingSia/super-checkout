@@ -82,6 +82,10 @@ export const Webhooks = () => {
    const [isModalOpen, setIsModalOpen] = useState(false);
    const [editingId, setEditingId] = useState<string | null>(null);
 
+   // Pagination for history
+   const [currentPage, setCurrentPage] = useState(1);
+   const itemsPerPage = 10;
+
    // Modal States
    const [deleteId, setDeleteId] = useState<string | null>(null);
    const [isDeleting, setIsDeleting] = useState(false);
@@ -305,13 +309,13 @@ export const Webhooks = () => {
          {/* Header */}
          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
             <div>
-               <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+               <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                   <Activity className="w-6 h-6 text-primary" /> Webhooks
                </h1>
-               <p className="text-gray-400 text-sm mt-1">Integre seu checkout com Zapier, n8n, CRMs e outros sistemas.</p>
+               <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Integre seu checkout com Zapier, n8n, CRMs e outros sistemas.</p>
             </div>
             <div className="flex gap-3">
-               <Button variant="outline" onClick={exportJSON} className="border-white/10 hover:bg-white/5">
+               <Button variant="outline" onClick={exportJSON} className="border-gray-200 dark:border-white/10 hover:bg-gray-100 dark:hover:bg-white/5">
                   <Download className="w-4 h-4 mr-2" /> Exportar Config
                </Button>
                <Button onClick={openNew} className="shadow-xl shadow-primary/20">
@@ -324,21 +328,21 @@ export const Webhooks = () => {
          <div className="flex gap-6 mb-6 border-b border-white/5 overflow-x-auto">
             <button
                onClick={() => setActiveTab('outgoing')}
-               className={`pb-3 text-sm font-medium transition-all relative ${activeTab === 'outgoing' ? 'text-primary' : 'text-gray-400 hover:text-white'}`}
+               className={`pb-3 text-sm font-medium transition-all relative ${activeTab === 'outgoing' ? 'text-primary' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
             >
                Webhooks de Saída
                {activeTab === 'outgoing' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-t-full" />}
             </button>
             <button
                onClick={() => setActiveTab('incoming')}
-               className={`pb-3 text-sm font-medium transition-all relative ${activeTab === 'incoming' ? 'text-primary' : 'text-gray-400 hover:text-white'}`}
+               className={`pb-3 text-sm font-medium transition-all relative ${activeTab === 'incoming' ? 'text-primary' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
             >
                Webhooks de Entrada
                {activeTab === 'incoming' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-t-full" />}
             </button>
             <button
                onClick={() => setActiveTab('history')}
-               className={`pb-3 text-sm font-medium transition-all relative ${activeTab === 'history' ? 'text-primary' : 'text-gray-400 hover:text-white'}`}
+               className={`pb-3 text-sm font-medium transition-all relative ${activeTab === 'history' ? 'text-primary' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
             >
                Histórico de Disparos
                {activeTab === 'history' && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-t-full" />}
@@ -349,11 +353,13 @@ export const Webhooks = () => {
          {activeTab === 'outgoing' && (
             <div className="space-y-6 animate-in fade-in duration-300">
                {webhooks.length === 0 ? (
-                  <div className="text-center py-20 bg-white/5 rounded-2xl border border-dashed border-white/10">
-                     <Globe className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-                     <h3 className="text-lg font-medium text-white">Nenhum webhook configurado</h3>
-                     <p className="text-gray-400 mb-6 max-w-md mx-auto">Crie sua primeira integração para notificar sistemas externos sobre vendas.</p>
-                     <Button onClick={openNew}>Criar Primeiro Webhook</Button>
+                  <div className="text-center py-20 bg-white dark:bg-white/5 rounded-2xl border border-dashed border-gray-300 dark:border-white/10">
+                     <Globe className="w-12 h-12 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+                     <h3 className="text-lg font-medium text-gray-900 dark:text-white">Nenhum webhook configurado</h3>
+                     <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-md mx-auto">Crie sua primeira integração para notificar sistemas externos sobre vendas.</p>
+                     <div className="flex justify-center">
+                        <Button onClick={openNew}>Criar Primeiro Webhook</Button>
+                     </div>
                   </div>
                ) : (
                   <div className="grid grid-cols-1 gap-4">
@@ -366,20 +372,20 @@ export const Webhooks = () => {
                               {/* Info */}
                               <div className="flex-1 min-w-0">
                                  <div className="flex items-center gap-3 mb-1">
-                                    <h3 className="text-lg font-bold text-white truncate">{wh.name}</h3>
+                                    <h3 className="text-lg font-bold text-gray-900 dark:text-white truncate">{wh.name}</h3>
                                     <span className={`text-[10px] px-2 py-0.5 rounded font-mono font-bold ${wh.method === 'POST' ? 'bg-blue-500/20 text-blue-400' :
                                        wh.method === 'GET' ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'
                                        }`}>
                                        {wh.method}
                                     </span>
                                  </div>
-                                 <div className="flex items-center gap-2 text-sm text-gray-400 font-mono mb-2 truncate">
+                                 <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 font-mono mb-2 truncate">
                                     <span className="truncate">{wh.url}</span>
-                                    <button onClick={() => copyToClipboard(wh.url)} className="hover:text-white"><Copy className="w-3 h-3" /></button>
+                                    <button onClick={() => copyToClipboard(wh.url)} className="hover:text-gray-900 dark:hover:text-white"><Copy className="w-3 h-3" /></button>
                                  </div>
                                  <div className="flex flex-wrap gap-2">
                                     {wh.events.slice(0, 3).map(evt => (
-                                       <span key={evt} className="text-xs bg-white/5 px-2 py-1 rounded border border-white/5 text-gray-300">
+                                       <span key={evt} className="text-xs bg-gray-100 dark:bg-white/5 px-2 py-1 rounded border border-gray-200 dark:border-white/5 text-gray-600 dark:text-gray-300">
                                           {evt}
                                        </span>
                                     ))}
@@ -392,7 +398,7 @@ export const Webhooks = () => {
                                  <p className="text-xs text-gray-500 uppercase mb-1">Último Disparo</p>
                                  {wh.last_fired_at ? (
                                     <>
-                                       <p className="text-white font-medium">{new Date(wh.last_fired_at).toLocaleString()}</p>
+                                       <p className="text-gray-900 dark:text-white font-medium">{new Date(wh.last_fired_at).toLocaleString()}</p>
                                        <div className={`text-xs font-bold mt-1 inline-flex items-center gap-1 ${wh.last_status && wh.last_status >= 200 && wh.last_status < 300 ? 'text-green-500' : 'text-red-500'
                                           }`}>
                                           {wh.last_status === 200 ? <CheckCircle className="w-3 h-3" /> : <AlertTriangle className="w-3 h-3" />}
@@ -409,7 +415,7 @@ export const Webhooks = () => {
                                  <Button variant="ghost" size="sm" onClick={() => handleTest(wh)}>
                                     <Play className="w-4 h-4 text-primary mr-2" /> Testar
                                  </Button>
-                                 <button onClick={() => openEdit(wh)} className="p-2 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors">
+                                 <button onClick={() => openEdit(wh)} className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
                                     <Settings className="w-4 h-4" />
                                  </button>
                                  <button onClick={() => handleDeleteClick(wh.id)} className="p-2 hover:bg-red-500/10 rounded-lg text-gray-400 hover:text-red-500 transition-colors">
@@ -427,15 +433,15 @@ export const Webhooks = () => {
          {/* CONTENT: HISTORY */}
          {activeTab === 'history' && (
             <Card noPadding className="overflow-hidden animate-in fade-in duration-300">
-               <div className="p-4 border-b border-white/5 flex justify-between items-center bg-white/5">
-                  <h3 className="font-bold text-white">Log de Eventos Recentes</h3>
+               <div className="p-4 border-b border-gray-200 dark:border-white/5 flex justify-between items-center bg-gray-50/50 dark:bg-white/5">
+                  <h3 className="font-bold text-gray-900 dark:text-white">Log de Eventos Recentes</h3>
                   <Button variant="ghost" size="sm" onClick={exportCSV} className="text-xs">
                      <Download className="w-3 h-3 mr-2" /> Exportar CSV
                   </Button>
                </div>
                <div className="overflow-x-auto">
                   <table className="w-full text-left text-sm whitespace-nowrap">
-                     <thead className="text-gray-500 bg-black/20 font-medium">
+                     <thead className="text-gray-500 bg-gray-100 dark:bg-black/20 font-medium">
                         <tr>
                            <th className="px-4 py-3">Status</th>
                            <th className="px-4 py-3">Evento / Direção</th>
@@ -444,14 +450,14 @@ export const Webhooks = () => {
                            <th className="px-4 py-3">Ações</th>
                         </tr>
                      </thead>
-                     <tbody className="divide-y divide-white/5">
+                     <tbody className="divide-y divide-gray-200 dark:divide-white/5">
                         {logs.length === 0 ? (
                            <tr>
                               <td colSpan={5} className="text-center py-8 text-gray-500">Nenhum registro encontrado.</td>
                            </tr>
                         ) : (
-                           logs.map(log => (
-                              <tr key={log.id} className="hover:bg-white/5 transition-colors">
+                           logs.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map(log => (
+                              <tr key={log.id} className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
                                  <td className="px-4 py-3">
                                     <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-bold border ${log.response_status && log.response_status >= 200 && log.response_status < 300
                                        ? 'bg-green-500/10 text-green-500 border-green-500/20'
@@ -462,7 +468,7 @@ export const Webhooks = () => {
                                  </td>
                                  <td className="px-4 py-3">
                                     <div className="flex flex-col">
-                                       <span className="text-white font-mono">{log.event}</span>
+                                       <span className="text-gray-900 dark:text-white font-mono">{log.event}</span>
                                        <span className="text-xs text-gray-500 capitalize">{log.direction}</span>
                                     </div>
                                  </td>
@@ -473,7 +479,7 @@ export const Webhooks = () => {
                                     {log.duration_ms ? `${log.duration_ms}ms` : '-'}
                                  </td>
                                  <td className="px-4 py-3">
-                                    <button className="text-primary hover:text-white text-xs flex items-center gap-1" onClick={() => showAlert('Info', 'Visualizador de Payload em breve.', 'info')}>
+                                    <button className="text-primary hover:text-primary-hover dark:hover:text-white text-xs flex items-center gap-1" onClick={() => showAlert('Info', 'Visualizador de Payload em breve.', 'info')}>
                                        <Code className="w-3 h-3" /> Payload
                                     </button>
                                  </td>
@@ -483,6 +489,60 @@ export const Webhooks = () => {
                      </tbody>
                   </table>
                </div>
+
+               {/* Pagination Controls */}
+               {logs.length > itemsPerPage && (
+                  <div className="p-4 border-t border-gray-200 dark:border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
+                     <span className="text-sm text-gray-400">
+                        Mostrando {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, logs.length)} de {logs.length} registros
+                     </span>
+                     <div className="flex items-center gap-2">
+                        <Button
+                           variant="ghost"
+                           size="sm"
+                           onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                           disabled={currentPage === 1}
+                        >
+                           Anterior
+                        </Button>
+
+                        {/* Page Numbers */}
+                        <div className="flex items-center gap-1">
+                           {Array.from({ length: Math.min(5, Math.ceil(logs.length / itemsPerPage)) }, (_, i) => {
+                              // Logic to show pages around current page could be complex, keeping it simple for now or using a sliding window if needed.
+                              // For simplicity showing first 5 or logic to just show all if small, but let's just map all for now as user asked for pagination.
+                              // If many pages, maybe limit. Let's just Map all for now as per previous attempt pattern which is simple.
+                              return i + 1;
+                           }).map((_, i, arr) => {
+                              // Actually let's use a simpler mapping that just shows all pages if fits, or we can use the previous logic I tried to inject.
+                              // Let's stick to the exact code I wanted to inject:
+                              return null;
+                           })}
+                           {Array.from({ length: Math.ceil(logs.length / itemsPerPage) }, (_, i) => i + 1).map(page => (
+                              <button
+                                 key={page}
+                                 onClick={() => setCurrentPage(page)}
+                                 className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${currentPage === page
+                                    ? 'bg-primary text-white'
+                                    : 'text-gray-400 hover:text-white hover:bg-white/5'
+                                    }`}
+                              >
+                                 {page}
+                              </button>
+                           ))}
+                        </div>
+
+                        <Button
+                           variant="ghost"
+                           size="sm"
+                           onClick={() => setCurrentPage(p => Math.min(Math.ceil(logs.length / itemsPerPage), p + 1))}
+                           disabled={currentPage === Math.ceil(logs.length / itemsPerPage)}
+                        >
+                           Próxima
+                        </Button>
+                     </div>
+                  </div>
+               )}
             </Card>
          )}
 
@@ -508,7 +568,7 @@ export const Webhooks = () => {
                      <h3 className="font-bold text-white mb-4 flex items-center gap-2">
                         <Terminal className="w-4 h-4 text-green-500" /> Exemplo cURL
                      </h3>
-                     <pre className="bg-black/30 p-4 rounded-lg text-xs text-gray-400 font-mono overflow-x-auto custom-scrollbar">
+                     <pre className="bg-black/30 p-4 rounded-lg text-xs text-gray-400 font-mono overflow-x-auto visible-scrollbar">
                         {`curl -X POST ${typeof window !== 'undefined' ? window.location.origin : 'https://api.supercheckout.app'}/api/v1/webhooks/incoming/123 \\
 -H "Content-Type: application/json" \\
 -H "Authorization: Bearer YOUR_API_KEY" \\
@@ -545,7 +605,7 @@ export const Webhooks = () => {
             title={editingId ? 'Editar Webhook' : 'Novo Webhook'}
             className="max-w-4xl"
          >
-            <form onSubmit={handleSave} className="flex flex-col lg:flex-row gap-6 max-h-[80vh] overflow-y-auto custom-scrollbar p-1">
+            <form onSubmit={handleSave} className="flex flex-col lg:flex-row gap-6 max-h-[70vh] overflow-y-auto visible-scrollbar p-1">
 
                {/* Left: Configuration */}
                <div className="flex-1 space-y-6">
@@ -592,7 +652,7 @@ export const Webhooks = () => {
 
                   <div>
                      <label className="block text-sm font-medium text-gray-300 mb-3">Eventos de Disparo</label>
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto custom-scrollbar pr-2">
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto visible-scrollbar pr-2">
                         {AVAILABLE_EVENTS.map(evt => (
                            <label
                               key={evt.id}
@@ -675,7 +735,7 @@ export const Webhooks = () => {
                         <span>Payload Preview</span>
                         <span className="text-[10px] bg-white/10 px-2 py-1 rounded text-gray-400">JSON</span>
                      </h4>
-                     <div className="bg-[#1E1E1E] rounded-xl border border-white/10 p-4 h-[300px] overflow-y-auto custom-scrollbar relative group">
+                     <div className="bg-[#1E1E1E] rounded-xl border border-white/10 p-4 h-[300px] overflow-y-auto visible-scrollbar relative group">
                         <pre className="text-xs font-mono text-green-400 whitespace-pre-wrap break-all">
                            {JSON.stringify(MOCK_PAYLOADS[formData.events[0]] || MOCK_PAYLOADS['pagamento.aprovado'], null, 2)}
                         </pre>

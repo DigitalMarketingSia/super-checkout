@@ -3,6 +3,7 @@ import { storage } from '../../services/storageService';
 import { Track, TrackItem, Product, Content, Module, Lesson } from '../../types';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
+import { ConfirmModal } from '../../components/ui/Modal';
 import { Plus, GripVertical, Trash2, Eye, EyeOff, Save, X, Search } from 'lucide-react';
 
 interface MemberAreaTracksProps {
@@ -24,6 +25,8 @@ export const MemberAreaTracks: React.FC<MemberAreaTracksProps> = ({ memberAreaId
     const [showItemModal, setShowItemModal] = useState(false);
     const [availableItems, setAvailableItems] = useState<any[]>([]);
     const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
+    const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; trackId: string | null }>({ isOpen: false, trackId: null });
+    const [isDeleting, setIsDeleting] = useState(false);
 
     useEffect(() => {
         loadTracks();
@@ -65,13 +68,17 @@ export const MemberAreaTracks: React.FC<MemberAreaTracksProps> = ({ memberAreaId
         }
     };
 
-    const handleDeleteTrack = async (id: string) => {
-        if (!confirm('Tem certeza que deseja excluir esta trilha?')) return;
+    const handleDeleteTrack = async () => {
+        if (!deleteModal.trackId) return;
+        setIsDeleting(true);
         try {
-            await storage.deleteTrack(id);
-            setTracks(tracks.filter(t => t.id !== id));
+            await storage.deleteTrack(deleteModal.trackId);
+            setTracks(tracks.filter(t => t.id !== deleteModal.trackId));
+            setDeleteModal({ isOpen: false, trackId: null });
         } catch (error) {
             console.error('Error deleting track:', error);
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -263,7 +270,7 @@ export const MemberAreaTracks: React.FC<MemberAreaTracksProps> = ({ memberAreaId
                                     {track.is_visible ? <Eye size={18} /> : <EyeOff size={18} />}
                                 </button>
                                 <button
-                                    onClick={() => handleDeleteTrack(track.id)}
+                                    onClick={() => setDeleteModal({ isOpen: true, trackId: track.id })}
                                     className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
                                 >
                                     <Trash2 size={18} />
@@ -337,6 +344,17 @@ export const MemberAreaTracks: React.FC<MemberAreaTracksProps> = ({ memberAreaId
                     </div>
                 </div>
             )}
+
+            <ConfirmModal
+                isOpen={deleteModal.isOpen}
+                onClose={() => setDeleteModal({ isOpen: false, trackId: null })}
+                onConfirm={handleDeleteTrack}
+                title="Excluir Trilha"
+                message="Tem certeza que deseja excluir esta trilha? Esta ação não pode ser desfeita."
+                confirmText="Sim, excluir"
+                variant="danger"
+                loading={isDeleting}
+            />
         </div>
     );
 };

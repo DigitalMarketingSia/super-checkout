@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import * as Tabs from '@radix-ui/react-tabs';
+import { ConfirmModal, AlertModal } from '../../ui/Modal';
 import { X, User, ShoppingBag, Clock, FileText, Activity, Shield, Mail, Calendar, Key, Ban, ExternalLink, Plus, Trash2, Tag, Save } from 'lucide-react';
 import { memberService } from '../../../services/memberService';
 import { Profile, ActivityLog, MemberNote, MemberTag } from '../../../types';
@@ -52,6 +53,11 @@ export const MemberDetailsModal: React.FC<MemberDetailsModalProps> = ({ member, 
     const [availableProducts, setAvailableProducts] = useState<any[]>([]);
     const [error, setError] = useState<string | null>(null);
 
+    // Modal states
+    const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; action: string; productId?: string }>({ isOpen: false, action: '' });
+    const [alertModal, setAlertModal] = useState<{ isOpen: boolean; title: string; message: string; variant: 'success' | 'error' }>({ isOpen: false, title: '', message: '', variant: 'success' });
+    const [isProcessing, setIsProcessing] = useState(false);
+
     useEffect(() => {
         if (isOpen && member) {
             setError(null);
@@ -70,28 +76,45 @@ export const MemberDetailsModal: React.FC<MemberDetailsModalProps> = ({ member, 
     };
 
     const handleGrantAccess = async (productId: string) => {
-        if (!confirm('Deseja liberar o acesso a este produto para o usuário?')) return;
-        try {
-            await memberService.grantAccess(member.user_id, [productId]);
-            alert('Acesso liberado com sucesso!');
-            loadDetails(); // Refresh list
-        } catch (error: any) {
-            console.error('Error granting access:', error);
-            // Show more detail in alert if available
-            const msg = error.message || JSON.stringify(error);
-            alert(`Erro ao liberar acesso: ${msg}`);
-        }
+        setConfirmModal({ isOpen: true, action: 'grant', productId });
     };
 
     const handleRevokeAccess = async (productId: string) => {
-        if (!confirm('Deseja revogar o acesso a este produto?')) return;
+        setConfirmModal({ isOpen: true, action: 'revoke', productId });
+    };
+
+    const executeGrantAccess = async () => {
+        if (!confirmModal.productId) return;
+        setIsProcessing(true);
         try {
-            await memberService.revokeAccess(member.user_id, productId);
-            alert('Acesso revogado com sucesso!');
-            loadDetails(); // Refresh list
+            await memberService.grantAccess(member.user_id, [confirmModal.productId]);
+            setConfirmModal({ isOpen: false, action: '' });
+            setAlertModal({ isOpen: true, title: 'Sucesso', message: 'Acesso liberado com sucesso!', variant: 'success' });
+            loadDetails();
+        } catch (error: any) {
+            console.error('Error granting access:', error);
+            const msg = error.message || JSON.stringify(error);
+            setConfirmModal({ isOpen: false, action: '' });
+            setAlertModal({ isOpen: true, title: 'Erro', message: `Erro ao liberar acesso: ${msg}`, variant: 'error' });
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    const executeRevokeAccess = async () => {
+        if (!confirmModal.productId) return;
+        setIsProcessing(true);
+        try {
+            await memberService.revokeAccess(member.user_id, confirmModal.productId);
+            setConfirmModal({ isOpen: false, action: '' });
+            setAlertModal({ isOpen: true, title: 'Sucesso', message: 'Acesso revogado com sucesso!', variant: 'success' });
+            loadDetails();
         } catch (error) {
             console.error('Error revoking access:', error);
-            alert('Erro ao revogar acesso.');
+            setConfirmModal({ isOpen: false, action: '' });
+            setAlertModal({ isOpen: true, title: 'Erro', message: 'Erro ao revogar acesso.', variant: 'error' });
+        } finally {
+            setIsProcessing(false);
         }
     };
 
@@ -115,47 +138,49 @@ export const MemberDetailsModal: React.FC<MemberDetailsModalProps> = ({ member, 
     };
 
     const handleAction = async (action: 'suspend' | 'activate' | 'email_reset' | 'email_welcome') => {
+        if (action === 'suspend' || action === 'activate') {
+            setConfirmModal({ isOpen: true, action });
+        } else {
+            executeAction(action);
+        }
+    };
+
+    const executeAction = async (action: 'suspend' | 'activate' | 'email_reset' | 'email_welcome') => {
+        setIsProcessing(true);
         try {
             if (action === 'suspend') {
-                if (!confirm('Tem certeza que deseja suspender este membro? Ele perderá acesso imediato.')) return;
-
-                // Optimistic Update
                 setCurrentStatus('suspended');
-
                 await memberService.updateMemberStatus(member.user_id, 'suspended');
-                alert('Membro suspenso com sucesso.');
-
+                setConfirmModal({ isOpen: false, action: '' });
+                setAlertModal({ isOpen: true, title: 'Sucesso', message: 'Membro suspenso com sucesso.', variant: 'success' });
                 if (onUpdate) onUpdate();
             }
             else if (action === 'activate') {
-                // Optimistic Update
                 setCurrentStatus('active');
-
                 await memberService.updateMemberStatus(member.user_id, 'active');
-                alert('Membro reativado com sucesso.');
-
+                setConfirmModal({ isOpen: false, action: '' });
+                setAlertModal({ isOpen: true, title: 'Sucesso', message: 'Membro reativado com sucesso.', variant: 'success' });
                 if (onUpdate) onUpdate();
             }
             else if (action === 'email_reset') {
-                // Requires endpoint support or client-side trigger?
-                // admin/members.ts supports 'resend_email' with type.
                 const response = await fetch('/api/admin/members', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ action: 'resend_email', userId: member.user_id, type: 'reset_password' })
                 });
                 if (!response.ok) throw new Error(await response.text());
-                alert('Email de redefinição de senha enviado.');
+                setAlertModal({ isOpen: true, title: 'Sucesso', message: 'Email de redefinição de senha enviado.', variant: 'success' });
             }
             else if (action === 'email_welcome') {
-                // Check if supported by backend
-                alert('Funcionalidade de reenviar boas-vindas não implementada no backend ainda.');
+                setAlertModal({ isOpen: true, title: 'Aviso', message: 'Funcionalidade de reenviar boas-vindas não implementada no backend ainda.', variant: 'error' });
             }
         } catch (error: any) {
             console.error('Action failed:', error);
-            alert(`Erro ao executar ação: ${error.message || 'Erro desconhecido'}`);
-            // Revert on error
+            setConfirmModal({ isOpen: false, action: '' });
+            setAlertModal({ isOpen: true, title: 'Erro', message: `Erro ao executar ação: ${error.message || 'Erro desconhecido'}`, variant: 'error' });
             loadDetails();
+        } finally {
+            setIsProcessing(false);
         }
     };
 
@@ -164,17 +189,20 @@ export const MemberDetailsModal: React.FC<MemberDetailsModalProps> = ({ member, 
     return (
         <Dialog.Root open={isOpen} onOpenChange={onClose}>
             <Dialog.Portal>
-                <Dialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 animate-in fade-in duration-200" />
-                <Dialog.Content className="fixed left-[50%] top-[50%] translate-x-[-50%] translate-y-[-50%] w-full max-w-5xl h-[90vh] bg-white dark:bg-[#151520] rounded-2xl shadow-2xl z-50 flex flex-col overflow-hidden outline-none animate-in zoom-in-95 duration-200">
+                <Dialog.Overlay className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 animate-in fade-in duration-200" />
+                <Dialog.Content className="fixed left-[50%] top-[50%] translate-x-[-50%] translate-y-[-50%] w-full max-w-5xl h-[90vh] bg-[#12121A]/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-purple-500/20 z-50 flex flex-col overflow-hidden outline-none animate-in zoom-in-95 duration-200">
+                    {/* Purple glow effects */}
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/20 rounded-full blur-3xl -mr-16 -mt-16" />
+                    <div className="absolute bottom-0 left-0 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl -ml-16 -mb-16" />
 
                     {/* Header */}
-                    <div className="flex-none p-6 border-b border-gray-100 dark:border-white/5 bg-gray-50/50 dark:bg-white/5 flex justify-between items-start">
+                    <div className="relative flex-none p-6 border-b border-white/10 bg-white/[0.02] flex justify-between items-start">
                         <div className="flex items-center gap-4">
                             <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white text-2xl font-bold shadow-lg shadow-primary/20">
                                 {member.name.charAt(0).toUpperCase()}
                             </div>
                             <div>
-                                <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                <h2 className="text-2xl font-bold text-white flex items-center gap-2">
                                     {member.name}
                                     {currentStatus === 'suspended' && (
                                         <span className="px-2 py-0.5 rounded-full bg-red-100 text-red-700 text-xs font-medium border border-red-200">Suspenso</span>
@@ -192,14 +220,14 @@ export const MemberDetailsModal: React.FC<MemberDetailsModalProps> = ({ member, 
                                 </div>
                             </div>
                         </div>
-                        <button onClick={onClose} className="p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-full transition-colors">
+                        <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full transition-colors">
                             <X className="w-6 h-6 text-gray-500" />
                         </button>
                     </div>
 
                     {/* Tabs & Content */}
                     <Tabs.Root value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-                        <div className="px-6 border-b border-gray-100 dark:border-white/5 bg-white dark:bg-[#151520]">
+                        <div className="relative px-6 border-b border-white/10 bg-[#12121A]">
                             <Tabs.List className="flex gap-6">
                                 {[
                                     { id: 'overview', label: 'Visão Geral', icon: Activity },
@@ -211,18 +239,18 @@ export const MemberDetailsModal: React.FC<MemberDetailsModalProps> = ({ member, 
                                         key={tab.id}
                                         value={tab.id}
                                         className={`group flex items-center gap-2 py-4 text-sm font-medium border-b-2 transition-colors outline-none ${activeTab === tab.id
-                                            ? 'border-primary text-primary'
-                                            : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                                            ? 'border-purple-500 text-purple-400'
+                                            : 'border-transparent text-gray-500 hover:text-gray-300'
                                             }`}
                                     >
-                                        <tab.icon className={`w-4 h-4 ${activeTab === tab.id ? 'text-primary' : 'text-gray-400 group-hover:text-gray-500'}`} />
+                                        <tab.icon className={`w-4 h-4 ${activeTab === tab.id ? 'text-purple-400' : 'text-gray-400 group-hover:text-gray-500'}`} />
                                         {tab.label}
                                     </Tabs.Trigger>
                                 ))}
                             </Tabs.List>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto p-6 bg-gray-50/30 dark:bg-black/20">
+                        <div className="relative flex-1 overflow-y-auto p-6 bg-black/20">
                             {loading ? (
                                 <div className="flex items-center justify-center h-full">
                                     <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
@@ -447,8 +475,8 @@ export const MemberDetailsModal: React.FC<MemberDetailsModalProps> = ({ member, 
                                                 {details?.logs?.map((log: ActivityLog) => (
                                                     <div key={log.id} className="relative pl-8">
                                                         <span className={`absolute -left-[5px] top-1.5 w-2.5 h-2.5 rounded-full ring-4 ring-white dark:ring-[#1A1A24] ${log.event.includes('suspend') || log.event.includes('revoke') ? 'bg-red-500' :
-                                                                log.event.includes('active') || log.event.includes('grant') ? 'bg-green-500' :
-                                                                    'bg-blue-500'
+                                                            log.event.includes('active') || log.event.includes('grant') ? 'bg-green-500' :
+                                                                'bg-blue-500'
                                                             }`} />
                                                         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1">
                                                             <div>
@@ -477,6 +505,42 @@ export const MemberDetailsModal: React.FC<MemberDetailsModalProps> = ({ member, 
                             )}
                         </div>
                     </Tabs.Root>
+
+                    {/* Confirm Modal */}
+                    <ConfirmModal
+                        isOpen={confirmModal.isOpen}
+                        onClose={() => setConfirmModal({ isOpen: false, action: '' })}
+                        onConfirm={() => {
+                            if (confirmModal.action === 'suspend') executeAction('suspend');
+                            else if (confirmModal.action === 'activate') executeAction('activate');
+                            else if (confirmModal.action === 'grant') executeGrantAccess();
+                            else if (confirmModal.action === 'revoke') executeRevokeAccess();
+                        }}
+                        title={
+                            confirmModal.action === 'suspend' ? 'Suspender Membro' :
+                                confirmModal.action === 'activate' ? 'Reativar Membro' :
+                                    confirmModal.action === 'grant' ? 'Liberar Acesso' :
+                                        'Revogar Acesso'
+                        }
+                        message={
+                            confirmModal.action === 'suspend' ? 'Tem certeza que deseja suspender este membro? Ele perderá acesso imediato.' :
+                                confirmModal.action === 'activate' ? 'Deseja reativar o acesso deste membro?' :
+                                    confirmModal.action === 'grant' ? 'Deseja liberar o acesso a este produto para o usuário?' :
+                                        'Deseja revogar o acesso a este produto?'
+                        }
+                        confirmText="Confirmar"
+                        variant={confirmModal.action === 'suspend' || confirmModal.action === 'revoke' ? 'danger' : 'primary'}
+                        loading={isProcessing}
+                    />
+
+                    {/* Alert Modal */}
+                    <AlertModal
+                        isOpen={alertModal.isOpen}
+                        onClose={() => setAlertModal({ isOpen: false, title: '', message: '', variant: 'success' })}
+                        title={alertModal.title}
+                        message={alertModal.message}
+                        variant={alertModal.variant}
+                    />
                 </Dialog.Content>
             </Dialog.Portal>
         </Dialog.Root>
