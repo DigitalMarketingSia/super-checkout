@@ -95,21 +95,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // Determine misconfigured status
         const isMisconfigured = domainData.misconfigured || config.misconfigured || configFailed;
 
-        // Construct DNS Records from Config (if verification is empty)
+        // Construct DNS Records: MERGE Verification + Config
         let dnsRecords: any[] = [];
+
+        // 1. Add Verification Challenges (Ownership)
         if (verificationChallenges.length > 0) {
-            dnsRecords = verificationChallenges;
-        } else if (config) {
+            dnsRecords = [...verificationChallenges];
+        }
+
+        // 2. Add Recommended Configuration (Connection) - if not already present
+        if (config) {
             if (config.recommendedCNAME && Array.isArray(config.recommendedCNAME)) {
                 config.recommendedCNAME
                     .filter((rec: any) => rec.rank === 1)
                     .forEach((rec: any) => {
-                        dnsRecords.push({
-                            type: 'CNAME',
-                            domain: domain,
-                            value: rec.value.endsWith('.') ? rec.value.slice(0, -1) : rec.value,
-                            reason: 'recommended_cname'
-                        });
+                        // Check if this type/value combo already exists
+                        const exists = dnsRecords.some(r => r.type === 'CNAME' && r.value === rec.value);
+                        if (!exists) {
+                            dnsRecords.push({
+                                type: 'CNAME',
+                                domain: domain,
+                                value: rec.value.endsWith('.') ? rec.value.slice(0, -1) : rec.value,
+                                reason: 'recommended_cname'
+                            });
+                        }
                     });
             }
             if (config.recommendedIPv4 && Array.isArray(config.recommendedIPv4)) {
@@ -118,20 +127,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     .forEach((rec: any) => {
                         if (Array.isArray(rec.value)) {
                             rec.value.forEach((val: string) => {
+                                const exists = dnsRecords.some(r => r.type === 'A' && r.value === val);
+                                if (!exists) {
+                                    dnsRecords.push({
+                                        type: 'A',
+                                        domain: '@',
+                                        value: val,
+                                        reason: 'recommended_a'
+                                    });
+                                }
+                            });
+                        } else {
+                            const exists = dnsRecords.some(r => r.type === 'A' && r.value === rec.value);
+                            if (!exists) {
                                 dnsRecords.push({
                                     type: 'A',
                                     domain: '@',
-                                    value: val,
+                                    value: rec.value,
                                     reason: 'recommended_a'
                                 });
-                            });
-                        } else {
-                            dnsRecords.push({
-                                type: 'A',
-                                domain: '@',
-                                value: rec.value,
-                                reason: 'recommended_a'
-                            });
+                            }
                         }
                     });
             }
