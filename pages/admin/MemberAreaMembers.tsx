@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { memberService } from '../../services/memberService';
 import { Member } from '../../types';
 import { Card } from '../../components/ui/Card';
-import { Search, User, Mail, Calendar, Shield, MoreVertical, Filter, Download, Plus, PlayCircle, Eye, RefreshCw, Slash, Lock } from 'lucide-react';
+import { Search, User, Mail, Calendar, Shield, MoreVertical, Filter, Download, Plus, PlayCircle, Eye, RefreshCw, Slash, Lock, Trash2 } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { MemberDetailsModal } from '../../components/admin/members/MemberDetailsModal';
 import { AddMemberModal } from '../../components/admin/members/AddMemberModal';
@@ -31,7 +31,9 @@ export const MemberAreaMembers: React.FC<MemberAreaMembersProps> = ({ memberArea
         setLoading(true);
         try {
             const { data } = await memberService.getMembersByArea(memberAreaId, 1, 100, searchQuery, statusFilter, typeFilter);
-            setMembers(data);
+            // Deduplicate members by user_id to prevent "ghost" items from display issues
+            const uniqueMembers = Array.from(new Map(data.map((item: any) => [item.user_id, item])).values());
+            setMembers(uniqueMembers);
         } catch (error) {
             console.error('Error loading members:', error);
         } finally {
@@ -51,6 +53,21 @@ export const MemberAreaMembers: React.FC<MemberAreaMembersProps> = ({ memberArea
         } catch (error) {
             console.error('Error exporting CSV:', error);
             alert('Erro ao exportar CSV');
+        }
+    };
+
+    const handleDelete = async (memberId: string, memberName: string) => {
+        if (!window.confirm(`Tem certeza que deseja excluir o membro "${memberName}"? Esta ação não pode ser desfeita e removerá todos os dados associados.`)) {
+            return;
+        }
+
+        try {
+            await memberService.deleteMember(memberId);
+            alert('Membro excluído com sucesso');
+            loadMembers();
+        } catch (error) {
+            console.error('Error deleting member:', error);
+            alert('Erro ao excluir membro');
         }
     };
 
@@ -159,6 +176,9 @@ export const MemberAreaMembers: React.FC<MemberAreaMembersProps> = ({ memberArea
                                                     <Mail className="w-3 h-3" />
                                                     {member.email}
                                                 </div>
+                                                <div className="text-[10px] text-gray-400 font-mono mt-0.5" title="User ID">
+                                                    {member.user_id}
+                                                </div>
                                             </div>
                                         </div>
                                     </td>
@@ -206,6 +226,13 @@ export const MemberAreaMembers: React.FC<MemberAreaMembersProps> = ({ memberArea
                                             >
                                                 <Eye className="w-4 h-4" />
                                             </button>
+                                            <button
+                                                title="Excluir Membro"
+                                                onClick={() => handleDelete(member.user_id, member.name)}
+                                                className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>
@@ -234,15 +261,18 @@ export const MemberAreaMembers: React.FC<MemberAreaMembersProps> = ({ memberArea
             </Card>
 
             {/* Member Details Modal */}
-            <MemberDetailsModal
-                isOpen={isDetailsOpen}
-                onClose={() => {
-                    setIsDetailsOpen(false);
-                    setSelectedMember(null);
-                }}
-                member={selectedMember}
-                onUpdate={loadMembers}
-            />
+            {/* Member Details Modal */}
+            {selectedMember && (
+                <MemberDetailsModal
+                    isOpen={isDetailsOpen}
+                    onClose={() => {
+                        setIsDetailsOpen(false);
+                        setSelectedMember(null);
+                    }}
+                    member={selectedMember}
+                    onUpdate={loadMembers}
+                />
+            )}
 
             {/* Add Member Modal */}
             <AddMemberModal

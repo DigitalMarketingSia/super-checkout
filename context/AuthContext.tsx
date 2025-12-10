@@ -1,6 +1,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../services/supabase';
+import { memberService } from '../services/memberService';
 import { Session, User } from '@supabase/supabase-js';
 
 interface AuthContextType {
@@ -76,6 +77,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) console.error('Error fetching profile:', error);
       setProfile(data);
+
+      // Update last seen asynchronously (fire and forget)
+      if (data) {
+        memberService.updateLastSeen(userId).catch(err => console.error('Failed to update last seen', err));
+      }
     } catch (e) {
       console.error('Exception fetching profile:', e);
     }

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { LogOut, User, Menu, X, ChevronDown, ChevronRight, ExternalLink, Home, ShoppingBag, LinkIcon, ChevronUp, Instagram, ArrowUpRight, HelpCircle } from 'lucide-react';
+import { LogOut, User, Menu, X, ChevronDown, ChevronRight, ExternalLink, Home, ShoppingBag, LinkIcon, ChevronUp, Instagram, ArrowUpRight, HelpCircle, Ban } from 'lucide-react';
 import { MemberArea, SidebarItem } from '../../types';
 
 interface MemberAreaLayoutProps {
@@ -11,12 +11,42 @@ interface MemberAreaLayoutProps {
 
 export const MemberAreaLayout: React.FC<MemberAreaLayoutProps> = ({ children, memberArea }) => {
     console.log('[Layout] Rendering with memberArea:', memberArea ? memberArea.name : 'null');
-    const { user, signOut } = useAuth();
+    const { user, profile, signOut } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
     const [expandedSections, setExpandedSections] = useState<string[]>([]);
+
+    if (profile?.status === 'suspended') {
+        return (
+            <div className="min-h-screen bg-[#0E1012] flex items-center justify-center text-white p-4 font-sans">
+                <div className="max-w-md w-full bg-[#1A1D21] p-8 rounded-2xl border border-red-500/20 text-center space-y-6 shadow-2xl">
+                    <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mx-auto ring-4 ring-red-500/5">
+                        <Ban className="w-10 h-10 text-red-500" />
+                    </div>
+                    <div className="space-y-2">
+                        <h2 className="text-2xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">Acesso Suspenso</h2>
+                        <p className="text-gray-400 text-sm leading-relaxed">
+                            Sua conta foi temporariamente suspensa por um administrador.
+                            <br />
+                            Entre em contato com o suporte para mais informações.
+                        </p>
+                    </div>
+                    <button
+                        onClick={() => { signOut(); navigate('/login'); }}
+                        className="w-full py-3 bg-white/5 hover:bg-white/10 active:bg-white/15 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 text-sm border border-white/5 hover:border-white/10"
+                    >
+                        <LogOut className="w-4 h-4" />
+                        Sair da conta
+                    </button>
+                    <div className="pt-4 border-t border-white/5">
+                        <p className="text-xs text-gray-600">ID: {user?.id}</p>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     const appLink = memberArea ? `/app/${memberArea.slug}` : '/app';
 

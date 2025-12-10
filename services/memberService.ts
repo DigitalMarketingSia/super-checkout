@@ -1,6 +1,15 @@
 import { supabase } from './storageService';
 import { Profile, MemberNote, MemberTag, ActivityLog, AccessGrant, Product } from '../types';
 
+interface MemberDetails {
+    profile: Profile;
+    accessGrants: Partial<AccessGrant>[];
+    notes: MemberNote[];
+    tags: MemberTag[];
+    logs: ActivityLog[];
+    orders: any[]; // Using any for simplify, ideally Order[]
+}
+
 export const memberService = {
     /**
      * Get all members (profiles) with optional filtering
@@ -111,12 +120,13 @@ export const memberService = {
         if (profileError) throw profileError;
 
         // Fetch related data in parallel
+        // Fetch related data in parallel with error suppression
         const [accessGrants, notes, tags, logs, orders] = await Promise.all([
-            this.getMemberAccess(userId),
-            this.getMemberNotes(userId),
-            this.getMemberTags(userId),
-            this.getMemberActivityLogs(userId),
-            this.getMemberOrders(userId),
+            this.getMemberAccess(userId).catch(e => { console.error('Failed to load access:', e); return []; }),
+            this.getMemberNotes(userId).catch(e => { console.error('Failed to load notes:', e); return []; }),
+            this.getMemberTags(userId).catch(e => { console.error('Failed to load tags:', e); return []; }),
+            this.getMemberActivityLogs(userId).catch(e => { console.error('Failed to load logs:', e); return []; }),
+            this.getMemberOrders(userId).catch(e => { console.error('Failed to load orders:', e); return []; }),
         ]);
 
         return {
@@ -135,7 +145,10 @@ export const memberService = {
             .select('*, product:products(*), content:contents(*)')
             .eq('user_id', userId);
 
-        if (error) throw error;
+        if (error) {
+            console.error('Error fetching member access grants:', error);
+            throw error;
+        }
         return data; // Typed as partial AccessGrant[]
     },
 
@@ -215,20 +228,46 @@ export const memberService = {
         return data;
     },
 
-    // Actions
     async updateMemberStatus(userId: string, status: 'active' | 'suspended' | 'disabled') {
         const action = status === 'suspended' ? 'suspend' : status === 'active' ? 'activate' : 'disable';
 
+        try {
+            const response = await fetch('/api/admin/members', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action, userId })
+            });
+
+            const contentType = response.headers.get("content-type");
+            if (!response.ok || (contentType && contentType.includes("text/html"))) {
+                throw new Error('API unavailable');
+            }
+        } catch (e) {
+            console.warn('Backend API failed, trying direct Supabase update (Local Dev Fallback)', e);
+            const { error } = await supabase
+                .from('profiles')
+                .update({ status: status })
+                .eq('id', userId);
+
+            if (error) {
+                console.error('Direct update failed:', error);
+                throw new Error('Falha ao atualizar status via API e Banco de Dados.');
+            }
+            console.info('Status updated via direct DB access (Local Mode)');
+        }
+    },
+
+    async deleteMember(userId: string) {
         const response = await fetch('/api/admin/members', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action, userId })
+            body: JSON.stringify({ action: 'delete', userId })
         });
-
         if (!response.ok) throw new Error(await response.text());
     },
 
     async grantAccess(userId: string, productIds: string[]) {
+        console.log(`Attempting to grant access for user ${userId} to products:`, productIds);
         // This assumes product-based access
         const grants = productIds.map(pid => ({
             user_id: userId,
@@ -239,11 +278,16 @@ export const memberService = {
 
         // Start of a "transaction" via RPC if possible, or just sequential inserts
         // We use upsert to avoid duplicates
-        const { error } = await supabase
+        const { data, error } = await supabase
             .from('access_grants')
-            .upsert(grants, { onConflict: 'user_id, product_id' });
+            .upsert(grants, { onConflict: 'user_id, product_id' })
+            .select();
 
-        if (error) throw error;
+        if (error) {
+            console.error('Supabase error granting access:', error);
+            throw error;
+        }
+        console.log('Access granted successfully:', data);
     },
 
     async revokeAccess(userId: string, productId: string) {
@@ -270,20 +314,41 @@ export const memberService = {
         if (!response.ok) {
             const contentType = response.headers.get("content-type");
             if (contentType && contentType.includes("text/html")) {
-                throw new Error("Erro: API Admin não detectada. Se estiver local, use 'vercel dev' para habilitar as funções de backend.");
+                throw new Error("Erro: API Admin não detectada (Rota 404). Se estiver local, use 'vercel dev'.");
             }
 
-            // Try to parse JSON error first
+            const errorText = await response.text();
             try {
-                const errorJson = await response.json();
+                const errorJson = JSON.parse(errorText);
                 throw new Error(errorJson.error || errorJson.message || 'Erro desconhecido');
             } catch (e: any) {
-                // If json parse fails (and not html), throw text or the parsing error
-                if (e.message !== 'Erro desconhecido' && !e.message.includes('JSON')) throw e;
-                throw new Error(await response.text() || 'Erro ao comunicar com servidor');
+                // If the error is the one we just threw, rethrow it
+                if (e.message !== 'JSON' && e.message !== 'Unexpected token') throw e;
+                // Otherwise use the raw text
+                throw new Error(errorText || 'Erro ao comunicar com servidor');
             }
         }
 
         return response.json();
+    },
+
+    async getProducts() {
+        const { data, error } = await supabase
+            .from('products')
+            .select('id, name')
+            .eq('active', true)
+            .order('name');
+
+        if (error) throw error;
+        return data as Partial<Product>[];
+    },
+
+    async updateLastSeen(userId: string) {
+        const { error } = await supabase
+            .from('profiles')
+            .update({ last_seen_at: new Date().toISOString() })
+            .eq('id', userId);
+
+        if (error) console.error('Error updating last_seen:', error);
     }
 };

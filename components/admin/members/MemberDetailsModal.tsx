@@ -18,64 +18,115 @@ export const MemberDetailsModal: React.FC<MemberDetailsModalProps> = ({ member, 
     const [activeTab, setActiveTab] = useState('overview');
     const [details, setDetails] = useState<any>(null);
     const [loading, setLoading] = useState(true);
-    const [newNote, setNewNote] = useState('');
-    const [newTag, setNewTag] = useState('');
-    const [addingTag, setAddingTag] = useState(false);
+    const [currentStatus, setCurrentStatus] = useState<'active' | 'suspended' | 'disabled'>(member.status || 'active');
+    const [availableProducts, setAvailableProducts] = useState<any[]>([]);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         if (isOpen && member) {
+            setError(null);
             loadDetails();
+            loadProducts();
         }
     }, [isOpen, member]);
 
+    const loadProducts = async () => {
+        try {
+            const products = await memberService.getProducts();
+            setAvailableProducts(products);
+        } catch (error) {
+            console.error('Error loading products:', error);
+        }
+    };
+
+    const handleGrantAccess = async (productId: string) => {
+        if (!confirm('Deseja liberar o acesso a este produto para o usuário?')) return;
+        try {
+            await memberService.grantAccess(member.user_id, [productId]);
+            alert('Acesso liberado com sucesso!');
+            loadDetails(); // Refresh list
+        } catch (error: any) {
+            console.error('Error granting access:', error);
+            // Show more detail in alert if available
+            const msg = error.message || JSON.stringify(error);
+            alert(`Erro ao liberar acesso: ${msg}`);
+        }
+    };
+
+    const handleRevokeAccess = async (productId: string) => {
+        if (!confirm('Deseja revogar o acesso a este produto?')) return;
+        try {
+            await memberService.revokeAccess(member.user_id, productId);
+            alert('Acesso revogado com sucesso!');
+            loadDetails(); // Refresh list
+        } catch (error) {
+            console.error('Error revoking access:', error);
+            alert('Erro ao revogar acesso.');
+        }
+    };
+
     const loadDetails = async () => {
         setLoading(true);
+        setError(null);
         try {
+            console.log('Loading details for:', member.user_id);
             const data = await memberService.getMemberDetails(member.user_id);
+            console.log('Loaded details:', data);
             setDetails(data);
-        } catch (error) {
+            if (data?.profile?.status) {
+                setCurrentStatus(data.profile.status);
+            }
+        } catch (error: any) {
             console.error('Error loading member details:', error);
+            setError(`Erro ao carregar dados: ${error.message || 'Erro desconhecido'}`);
         } finally {
             setLoading(false);
         }
     };
 
-    const handleAddNote = async () => {
-        if (!newNote.trim()) return;
-        try {
-            await memberService.addMemberNote(member.user_id, newNote);
-            setNewNote('');
-            loadDetails(); // Reload to show new note
-        } catch (error) {
-            console.error('Error adding note:', error);
-        }
-    };
-
-    const handleAddTag = async () => {
-        if (!newTag.trim()) return;
-        try {
-            await memberService.addMemberTag(member.user_id, newTag);
-            setNewTag('');
-            setAddingTag(false);
-            loadDetails();
-        } catch (error) {
-            console.error('Error adding tag:', error);
-        }
-    };
-
-    const handleRemoveTag = async (tag: string) => {
-        try {
-            await memberService.removeMemberTag(member.user_id, tag);
-            loadDetails();
-        } catch (error) {
-            console.error('Error removing tag:', error);
-        }
-    };
-
     const handleAction = async (action: 'suspend' | 'activate' | 'email_reset' | 'email_welcome') => {
-        // Implement action logic
-        console.log('Action:', action);
-        alert(`Ação ${action} solicitada (simulação)`);
+        try {
+            if (action === 'suspend') {
+                if (!confirm('Tem certeza que deseja suspender este membro? Ele perderá acesso imediato.')) return;
+
+                // Optimistic Update
+                setCurrentStatus('suspended');
+
+                await memberService.updateMemberStatus(member.user_id, 'suspended');
+                alert('Membro suspenso com sucesso.');
+
+                if (onUpdate) onUpdate();
+            }
+            else if (action === 'activate') {
+                // Optimistic Update
+                setCurrentStatus('active');
+
+                await memberService.updateMemberStatus(member.user_id, 'active');
+                alert('Membro reativado com sucesso.');
+
+                if (onUpdate) onUpdate();
+            }
+            else if (action === 'email_reset') {
+                // Requires endpoint support or client-side trigger?
+                // admin/members.ts supports 'resend_email' with type.
+                const response = await fetch('/api/admin/members', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'resend_email', userId: member.user_id, type: 'reset_password' })
+                });
+                if (!response.ok) throw new Error(await response.text());
+                alert('Email de redefinição de senha enviado.');
+            }
+            else if (action === 'email_welcome') {
+                // Check if supported by backend
+                alert('Funcionalidade de reenviar boas-vindas não implementada no backend ainda.');
+            }
+        } catch (error: any) {
+            console.error('Action failed:', error);
+            alert(`Erro ao executar ação: ${error.message || 'Erro desconhecido'}`);
+            // Revert on error
+            loadDetails();
+        }
     };
 
     if (!isOpen) return null;
@@ -95,7 +146,7 @@ export const MemberDetailsModal: React.FC<MemberDetailsModalProps> = ({ member, 
                             <div>
                                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                                     {member.name}
-                                    {details?.profile?.status === 'suspended' && (
+                                    {currentStatus === 'suspended' && (
                                         <span className="px-2 py-0.5 rounded-full bg-red-100 text-red-700 text-xs font-medium border border-red-200">Suspenso</span>
                                     )}
                                 </h2>
@@ -125,14 +176,13 @@ export const MemberDetailsModal: React.FC<MemberDetailsModalProps> = ({ member, 
                                     { id: 'products', label: 'Produtos e Acesso', icon: ShoppingBag },
                                     { id: 'orders', label: 'Histórico de Compras', icon: FileText },
                                     { id: 'history', label: 'Log de Atividades', icon: Clock },
-                                    { id: 'notes', label: 'Notas Internas', icon: Tag },
                                 ].map(tab => (
                                     <Tabs.Trigger
                                         key={tab.id}
                                         value={tab.id}
                                         className={`group flex items-center gap-2 py-4 text-sm font-medium border-b-2 transition-colors outline-none ${activeTab === tab.id
-                                                ? 'border-primary text-primary'
-                                                : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                                            ? 'border-primary text-primary'
+                                            : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
                                             }`}
                                     >
                                         <tab.icon className={`w-4 h-4 ${activeTab === tab.id ? 'text-primary' : 'text-gray-400 group-hover:text-gray-500'}`} />
@@ -146,6 +196,17 @@ export const MemberDetailsModal: React.FC<MemberDetailsModalProps> = ({ member, 
                             {loading ? (
                                 <div className="flex items-center justify-center h-full">
                                     <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                                </div>
+                            ) : error ? (
+                                <div className="flex flex-col items-center justify-center h-full text-center p-8 space-y-4">
+                                    <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+                                        <Ban className="w-6 h-6 text-red-500" />
+                                    </div>
+                                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Erro ao carregar dados</h3>
+                                    <p className="text-gray-500 max-w-sm">{error}</p>
+                                    <button onClick={onClose} className="px-4 py-2 bg-gray-100 dark:bg-white/5 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-white/10 transition-colors">
+                                        Fechar
+                                    </button>
                                 </div>
                             ) : (
                                 <>
@@ -187,7 +248,7 @@ export const MemberDetailsModal: React.FC<MemberDetailsModalProps> = ({ member, 
                                                             Reenviar Email de Boas-vindas
                                                         </button>
                                                         <hr className="border-gray-100 dark:border-white/5 my-2" />
-                                                        {details?.profile?.status === 'suspended' ? (
+                                                        {currentStatus === 'suspended' ? (
                                                             <button onClick={() => handleAction('activate')} className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800 transition-colors">
                                                                 <Shield className="w-4 h-4" />
                                                                 Reativar Acesso
@@ -201,41 +262,6 @@ export const MemberDetailsModal: React.FC<MemberDetailsModalProps> = ({ member, 
                                                     </div>
                                                 </div>
 
-                                                {/* Tags */}
-                                                <div className="bg-white dark:bg-[#1A1A24] rounded-xl border border-gray-200 dark:border-white/5 p-5 shadow-sm">
-                                                    <div className="flex justify-between items-center mb-4">
-                                                        <h3 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider">Tags</h3>
-                                                        <button onClick={() => setAddingTag(true)} className="text-xs text-primary hover:underline">+ Adicionar</button>
-                                                    </div>
-
-                                                    {addingTag && (
-                                                        <div className="flex gap-2 mb-3">
-                                                            <input
-                                                                autoFocus
-                                                                className="flex-1 bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded px-2 py-1 text-xs"
-                                                                placeholder="Nova tag..."
-                                                                value={newTag}
-                                                                onChange={e => setNewTag(e.target.value)}
-                                                                onKeyDown={e => e.key === 'Enter' && handleAddTag()}
-                                                            />
-                                                            <button onClick={handleAddTag} className="p-1 bg-primary text-white rounded"><Save className="w-3 h-3" /></button>
-                                                        </div>
-                                                    )}
-
-                                                    <div className="flex flex-wrap gap-2">
-                                                        {details?.tags?.map((t: MemberTag) => (
-                                                            <span key={t.id} className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 dark:bg-white/5 text-gray-700 dark:text-gray-300 text-xs rounded-md group">
-                                                                {t.tag}
-                                                                <button onClick={() => handleRemoveTag(t.tag)} className="hidden group-hover:block ml-1 text-gray-400 hover:text-red-500">
-                                                                    <X className="w-3 h-3" />
-                                                                </button>
-                                                            </span>
-                                                        ))}
-                                                        {(!details?.tags || details.tags.length === 0) && !addingTag && (
-                                                            <span className="text-sm text-gray-500 italic">Nenhuma tag atribuída.</span>
-                                                        )}
-                                                    </div>
-                                                </div>
                                             </div>
 
                                             {/* Recent Activity Column */}
@@ -271,6 +297,26 @@ export const MemberDetailsModal: React.FC<MemberDetailsModalProps> = ({ member, 
                                     </Tabs.Content>
 
                                     <Tabs.Content value="products" className="space-y-4 outline-none animate-in fade-in slide-in-from-bottom-2 duration-300">
+                                        <div className="flex justify-between items-center bg-gray-50 dark:bg-white/5 p-4 rounded-xl border border-gray-100 dark:border-white/5">
+                                            <h3 className="text-sm font-semibold text-gray-900 dark:text-white uppercase tracking-wider">Acessos Concedidos</h3>
+                                            <div className="flex gap-2">
+                                                <select
+                                                    id="product-select"
+                                                    className="bg-white dark:bg-[#1A1A24] border border-gray-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary"
+                                                    onChange={(e) => {
+                                                        const pid = e.target.value;
+                                                        if (pid) handleGrantAccess(pid);
+                                                        e.target.value = ""; // Reset
+                                                    }}
+                                                >
+                                                    <option value="">+ Liberar Acesso...</option>
+                                                    {availableProducts.map(p => (
+                                                        <option key={p.id} value={p.id}>{p.name}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        </div>
+
                                         <div className="bg-white dark:bg-[#1A1A24] rounded-xl border border-gray-200 dark:border-white/5 overflow-hidden">
                                             <table className="w-full text-left">
                                                 <thead className="bg-gray-50 dark:bg-white/5 border-b border-gray-200 dark:border-white/5">
@@ -300,7 +346,12 @@ export const MemberDetailsModal: React.FC<MemberDetailsModalProps> = ({ member, 
                                                                 {grant.expires_at ? format(new Date(grant.expires_at), "dd/MM/yyyy") : 'Vitalício'}
                                                             </td>
                                                             <td className="p-4 text-right">
-                                                                <button className="text-red-500 hover:text-red-700 text-sm font-medium">Revogar</button>
+                                                                <button
+                                                                    onClick={() => handleRevokeAccess(grant.product_id)}
+                                                                    className="text-red-500 hover:text-red-700 text-sm font-medium hover:bg-red-50 px-2 py-1 rounded transition-colors"
+                                                                >
+                                                                    Revogar
+                                                                </button>
                                                             </td>
                                                         </tr>
                                                     ))}
@@ -333,8 +384,8 @@ export const MemberDetailsModal: React.FC<MemberDetailsModalProps> = ({ member, 
                                                             </td>
                                                             <td className="p-4">
                                                                 <span className={`px-2 py-1 rounded text-xs font-medium ${order.status === 'paid' ? 'bg-green-100 text-green-700' :
-                                                                        order.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                                                                            'bg-red-100 text-red-700'
+                                                                    order.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                                                                        'bg-red-100 text-red-700'
                                                                     }`}>
                                                                     {order.status}
                                                                 </span>
@@ -355,49 +406,7 @@ export const MemberDetailsModal: React.FC<MemberDetailsModalProps> = ({ member, 
                                         </div>
                                     </Tabs.Content>
 
-                                    <Tabs.Content value="notes" className="space-y-6 outline-none animate-in fade-in slide-in-from-bottom-2 duration-300">
-                                        <div className="bg-white dark:bg-[#1A1A24] rounded-xl border border-gray-200 dark:border-white/5 p-4">
-                                            <textarea
-                                                className="w-full bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-lg p-3 text-sm focus:ring-2 focus:ring-primary/50 outline-none transition-all resize-none"
-                                                rows={3}
-                                                placeholder="Adicionar nota interna sobre este aluno..."
-                                                value={newNote}
-                                                onChange={e => setNewNote(e.target.value)}
-                                            />
-                                            <div className="flex justify-end mt-2">
-                                                <button
-                                                    onClick={handleAddNote}
-                                                    disabled={!newNote.trim()}
-                                                    className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-lg disabled:opacity-50 hover:bg-primary/90 transition-colors"
-                                                >
-                                                    Adicionar Nota
-                                                </button>
-                                            </div>
-                                        </div>
 
-                                        <div className="space-y-4">
-                                            {details?.notes?.map((note: MemberNote) => (
-                                                <div key={note.id} className="bg-white dark:bg-[#1A1A24] rounded-xl border border-gray-200 dark:border-white/5 p-4 shadow-sm">
-                                                    <div className="flex justify-between items-start mb-2">
-                                                        <div className="font-medium text-gray-900 dark:text-white text-sm">
-                                                            {note.author?.full_name || note.author?.email || 'Admin'}
-                                                        </div>
-                                                        <div className="text-xs text-gray-500">
-                                                            {format(new Date(note.created_at), "d MMM, yyyy HH:mm", { locale: ptBR })}
-                                                        </div>
-                                                    </div>
-                                                    <p className="text-gray-600 dark:text-gray-300 text-sm whitespace-pre-wrap">
-                                                        {note.content}
-                                                    </p>
-                                                </div>
-                                            ))}
-                                            {(!details?.notes || details.notes.length === 0) && (
-                                                <div className="text-center text-gray-500 py-8">
-                                                    Nenhuma nota interna registrada.
-                                                </div>
-                                            )}
-                                        </div>
-                                    </Tabs.Content>
 
                                     <Tabs.Content value="history" className="outline-none animate-in fade-in slide-in-from-bottom-2 duration-300">
                                         <div className="bg-white dark:bg-[#1A1A24] rounded-xl border border-gray-200 dark:border-white/5 p-6 shadow-sm">
