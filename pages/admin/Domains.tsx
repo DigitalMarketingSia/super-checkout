@@ -420,14 +420,14 @@ export const Domains = () => {
                 ) : (
                   <div className="space-y-6">
                     {/* CNAME Records */}
-                    {dnsRecords.filter((r: any) => r.type === 'CNAME').length > 0 && (
+                    {dnsRecords.filter((r: any) => r.type.toUpperCase() === 'CNAME').length > 0 && (
                       <div className="space-y-2">
-                        <h3 className="text-xs font-medium text-gray-400 uppercase tracking-wider">Subdomínio</h3>
-                        {dnsRecords.filter((r: any) => r.type === 'CNAME').map((record: any, idx: number) => (
+                        <h3 className="text-xs font-medium text-gray-400 uppercase tracking-wider">Subdomínio (CNAME)</h3>
+                        {dnsRecords.filter((r: any) => r.type.toUpperCase() === 'CNAME').map((record: any, idx: number) => (
                           <div key={`cname-${idx}`} className="grid grid-cols-4 gap-2 text-xs">
                             <div className="bg-white/5 p-2 rounded border border-white/5">
                               <span className="text-gray-500 block mb-1">Type</span>
-                              <span className="text-white font-mono font-bold">{record.type}</span>
+                              <span className="text-white font-mono font-bold">CNAME</span>
                             </div>
                             <div className="bg-white/5 p-2 rounded border border-white/5">
                               <span className="text-gray-500 block mb-1">Name</span>
@@ -446,14 +446,14 @@ export const Domains = () => {
                     )}
 
                     {/* A Records */}
-                    {dnsRecords.filter((r: any) => r.type === 'A').length > 0 && (
+                    {dnsRecords.filter((r: any) => r.type.toUpperCase() === 'A').length > 0 && (
                       <div className="space-y-2">
-                        <h3 className="text-xs font-medium text-gray-400 uppercase tracking-wider">Domínio</h3>
-                        {dnsRecords.filter((r: any) => r.type === 'A').map((record: any, idx: number) => (
+                        <h3 className="text-xs font-medium text-gray-400 uppercase tracking-wider">Domínio (A Record)</h3>
+                        {dnsRecords.filter((r: any) => r.type.toUpperCase() === 'A').map((record: any, idx: number) => (
                           <div key={`a-${idx}`} className="grid grid-cols-4 gap-2 text-xs">
                             <div className="bg-white/5 p-2 rounded border border-white/5">
                               <span className="text-gray-500 block mb-1">Type</span>
-                              <span className="text-white font-mono font-bold">{record.type}</span>
+                              <span className="text-white font-mono font-bold">A</span>
                             </div>
                             <div className="bg-white/5 p-2 rounded border border-white/5">
                               <span className="text-gray-500 block mb-1">Name</span>
@@ -464,6 +464,32 @@ export const Domains = () => {
                               <span className="text-white font-mono break-all">{record.value}</span>
                               <button onClick={() => handleCopy(record.value, `val-a-${idx}`)} className="absolute top-2 right-2 text-gray-500 hover:text-white">
                                 {copiedField === `val-a-${idx}` ? <CheckCircle className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* TXT Records */}
+                    {dnsRecords.filter((r: any) => r.type.toUpperCase() === 'TXT').length > 0 && (
+                      <div className="space-y-2">
+                        <h3 className="text-xs font-medium text-gray-400 uppercase tracking-wider">Verificação (TXT)</h3>
+                        {dnsRecords.filter((r: any) => r.type.toUpperCase() === 'TXT').map((record: any, idx: number) => (
+                          <div key={`txt-${idx}`} className="grid grid-cols-4 gap-2 text-xs">
+                            <div className="bg-white/5 p-2 rounded border border-white/5">
+                              <span className="text-gray-500 block mb-1">Type</span>
+                              <span className="text-white font-mono font-bold">TXT</span>
+                            </div>
+                            <div className="bg-white/5 p-2 rounded border border-white/5">
+                              <span className="text-gray-500 block mb-1">Name</span>
+                              <span className="text-white font-mono">{record.domain.startsWith('_vercel') ? '_vercel' : '@'}</span>
+                            </div>
+                            <div className="bg-white/5 p-2 rounded border border-white/5 relative group col-span-2">
+                              <span className="text-gray-500 block mb-1">Value</span>
+                              <span className="text-white font-mono break-all">{record.value}</span>
+                              <button onClick={() => handleCopy(record.value, `val-txt-${idx}`)} className="absolute top-2 right-2 text-gray-500 hover:text-white">
+                                {copiedField === `val-txt-${idx}` ? <CheckCircle className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
                               </button>
                             </div>
                           </div>
