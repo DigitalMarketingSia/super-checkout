@@ -141,16 +141,31 @@ export const Domains = () => {
       // Check both project config (data.misconfigured) and global config (data.config?.misconfigured)
       const isMisconfigured = data.misconfigured || data.config?.misconfigured;
 
+      // Get the domain's usage type
+      const currentDomain = domains.find(d => d.id === id);
+      const isSystemDomain = currentDomain?.usage === DomainUsage.SYSTEM;
+
       let newStatus = DomainStatus.PENDING;
 
-      // It is ONLY active if verified is true AND it is NOT misconfigured.
-      if (data.verified && !isMisconfigured) {
-        newStatus = DomainStatus.ACTIVE;
-      } else if (data.error) {
-        newStatus = DomainStatus.ERROR;
+      // For SYSTEM domains: only check if verified (DNS configured)
+      // For other domains: check both verified AND not misconfigured
+      if (isSystemDomain) {
+        // System domains just need DNS to be verified
+        if (data.verified) {
+          newStatus = DomainStatus.ACTIVE;
+        } else if (data.error) {
+          newStatus = DomainStatus.ERROR;
+        }
       } else {
-        // Force PENDING if misconfigured, even if verified is true (which happens sometimes)
-        newStatus = DomainStatus.PENDING;
+        // Checkout/Member Area domains need stricter verification
+        if (data.verified && !isMisconfigured) {
+          newStatus = DomainStatus.ACTIVE;
+        } else if (data.error) {
+          newStatus = DomainStatus.ERROR;
+        } else {
+          // Force PENDING if misconfigured, even if verified is true
+          newStatus = DomainStatus.PENDING;
+        }
       }
 
       // Only update state if status actually changed
@@ -338,8 +353,8 @@ export const Domains = () => {
         <button
           onClick={() => setActiveTab('all')}
           className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${activeTab === 'all'
-              ? 'bg-primary text-white'
-              : 'bg-white/5 text-gray-400 hover:bg-white/10'
+            ? 'bg-primary text-white'
+            : 'bg-white/5 text-gray-400 hover:bg-white/10'
             }`}
         >
           Todos
@@ -347,8 +362,8 @@ export const Domains = () => {
         <button
           onClick={() => setActiveTab('checkout')}
           className={`px-4 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-2 ${activeTab === 'checkout'
-              ? 'bg-primary text-white'
-              : 'bg-white/5 text-gray-400 hover:bg-white/10'
+            ? 'bg-primary text-white'
+            : 'bg-white/5 text-gray-400 hover:bg-white/10'
             }`}
         >
           <ShoppingCart className="w-4 h-4" /> Checkout
@@ -356,8 +371,8 @@ export const Domains = () => {
         <button
           onClick={() => setActiveTab('member_area')}
           className={`px-4 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-2 ${activeTab === 'member_area'
-              ? 'bg-primary text-white'
-              : 'bg-white/5 text-gray-400 hover:bg-white/10'
+            ? 'bg-primary text-white'
+            : 'bg-white/5 text-gray-400 hover:bg-white/10'
             }`}
         >
           <Users className="w-4 h-4" /> Área de Membros
@@ -365,8 +380,8 @@ export const Domains = () => {
         <button
           onClick={() => setActiveTab('system')}
           className={`px-4 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-2 ${activeTab === 'system'
-              ? 'bg-primary text-white'
-              : 'bg-white/5 text-gray-400 hover:bg-white/10'
+            ? 'bg-primary text-white'
+            : 'bg-white/5 text-gray-400 hover:bg-white/10'
             }`}
         >
           <LayoutIcon className="w-4 h-4" /> Sistema
