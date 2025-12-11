@@ -293,39 +293,6 @@ export const MemberSettings: React.FC<MemberSettingsProps> = ({ area, onSave, is
                                 </div>
                             </div>
                         </div>
-
-                        {/* Layout Settings */}
-                        <div className="mt-6 pt-6 border-t border-gray-200 dark:border-white/10">
-                            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                                <LayoutIcon className="w-5 h-5" /> Layout & Organização
-                            </h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Organizar por</label>
-                                    <select
-                                        value={settings.layout_mode || 'content'}
-                                        onChange={(e) => setSettings({ ...settings, layout_mode: e.target.value as 'content' | 'module' })}
-                                        className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-4 py-3 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-colors"
-                                    >
-                                        <option value="content">Conteúdos (Cursos/Packs)</option>
-                                        <option value="module">Módulos (Direto)</option>
-                                    </select>
-                                    <p className="text-xs text-gray-500 mt-2">Define o que será listado na página inicial do portal.</p>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Estilo dos Cards</label>
-                                    <select
-                                        value={settings.card_style || 'standard'}
-                                        onChange={(e) => setSettings({ ...settings, card_style: e.target.value as 'standard' | 'flyer' })}
-                                        className="w-full bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg px-4 py-3 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition-colors"
-                                    >
-                                        <option value="standard">Card Padrão (Horizontal 16:9)</option>
-                                        <option value="flyer">Flyer / Poster (Vertical 2:3)</option>
-                                    </select>
-                                    <p className="text-xs text-gray-500 mt-2">Define o formato visual dos itens listados.</p>
-                                </div>
-                            </div>
-                        </div>
                     </Card>
 
                     {/* Menu Settings */}
