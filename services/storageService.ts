@@ -809,7 +809,7 @@ class StorageService {
       .from('member_areas')
       .select('id, name')
       .eq('domain_id', domainId)
-      .eq('user_id', user.id); // Assuming member_areas also has user_id or RLS handles it
+      .eq('owner_id', user.id);
 
     if (memberAreaError) throw memberAreaError;
 
