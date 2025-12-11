@@ -5,7 +5,7 @@ import { storage } from '../../services/storageService';
 import { Domain, DomainStatus, DomainType, Checkout, DomainUsage } from '../../types';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
-import { Modal, ConfirmModal } from '../../components/ui/Modal';
+import { Modal, ConfirmModal, AlertModal } from '../../components/ui/Modal';
 import {
   Plus,
   Globe,
@@ -37,6 +37,7 @@ export const Domains = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dnsLoading, setDnsLoading] = useState(false);
+  const [alertModal, setAlertModal] = useState<{ isOpen: boolean; title: string; message: string; variant: 'success' | 'error' | 'info' }>({ isOpen: false, title: '', message: '', variant: 'info' });
 
   // Form State
   const [formData, setFormData] = useState({
@@ -230,7 +231,7 @@ export const Domains = () => {
       setDeleteDomainName('');
     } catch (err) {
       console.error('Removal failed:', err);
-      alert('Erro ao remover domínio');
+      setAlertModal({ isOpen: true, title: 'Erro', message: 'Erro ao remover domínio', variant: 'error' });
     } finally {
       setRemovingId(null);
     }
@@ -606,6 +607,15 @@ export const Domains = () => {
         cancelText="Cancelar"
         variant="danger"
         loading={removingId === deleteId}
+      />
+
+      {/* ALERT MODAL */}
+      <AlertModal
+        isOpen={alertModal.isOpen}
+        onClose={() => setAlertModal({ ...alertModal, isOpen: false })}
+        title={alertModal.title}
+        message={alertModal.message}
+        variant={alertModal.variant}
       />
     </Layout>
   );
