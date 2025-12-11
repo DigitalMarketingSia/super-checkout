@@ -67,7 +67,7 @@ export const MemberDomains: React.FC<MemberDomainsProps> = ({ area, onSave }) =>
                                     onChange={(e) => setSelectedDomainId(e.target.value)}
                                     className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
                                 >
-                                    <option value="">Usar subdomínio padrão (checkout.com/app/{area.slug})</option>
+                                    <option value="">Usar domínio do sistema</option>
                                     {domains.map(domain => (
                                         <option key={domain.id} value={domain.id}>
                                             {domain.domain}
