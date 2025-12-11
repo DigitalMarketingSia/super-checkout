@@ -7,10 +7,10 @@ import { Checkout, Product, Gateway, Domain, DomainStatus } from '../../types';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import {
-  Plus, Copy, Eye, Edit2, Trash2, Settings, ShoppingBag
+  Plus, Copy, Eye, Edit2, Trash2, Settings, ShoppingBag, AlertTriangle, Loader2
 } from 'lucide-react';
 
-import { ConfirmModal, AlertModal } from '../../components/ui/Modal';
+import { ConfirmModal, AlertModal, Modal } from '../../components/ui/Modal';
 
 export const Checkouts = () => {
   const navigate = useNavigate();
@@ -22,6 +22,8 @@ export const Checkouts = () => {
   const [loading, setLoading] = useState(true);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [checkingUsageId, setCheckingUsageId] = useState<string | null>(null);
+  const [usageWarning, setUsageWarning] = useState<{ products: any[], domains: any[] } | null>(null);
   const [alertState, setAlertState] = useState<{ isOpen: boolean; title: string; message: string; variant: 'success' | 'error' | 'info' }>({
     isOpen: false,
     title: '',
@@ -61,8 +63,21 @@ export const Checkouts = () => {
     }
   };
 
-  const handleDeleteClick = (id: string) => {
-    setDeleteId(id);
+  const handleDeleteClick = async (id: string) => {
+    setCheckingUsageId(id);
+    try {
+      const usage = await storage.getCheckoutUsage(id);
+      if (usage.products.length > 0 || usage.domains.length > 0) {
+        setUsageWarning(usage);
+      } else {
+        setDeleteId(id);
+      }
+    } catch (error) {
+      console.error('Error checking checkout usage:', error);
+      showAlert('Erro', 'Erro ao verificar uso do checkout', 'error');
+    } finally {
+      setCheckingUsageId(null);
+    }
   };
 
   const handleConfirmDelete = async () => {
@@ -73,6 +88,7 @@ export const Checkouts = () => {
       await storage.deleteCheckout(deleteId);
       await loadData();
       setDeleteId(null);
+      showAlert('Sucesso', 'Checkout excluído com sucesso', 'success');
     } catch (error) {
       console.error('Error deleting checkout:', error);
       showAlert('Erro', 'Erro ao excluir checkout.', 'error');
@@ -208,10 +224,11 @@ export const Checkouts = () => {
                         {/* Excluir */}
                         <button
                           onClick={() => handleDeleteClick(chk.id)}
-                          className="p-2 bg-red-500/10 hover:bg-red-500/20 rounded-lg text-red-400 border border-red-500/10 transition-colors"
+                          disabled={checkingUsageId === chk.id}
+                          className="p-2 bg-red-500/10 hover:bg-red-500/20 rounded-lg text-red-400 border border-red-500/10 transition-colors disabled:opacity-50"
                           title="Excluir"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          {checkingUsageId === chk.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                         </button>
 
                         {/* Copiar Link */}
@@ -267,6 +284,60 @@ export const Checkouts = () => {
         message={alertState.message}
         variant={alertState.variant}
       />
+
+      {/* USAGE WARNING MODAL */}
+      <Modal
+        isOpen={!!usageWarning}
+        onClose={() => setUsageWarning(null)}
+        title="Checkout em Uso"
+        className="max-w-md"
+      >
+        <div className="space-y-4">
+          <div className="bg-yellow-500/10 border border-yellow-500/20 p-4 rounded-xl flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-yellow-500 shrink-0 mt-0.5" />
+            <div>
+              <h3 className="text-yellow-500 font-bold text-sm mb-1">Não é possível excluir</h3>
+              <p className="text-yellow-200/80 text-xs">
+                Este checkout está vinculado aos seguintes itens. Remova os vínculos antes de excluir.
+              </p>
+            </div>
+          </div>
+
+          <div className="bg-black/30 border border-white/10 rounded-xl overflow-hidden">
+            {usageWarning?.products.length > 0 && (
+              <div className="p-3 border-b border-white/5 last:border-0">
+                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Produtos</h4>
+                <ul className="space-y-1">
+                  {usageWarning.products.map((product: any) => (
+                    <li key={product.id} className="text-sm text-white flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                      {product.name}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {usageWarning?.domains.length > 0 && (
+              <div className="p-3 border-b border-white/5 last:border-0">
+                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Domínios</h4>
+                <ul className="space-y-1">
+                  {usageWarning.domains.map((domain: any) => (
+                    <li key={domain.id} className="text-sm text-white flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-purple-500"></div>
+                      {domain.domain}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-end pt-2">
+            <Button onClick={() => setUsageWarning(null)}>Entendi</Button>
+          </div>
+        </div>
+      </Modal>
     </Layout>
   );
 };

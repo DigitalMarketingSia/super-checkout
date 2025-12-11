@@ -819,6 +819,35 @@ class StorageService {
     };
   }
 
+  async getCheckoutUsage(checkoutId: string) {
+    const user = await this.getUser();
+    if (!user) throw new Error('No user logged in');
+
+    // 1. Check Use in Products (member_area_checkout_id)
+    const { data: products, error: productError } = await supabase
+      .from('products')
+      .select('id, name')
+      .eq('member_area_checkout_id', checkoutId)
+      .eq('user_id', user.id);
+
+    if (productError) throw productError;
+
+    // 2. Check Use in Domains
+    const { data: domains, error: domainError } = await supabase
+      .from('domains')
+      .select('id, domain')
+      .eq('checkout_id', checkoutId)
+      .eq('user_id', user.id);
+
+    if (domainError) throw domainError;
+
+    return {
+      products: products || [],
+      domains: domains || []
+    };
+  }
+
+
   async createDomain(domain: Omit<Domain, 'id'>) {
     const user = await this.getUser();
     if (!user) throw new Error('No user logged in');
