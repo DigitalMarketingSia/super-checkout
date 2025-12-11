@@ -137,35 +137,20 @@ export const Domains = () => {
 
       if (data.error) throw new Error(data.error);
 
-      // Update Status: STRICTER LOGIC
-      // Check both project config (data.misconfigured) and global config (data.config?.misconfigured)
-      const isMisconfigured = data.misconfigured || data.config?.misconfigured;
+      // Update Status: Simplified Logic
+      // All domains (System, Checkout, Member Area) just need DNS to be verified
+      // The "misconfigured" flag from Vercel is often a false positive
 
-      // Get the domain's usage type
       const currentDomain = domains.find(d => d.id === id);
-      const isSystemDomain = currentDomain?.usage === DomainUsage.SYSTEM;
-
       let newStatus = DomainStatus.PENDING;
 
-      // For SYSTEM domains: only check if verified (DNS configured)
-      // For other domains: check both verified AND not misconfigured
-      if (isSystemDomain) {
-        // System domains just need DNS to be verified
-        if (data.verified) {
-          newStatus = DomainStatus.ACTIVE;
-        } else if (data.error) {
-          newStatus = DomainStatus.ERROR;
-        }
+      // Mark as active if DNS is verified, regardless of misconfiguration warnings
+      if (data.verified) {
+        newStatus = DomainStatus.ACTIVE;
+      } else if (data.error) {
+        newStatus = DomainStatus.ERROR;
       } else {
-        // Checkout/Member Area domains need stricter verification
-        if (data.verified && !isMisconfigured) {
-          newStatus = DomainStatus.ACTIVE;
-        } else if (data.error) {
-          newStatus = DomainStatus.ERROR;
-        } else {
-          // Force PENDING if misconfigured, even if verified is true
-          newStatus = DomainStatus.PENDING;
-        }
+        newStatus = DomainStatus.PENDING;
       }
 
       // Only update state if status actually changed
