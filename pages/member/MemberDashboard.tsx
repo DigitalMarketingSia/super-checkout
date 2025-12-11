@@ -62,7 +62,16 @@ export const MemberDashboard = () => {
         handleAccess(item, {
             onAccess: () => {
                 console.log('Access granted');
-                const appLink = memberArea ? `/app/${memberArea.slug}` : '/app';
+
+                // Detect if we're on a custom domain
+                const isCustomDomain = typeof window !== 'undefined' &&
+                    !window.location.hostname.includes('vercel.app') &&
+                    !window.location.hostname.includes('localhost') &&
+                    window.location.pathname.startsWith('/app/') === false;
+
+                // If on custom domain, use root paths. Otherwise use /app/slug paths
+                const appLink = isCustomDomain ? '' : (memberArea ? `/app/${memberArea.slug}` : '/app');
+
                 console.log('Navigating to:', appLink);
                 if (item.content) {
                     navigate(`${appLink}/content/${item.content.id}`);
