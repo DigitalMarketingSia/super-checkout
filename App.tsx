@@ -129,24 +129,18 @@ const DomainDispatcher = () => {
             return;
           }
 
-          // --- GENERAL DOMAIN LOGIC (Legacy) ---
-          // Fallback logic for General domains: Try checkout, otherwise allow standard routing
-
-          if (pathname.startsWith('/thank-you') || pathname.startsWith('/pagamento')) {
+          // --- SYSTEM DOMAIN LOGIC ---
+          // Allow standard routing (Admin panel, etc.)
+          if (domain.usage === DomainUsage.SYSTEM) {
+            console.log('System domain detected, allowing standard routing.');
             setLoading(false);
-            setCustomCheckoutId('system');
             return;
           }
 
-          const slug = pathname.substring(1);
-          const checkout = await storage.getCheckoutByDomainAndSlug(domain.id, slug);
-
-          if (checkout) {
-            setCustomCheckoutId(checkout.id);
-          } else {
-            // Allow Standard Routing (Admin, etc)
-            setLoading(false);
-          }
+          // --- FALLBACK FOR UNKNOWN USAGE ---
+          // If domain exists but has unknown usage, allow standard routing
+          console.log('Unknown domain usage, allowing standard routing.');
+          setLoading(false);
 
         } else {
           // Domain points here but not found in DB

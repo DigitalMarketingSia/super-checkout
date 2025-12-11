@@ -40,6 +40,7 @@ export const Domains = () => {
   const [checkingUsageId, setCheckingUsageId] = useState<string | null>(null);
   const [usageWarning, setUsageWarning] = useState<{ checkouts: any[], memberAreas: any[] } | null>(null);
   const [alertModal, setAlertModal] = useState<{ isOpen: boolean; title: string; message: string; variant: 'success' | 'error' | 'info' }>({ isOpen: false, title: '', message: '', variant: 'info' });
+  const [activeTab, setActiveTab] = useState<'all' | 'checkout' | 'member_area' | 'system'>('all');
 
   // Form State
   const [formData, setFormData] = useState({
@@ -299,11 +300,11 @@ export const Domains = () => {
             <Users className="w-3 h-3" /> Área de Membros
           </span>
         );
-      case DomainUsage.GENERAL:
+      case DomainUsage.SYSTEM:
       default:
         return (
-          <span className="flex items-center gap-1.5 bg-gray-500/10 text-gray-400 px-2 py-0.5 rounded text-[10px] font-medium border border-gray-500/20 uppercase tracking-wide">
-            <Globe className="w-3 h-3" /> Geral
+          <span className="flex items-center gap-1.5 bg-green-500/10 text-green-400 px-2 py-0.5 rounded text-[10px] font-medium border border-green-500/20 uppercase tracking-wide">
+            <LayoutIcon className="w-3 h-3" /> Sistema
           </span>
         );
     }
@@ -311,9 +312,18 @@ export const Domains = () => {
 
   const systemDomain = 'cname.vercel-dns.com';
 
+  // Filter domains based on active tab
+  const filteredDomains = domains.filter(domain => {
+    if (activeTab === 'all') return true;
+    if (activeTab === 'checkout') return domain.usage === DomainUsage.CHECKOUT;
+    if (activeTab === 'member_area') return domain.usage === DomainUsage.MEMBER_AREA;
+    if (activeTab === 'system') return domain.usage === DomainUsage.SYSTEM;
+    return true;
+  });
+
   return (
     <Layout>
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold text-white">Domínios</h1>
           <p className="text-gray-400 text-sm mt-1">Conecte seus domínios personalizados.</p>
@@ -323,8 +333,48 @@ export const Domains = () => {
         </Button>
       </div>
 
+      {/* Tabbed Navigation */}
+      <div className="flex items-center gap-3 mb-8">
+        <button
+          onClick={() => setActiveTab('all')}
+          className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${activeTab === 'all'
+              ? 'bg-primary text-white'
+              : 'bg-white/5 text-gray-400 hover:bg-white/10'
+            }`}
+        >
+          Todos
+        </button>
+        <button
+          onClick={() => setActiveTab('checkout')}
+          className={`px-4 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-2 ${activeTab === 'checkout'
+              ? 'bg-primary text-white'
+              : 'bg-white/5 text-gray-400 hover:bg-white/10'
+            }`}
+        >
+          <ShoppingCart className="w-4 h-4" /> Checkout
+        </button>
+        <button
+          onClick={() => setActiveTab('member_area')}
+          className={`px-4 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-2 ${activeTab === 'member_area'
+              ? 'bg-primary text-white'
+              : 'bg-white/5 text-gray-400 hover:bg-white/10'
+            }`}
+        >
+          <Users className="w-4 h-4" /> Área de Membros
+        </button>
+        <button
+          onClick={() => setActiveTab('system')}
+          className={`px-4 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-2 ${activeTab === 'system'
+              ? 'bg-primary text-white'
+              : 'bg-white/5 text-gray-400 hover:bg-white/10'
+            }`}
+        >
+          <LayoutIcon className="w-4 h-4" /> Sistema
+        </button>
+      </div>
+
       <div className="grid grid-cols-1 gap-6">
-        {domains.length === 0 ? (
+        {filteredDomains.length === 0 ? (
           <Card className="text-center py-20 border-dashed border-white/10 bg-white/5">
             <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
               <Globe className="w-8 h-8 text-gray-400" />
@@ -335,7 +385,7 @@ export const Domains = () => {
             </div>
           </Card>
         ) : (
-          domains.map(domain => (
+          filteredDomains.map(domain => (
             <Card key={domain.id} className="group overflow-hidden relative" noPadding>
               <div className="p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                 <div className="flex items-start gap-4">
@@ -436,16 +486,16 @@ export const Domains = () => {
               </div>
 
               <div
-                className={`p-3 rounded-xl border cursor-pointer transition-all ${formData.usage === DomainUsage.GENERAL ? 'bg-gray-500/20 border-gray-500/50' : 'bg-black/30 border-white/10 hover:border-white/20'}`}
-                onClick={() => setFormData({ ...formData, usage: DomainUsage.GENERAL })}
+                className={`p-3 rounded-xl border cursor-pointer transition-all ${formData.usage === DomainUsage.SYSTEM ? 'bg-green-500/20 border-green-500/50' : 'bg-black/30 border-white/10 hover:border-white/20'}`}
+                onClick={() => setFormData({ ...formData, usage: DomainUsage.SYSTEM })}
               >
                 <div className="flex items-center gap-3">
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${formData.usage === DomainUsage.GENERAL ? 'bg-gray-500 text-white' : 'bg-white/5 text-gray-400'}`}>
-                    <Globe className="w-4 h-4" />
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${formData.usage === DomainUsage.SYSTEM ? 'bg-green-500 text-white' : 'bg-white/5 text-gray-400'}`}>
+                    <LayoutIcon className="w-4 h-4" />
                   </div>
                   <div>
-                    <h3 className={`text-sm font-bold ${formData.usage === DomainUsage.GENERAL ? 'text-white' : 'text-gray-300'}`}>Uso Geral</h3>
-                    <p className="text-xs text-gray-500">Outros fins</p>
+                    <h3 className={`text-sm font-bold ${formData.usage === DomainUsage.SYSTEM ? 'text-white' : 'text-gray-300'}`}>Para Sistema</h3>
+                    <p className="text-xs text-gray-500">Ex: admin.meusite.com</p>
                   </div>
                 </div>
               </div>

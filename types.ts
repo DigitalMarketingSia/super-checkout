@@ -70,7 +70,7 @@ export interface Offer {
 }
 
 export enum DomainUsage {
-  GENERAL = 'general',
+  SYSTEM = 'system',      // For admin panel access
   CHECKOUT = 'checkout',
   MEMBER_AREA = 'member_area'
 }
