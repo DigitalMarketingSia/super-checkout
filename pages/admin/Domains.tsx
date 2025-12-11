@@ -5,6 +5,7 @@ import { storage } from '../../services/storageService';
 import { Domain, DomainStatus, DomainType, Checkout, DomainUsage } from '../../types';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
+import { Modal, ConfirmModal } from '../../components/ui/Modal';
 import {
   Plus,
   Globe,
@@ -30,6 +31,8 @@ export const Domains = () => {
   const [selectedDomain, setSelectedDomain] = useState<Domain | null>(null);
   const [verifyingId, setVerifyingId] = useState<string | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleteDomainName, setDeleteDomainName] = useState<string>('');
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -210,14 +213,21 @@ export const Domains = () => {
     setDnsLoading(false);
   };
 
-  const handleRemove = async (id: string, domainName: string) => {
-    if (!confirm('Tem certeza que deseja remover este domínio?')) return;
+  const handleDeleteClick = (id: string, domainName: string) => {
+    setDeleteId(id);
+    setDeleteDomainName(domainName);
+  };
 
-    setRemovingId(id);
+  const handleConfirmDelete = async () => {
+    if (!deleteId || !deleteDomainName) return;
+
+    setRemovingId(deleteId);
     try {
-      await fetch(`/api/domains/remove?domain=${domainName}`, { method: 'DELETE' });
-      await storage.deleteDomain(id);
-      setDomains(domains.filter(d => d.id !== id));
+      await fetch(`/api/domains/remove?domain=${deleteDomainName}`, { method: 'DELETE' });
+      await storage.deleteDomain(deleteId);
+      setDomains(domains.filter(d => d.id !== deleteId));
+      setDeleteId(null);
+      setDeleteDomainName('');
     } catch (err) {
       console.error('Removal failed:', err);
       alert('Erro ao remover domínio');
@@ -354,7 +364,7 @@ export const Domains = () => {
                   </Button>
 
                   <button
-                    onClick={() => handleRemove(domain.id, domain.domain)}
+                    onClick={() => handleDeleteClick(domain.id, domain.domain)}
                     disabled={removingId === domain.id}
                     className="p-2 hover:bg-red-500/10 rounded-lg text-gray-400 hover:text-red-500 transition-colors"
                   >
@@ -367,236 +377,236 @@ export const Domains = () => {
         )}
       </div>
 
-      {/* MODAL 1: ADD DOMAIN (Simple) */}
-      {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm">
-          <div className="bg-[#12121A]/80 backdrop-blur-xl w-full max-w-md rounded-2xl shadow-2xl border border-purple-500/20 overflow-hidden animate-in fade-in zoom-in duration-200 relative">
-            {/* Purple glow effects */}
-            <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/20 rounded-full blur-3xl -mr-16 -mt-16" />
-            <div className="absolute bottom-0 left-0 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl -ml-16 -mb-16" />
-
-            <div className="relative px-6 py-5 border-b border-white/10 flex justify-between items-center bg-white/[0.02]">
-              <h2 className="text-lg font-bold text-white">Adicionar Domínio</h2>
-              <button onClick={() => setIsAddModalOpen(false)} className="text-gray-500 hover:text-white"><X className="w-5 h-5" /></button>
+      {/* MODAL 1: ADD DOMAIN */}
+      <Modal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} title="Adicionar Domínio">
+        <form onSubmit={handleSave} className="space-y-6">
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-lg text-sm flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4" /> {error}
             </div>
-            <form onSubmit={handleSave} className="relative p-6 space-y-6">
-              {error && (
-                <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-lg text-sm flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4" /> {error}
+          )}
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">Finalidade do Domínio</label>
+            <div className="grid grid-cols-1 gap-3">
+              <div
+                className={`p-3 rounded-xl border cursor-pointer transition-all ${formData.usage === DomainUsage.CHECKOUT ? 'bg-blue-500/20 border-blue-500/50' : 'bg-black/30 border-white/10 hover:border-white/20'}`}
+                onClick={() => setFormData({ ...formData, usage: DomainUsage.CHECKOUT })}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${formData.usage === DomainUsage.CHECKOUT ? 'bg-blue-500 text-white' : 'bg-white/5 text-gray-400'}`}>
+                    <ShoppingCart className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className={`text-sm font-bold ${formData.usage === DomainUsage.CHECKOUT ? 'text-white' : 'text-gray-300'}`}>Para Checkout</h3>
+                    <p className="text-xs text-gray-500">Ex: pay.meusite.com</p>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                className={`p-3 rounded-xl border cursor-pointer transition-all ${formData.usage === DomainUsage.MEMBER_AREA ? 'bg-purple-500/20 border-purple-500/50' : 'bg-black/30 border-white/10 hover:border-white/20'}`}
+                onClick={() => setFormData({ ...formData, usage: DomainUsage.MEMBER_AREA })}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${formData.usage === DomainUsage.MEMBER_AREA ? 'bg-purple-500 text-white' : 'bg-white/5 text-gray-400'}`}>
+                    <Users className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className={`text-sm font-bold ${formData.usage === DomainUsage.MEMBER_AREA ? 'text-white' : 'text-gray-300'}`}>Para Área de Membros</h3>
+                    <p className="text-xs text-gray-500">Ex: membros.meusite.com</p>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                className={`p-3 rounded-xl border cursor-pointer transition-all ${formData.usage === DomainUsage.GENERAL ? 'bg-gray-500/20 border-gray-500/50' : 'bg-black/30 border-white/10 hover:border-white/20'}`}
+                onClick={() => setFormData({ ...formData, usage: DomainUsage.GENERAL })}
+              >
+                <div className="flex items-center gap-3">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${formData.usage === DomainUsage.GENERAL ? 'bg-gray-500 text-white' : 'bg-white/5 text-gray-400'}`}>
+                    <Globe className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className={`text-sm font-bold ${formData.usage === DomainUsage.GENERAL ? 'text-white' : 'text-gray-300'}`}>Uso Geral</h3>
+                    <p className="text-xs text-gray-500">Outros fins</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1.5">Domínio (sem http/https)</label>
+            <input
+              required
+              type="text"
+              className="w-full bg-black/30 border border-purple-500/20 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 outline-none placeholder:text-gray-600"
+              placeholder={formData.usage === DomainUsage.MEMBER_AREA ? "clube.meusite.com" : "pay.meusite.com"}
+              value={formData.domain}
+              onChange={e => setFormData({ ...formData, domain: e.target.value })}
+            />
+          </div>
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="ghost" onClick={() => setIsAddModalOpen(false)}>Cancelar</Button>
+            <Button onClick={handleSave} disabled={isLoading} className="bg-purple-600 hover:bg-purple-700 text-white border-none shadow-lg shadow-purple-500/20">
+              {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Adicionar'}
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+
+      {/* MODAL 2: DNS CONFIGURATION */}
+      {selectedDomain && (
+        <Modal
+          isOpen={isDnsModalOpen}
+          onClose={() => setIsDnsModalOpen(false)}
+          title={selectedDomain.status === DomainStatus.ACTIVE ? 'Domínio Conectado' : 'Configuração DNS'}
+          className="max-w-2xl"
+        >
+          <div className="space-y-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center border ${selectedDomain.status === DomainStatus.ACTIVE
+                ? 'bg-green-500/20 text-green-500 border-green-500/20'
+                : 'bg-yellow-500/20 text-yellow-500 border-yellow-500/20'
+                }`}>
+                <Server className="w-5 h-5" />
+              </div>
+              <p className="text-sm text-gray-400">
+                {selectedDomain.status === DomainStatus.ACTIVE
+                  ? 'Seu domínio está ativo e funcionando.'
+                  : 'Configure seu provedor para conectar o domínio.'}
+              </p>
+            </div>
+
+            <div className="bg-black/30 border border-white/10 rounded-xl p-4 space-y-4">
+              <div className="flex justify-between items-center">
+                <p className="text-sm text-gray-300">
+                  Registros DNS necessários:
+                </p>
+              </div>
+
+              {dnsLoading ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                </div>
+              ) : !dnsRecords ? (
+                <div className="text-center py-8 text-gray-400">
+                  <p className="mb-2 font-medium text-white">Não foi possível obter os registros.</p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* CNAME Records */}
+                  {dnsRecords.filter((r: any) => r.type.toUpperCase() === 'CNAME').length > 0 && (
+                    <div className="space-y-2">
+                      <h3 className="text-xs font-medium text-gray-400 uppercase tracking-wider">Subdomínio (CNAME)</h3>
+                      {dnsRecords.filter((r: any) => r.type.toUpperCase() === 'CNAME').map((record: any, idx: number) => (
+                        <div key={`cname-${idx}`} className="grid grid-cols-4 gap-2 text-xs">
+                          <div className="bg-white/5 p-2 rounded border border-white/5">
+                            <span className="text-gray-500 block mb-1">Type</span>
+                            <span className="text-white font-mono font-bold">CNAME</span>
+                          </div>
+                          <div className="bg-white/5 p-2 rounded border border-white/5">
+                            <span className="text-gray-500 block mb-1">Name</span>
+                            <span className="text-white font-mono">{record.domain.startsWith('www.') ? 'www' : (record.domain.split('.').length > 2 ? record.domain.split('.')[0] : '@')}</span>
+                          </div>
+                          <div className="bg-white/5 p-2 rounded border border-white/5 relative group col-span-2">
+                            <span className="text-gray-500 block mb-1">Value</span>
+                            <span className="text-white font-mono break-all">{record.value}</span>
+                            <button onClick={() => handleCopy(record.value, `val-cname-${idx}`)} className="absolute top-2 right-2 text-gray-500 hover:text-white">
+                              {copiedField === `val-cname-${idx}` ? <CheckCircle className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* A Records */}
+                  {dnsRecords.filter((r: any) => r.type.toUpperCase() === 'A').length > 0 && (
+                    <div className="space-y-2">
+                      <h3 className="text-xs font-medium text-gray-400 uppercase tracking-wider">Domínio (A Record)</h3>
+                      {dnsRecords.filter((r: any) => r.type.toUpperCase() === 'A').map((record: any, idx: number) => (
+                        <div key={`a-${idx}`} className="grid grid-cols-4 gap-2 text-xs">
+                          <div className="bg-white/5 p-2 rounded border border-white/5">
+                            <span className="text-gray-500 block mb-1">Type</span>
+                            <span className="text-white font-mono font-bold">A</span>
+                          </div>
+                          <div className="bg-white/5 p-2 rounded border border-white/5">
+                            <span className="text-gray-500 block mb-1">Name</span>
+                            <span className="text-white font-mono">@</span>
+                          </div>
+                          <div className="bg-white/5 p-2 rounded border border-white/5 relative group col-span-2">
+                            <span className="text-gray-500 block mb-1">Value</span>
+                            <span className="text-white font-mono break-all">{record.value}</span>
+                            <button onClick={() => handleCopy(record.value, `val-a-${idx}`)} className="absolute top-2 right-2 text-gray-500 hover:text-white">
+                              {copiedField === `val-a-${idx}` ? <CheckCircle className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* TXT Records */}
+                  {dnsRecords.filter((r: any) => r.type.toUpperCase() === 'TXT').length > 0 && (
+                    <div className="space-y-2">
+                      <h3 className="text-xs font-medium text-gray-400 uppercase tracking-wider">Verificação (TXT)</h3>
+                      {dnsRecords.filter((r: any) => r.type.toUpperCase() === 'TXT').map((record: any, idx: number) => (
+                        <div key={`txt-${idx}`} className="grid grid-cols-4 gap-2 text-xs">
+                          <div className="bg-white/5 p-2 rounded border border-white/5">
+                            <span className="text-gray-500 block mb-1">Type</span>
+                            <span className="text-white font-mono font-bold">TXT</span>
+                          </div>
+                          <div className="bg-white/5 p-2 rounded border border-white/5">
+                            <span className="text-gray-500 block mb-1">Name</span>
+                            <span className="text-white font-mono">{record.domain.startsWith('_vercel') ? '_vercel' : '@'}</span>
+                          </div>
+                          <div className="bg-white/5 p-2 rounded border border-white/5 relative group col-span-2">
+                            <span className="text-gray-500 block mb-1">Value</span>
+                            <span className="text-white font-mono break-all">{record.value}</span>
+                            <button onClick={() => handleCopy(record.value, `val-txt-${idx}`)} className="absolute top-2 right-2 text-gray-500 hover:text-white">
+                              {copiedField === `val-txt-${idx}` ? <CheckCircle className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-4 gap-2 text-xs mt-2">
+                    <div className="col-span-4 bg-white/5 p-2 rounded border border-white/5 flex items-center justify-between">
+                      <span className="text-gray-500">Proxy (Cloudflare)</span>
+                      <span className="text-gray-400 font-mono">Desativado (Nuvem Cinza)</span>
+                    </div>
+                  </div>
                 </div>
               )}
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1.5">Finalidade do Domínio</label>
-                <div className="grid grid-cols-1 gap-3">
-                  <div
-                    className={`p-3 rounded-xl border cursor-pointer transition-all ${formData.usage === DomainUsage.CHECKOUT ? 'bg-blue-500/20 border-blue-500/50' : 'bg-black/30 border-white/10 hover:border-white/20'}`}
-                    onClick={() => setFormData({ ...formData, usage: DomainUsage.CHECKOUT })}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${formData.usage === DomainUsage.CHECKOUT ? 'bg-blue-500 text-white' : 'bg-white/5 text-gray-400'}`}>
-                        <ShoppingCart className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <h3 className={`text-sm font-bold ${formData.usage === DomainUsage.CHECKOUT ? 'text-white' : 'text-gray-300'}`}>Para Checkout</h3>
-                        <p className="text-xs text-gray-500">Ex: pay.meusite.com</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div
-                    className={`p-3 rounded-xl border cursor-pointer transition-all ${formData.usage === DomainUsage.MEMBER_AREA ? 'bg-purple-500/20 border-purple-500/50' : 'bg-black/30 border-white/10 hover:border-white/20'}`}
-                    onClick={() => setFormData({ ...formData, usage: DomainUsage.MEMBER_AREA })}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${formData.usage === DomainUsage.MEMBER_AREA ? 'bg-purple-500 text-white' : 'bg-white/5 text-gray-400'}`}>
-                        <Users className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <h3 className={`text-sm font-bold ${formData.usage === DomainUsage.MEMBER_AREA ? 'text-white' : 'text-gray-300'}`}>Para Área de Membros</h3>
-                        <p className="text-xs text-gray-500">Ex: membros.meusite.com</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div
-                    className={`p-3 rounded-xl border cursor-pointer transition-all ${formData.usage === DomainUsage.GENERAL ? 'bg-gray-500/20 border-gray-500/50' : 'bg-black/30 border-white/10 hover:border-white/20'}`}
-                    onClick={() => setFormData({ ...formData, usage: DomainUsage.GENERAL })}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${formData.usage === DomainUsage.GENERAL ? 'bg-gray-500 text-white' : 'bg-white/5 text-gray-400'}`}>
-                        <Globe className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <h3 className={`text-sm font-bold ${formData.usage === DomainUsage.GENERAL ? 'text-white' : 'text-gray-300'}`}>Uso Geral</h3>
-                        <p className="text-xs text-gray-500">Outros fins</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1.5">Domínio (sem http/https)</label>
-                <input
-                  required
-                  type="text"
-                  className="w-full bg-black/30 border border-purple-500/20 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 outline-none placeholder:text-gray-600"
-                  placeholder={formData.usage === DomainUsage.MEMBER_AREA ? "clube.meusite.com" : "pay.meusite.com"}
-                  value={formData.domain}
-                  onChange={e => setFormData({ ...formData, domain: e.target.value })}
-                />
-              </div>
-              <div className="flex justify-end gap-3 pt-2">
-                <Button variant="ghost" onClick={() => setIsAddModalOpen(false)}>Cancelar</Button>
-                <Button onClick={handleSave} disabled={isLoading} className="bg-purple-600 hover:bg-purple-700 text-white border-none shadow-lg shadow-purple-500/20">
-                  {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Adicionar'}
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL 2: DNS CONFIGURATION (Dynamic) */}
-      {isDnsModalOpen && selectedDomain && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="bg-[#0F0F13] w-full max-w-2xl rounded-2xl shadow-2xl border border-white/10 overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="px-6 py-5 border-b border-white/5 flex justify-between items-center bg-white/5">
-              <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-lg flex items-center justify-center border ${selectedDomain.status === DomainStatus.ACTIVE
-                  ? 'bg-green-500/20 text-green-500 border-green-500/20'
-                  : 'bg-yellow-500/20 text-yellow-500 border-yellow-500/20'
-                  }`}>
-                  <Server className="w-5 h-5" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-bold text-white">
-                    {selectedDomain.status === DomainStatus.ACTIVE ? 'Domínio Conectado' : 'Configuração DNS'}
-                  </h2>
-                  <p className="text-xs text-gray-400">
-                    {selectedDomain.status === DomainStatus.ACTIVE
-                      ? 'Seu domínio está ativo e funcionando.'
-                      : 'Configure seu provedor para conectar o domínio.'}
-                  </p>
-                </div>
-              </div>
-              <button onClick={() => setIsDnsModalOpen(false)} className="text-gray-500 hover:text-white"><X className="w-5 h-5" /></button>
             </div>
 
-            <div className="p-6 space-y-6">
-              <div className="bg-black/30 border border-white/10 rounded-xl p-4 space-y-4">
-                <div className="flex justify-between items-center">
-                  <p className="text-sm text-gray-300">
-                    Registros DNS necessários:
-                  </p>
-                </div>
-
-                {dnsLoading ? (
-                  <div className="flex justify-center py-8">
-                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                  </div>
-                ) : !dnsRecords ? (
-                  <div className="text-center py-8 text-gray-400">
-                    <p className="mb-2 font-medium text-white">Não foi possível obter os registros.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-6">
-                    {/* CNAME Records */}
-                    {dnsRecords.filter((r: any) => r.type.toUpperCase() === 'CNAME').length > 0 && (
-                      <div className="space-y-2">
-                        <h3 className="text-xs font-medium text-gray-400 uppercase tracking-wider">Subdomínio (CNAME)</h3>
-                        {dnsRecords.filter((r: any) => r.type.toUpperCase() === 'CNAME').map((record: any, idx: number) => (
-                          <div key={`cname-${idx}`} className="grid grid-cols-4 gap-2 text-xs">
-                            <div className="bg-white/5 p-2 rounded border border-white/5">
-                              <span className="text-gray-500 block mb-1">Type</span>
-                              <span className="text-white font-mono font-bold">CNAME</span>
-                            </div>
-                            <div className="bg-white/5 p-2 rounded border border-white/5">
-                              <span className="text-gray-500 block mb-1">Name</span>
-                              <span className="text-white font-mono">{record.domain.startsWith('www.') ? 'www' : (record.domain.split('.').length > 2 ? record.domain.split('.')[0] : '@')}</span>
-                            </div>
-                            <div className="bg-white/5 p-2 rounded border border-white/5 relative group col-span-2">
-                              <span className="text-gray-500 block mb-1">Value</span>
-                              <span className="text-white font-mono break-all">{record.value}</span>
-                              <button onClick={() => handleCopy(record.value, `val-cname-${idx}`)} className="absolute top-2 right-2 text-gray-500 hover:text-white">
-                                {copiedField === `val-cname-${idx}` ? <CheckCircle className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* A Records */}
-                    {dnsRecords.filter((r: any) => r.type.toUpperCase() === 'A').length > 0 && (
-                      <div className="space-y-2">
-                        <h3 className="text-xs font-medium text-gray-400 uppercase tracking-wider">Domínio (A Record)</h3>
-                        {dnsRecords.filter((r: any) => r.type.toUpperCase() === 'A').map((record: any, idx: number) => (
-                          <div key={`a-${idx}`} className="grid grid-cols-4 gap-2 text-xs">
-                            <div className="bg-white/5 p-2 rounded border border-white/5">
-                              <span className="text-gray-500 block mb-1">Type</span>
-                              <span className="text-white font-mono font-bold">A</span>
-                            </div>
-                            <div className="bg-white/5 p-2 rounded border border-white/5">
-                              <span className="text-gray-500 block mb-1">Name</span>
-                              <span className="text-white font-mono">@</span>
-                            </div>
-                            <div className="bg-white/5 p-2 rounded border border-white/5 relative group col-span-2">
-                              <span className="text-gray-500 block mb-1">Value</span>
-                              <span className="text-white font-mono break-all">{record.value}</span>
-                              <button onClick={() => handleCopy(record.value, `val-a-${idx}`)} className="absolute top-2 right-2 text-gray-500 hover:text-white">
-                                {copiedField === `val-a-${idx}` ? <CheckCircle className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* TXT Records */}
-                    {dnsRecords.filter((r: any) => r.type.toUpperCase() === 'TXT').length > 0 && (
-                      <div className="space-y-2">
-                        <h3 className="text-xs font-medium text-gray-400 uppercase tracking-wider">Verificação (TXT)</h3>
-                        {dnsRecords.filter((r: any) => r.type.toUpperCase() === 'TXT').map((record: any, idx: number) => (
-                          <div key={`txt-${idx}`} className="grid grid-cols-4 gap-2 text-xs">
-                            <div className="bg-white/5 p-2 rounded border border-white/5">
-                              <span className="text-gray-500 block mb-1">Type</span>
-                              <span className="text-white font-mono font-bold">TXT</span>
-                            </div>
-                            <div className="bg-white/5 p-2 rounded border border-white/5">
-                              <span className="text-gray-500 block mb-1">Name</span>
-                              <span className="text-white font-mono">{record.domain.startsWith('_vercel') ? '_vercel' : '@'}</span>
-                            </div>
-                            <div className="bg-white/5 p-2 rounded border border-white/5 relative group col-span-2">
-                              <span className="text-gray-500 block mb-1">Value</span>
-                              <span className="text-white font-mono break-all">{record.value}</span>
-                              <button onClick={() => handleCopy(record.value, `val-txt-${idx}`)} className="absolute top-2 right-2 text-gray-500 hover:text-white">
-                                {copiedField === `val-txt-${idx}` ? <CheckCircle className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    <div className="grid grid-cols-4 gap-2 text-xs mt-2">
-                      <div className="col-span-4 bg-white/5 p-2 rounded border border-white/5 flex items-center justify-between">
-                        <span className="text-gray-500">Proxy (Cloudflare)</span>
-                        <span className="text-gray-400 font-mono">Desativado (Nuvem Cinza)</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex justify-end">
-                <Button onClick={() => setIsDnsModalOpen(false)}>Fechar</Button>
-              </div>
+            <div className="flex justify-end">
+              <Button onClick={() => setIsDnsModalOpen(false)}>Fechar</Button>
             </div>
           </div>
-        </div>
+        </Modal>
       )}
+
+      {/* DELETE CONFIRMATION MODAL */}
+      <ConfirmModal
+        isOpen={!!deleteId}
+        onClose={() => {
+          setDeleteId(null);
+          setDeleteDomainName('');
+        }}
+        onConfirm={handleConfirmDelete}
+        title="Excluir Domínio"
+        message="Tem certeza que deseja excluir este domínio? Esta ação não pode ser desfeita."
+        confirmText="Sim, excluir"
+        cancelText="Cancelar"
+        variant="danger"
+        loading={removingId === deleteId}
+      />
     </Layout>
   );
 };
