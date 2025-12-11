@@ -518,7 +518,7 @@ export const Products = () => {
                       value={formData.member_area_checkout_id}
                       onChange={(e) => setFormData({ ...formData, member_area_checkout_id: e.target.value })}
                     >
-                      <option value="" className="bg-gray-900 text-white">-- Selecione um Checkout --</option>
+                      <option value="" className="bg-gray-900 text-gray-400">🔓 Nenhum checkout vinculado</option>
                       {checkouts.map(checkout => (
                         <option key={checkout.id} value={checkout.id} className="bg-gray-900 text-white">
                           {checkout.name} ({checkout.custom_url_slug})
@@ -526,7 +526,9 @@ export const Products = () => {
                       ))}
                     </select>
                     <p className="text-xs text-gray-500 mt-2">
-                      O usuário será redirecionado para este checkout específico.
+                      {formData.member_area_checkout_id
+                        ? '✅ O usuário será redirecionado para este checkout específico.'
+                        : '⚠️ Nenhum checkout vinculado. Selecione um para ativar o redirecionamento.'}
                     </p>
                   </div>
                 )}

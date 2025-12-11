@@ -154,7 +154,7 @@ class StorageService {
       visible_in_member_area: product.visible_in_member_area,
       for_sale: product.for_sale,
       member_area_action: product.member_area_action,
-      member_area_checkout_id: product.member_area_checkout_id
+      member_area_checkout_id: product.member_area_checkout_id || null // Convert empty string to null
     };
 
     const { data, error } = await supabase
@@ -190,7 +190,7 @@ class StorageService {
       visible_in_member_area: product.visible_in_member_area,
       for_sale: product.for_sale,
       member_area_action: product.member_area_action,
-      member_area_checkout_id: product.member_area_checkout_id
+      member_area_checkout_id: product.member_area_checkout_id || null // Convert empty string to null
     };
 
     const { data, error } = await supabase
