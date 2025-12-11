@@ -37,6 +37,8 @@ export const Domains = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dnsLoading, setDnsLoading] = useState(false);
+  const [checkingUsageId, setCheckingUsageId] = useState<string | null>(null);
+  const [usageWarning, setUsageWarning] = useState<{ checkouts: any[], memberAreas: any[] } | null>(null);
   const [alertModal, setAlertModal] = useState<{ isOpen: boolean; title: string; message: string; variant: 'success' | 'error' | 'info' }>({ isOpen: false, title: '', message: '', variant: 'info' });
 
   // Form State
@@ -214,9 +216,22 @@ export const Domains = () => {
     setDnsLoading(false);
   };
 
-  const handleDeleteClick = (id: string, domainName: string) => {
-    setDeleteId(id);
-    setDeleteDomainName(domainName);
+  const handleDeleteClick = async (id: string, domainName: string) => {
+    setCheckingUsageId(id);
+    try {
+      const usage = await storage.getDomainUsage(id);
+      if (usage.checkouts.length > 0 || usage.memberAreas.length > 0) {
+        setUsageWarning(usage);
+      } else {
+        setDeleteId(id);
+        setDeleteDomainName(domainName);
+      }
+    } catch (error) {
+      console.error('Error checking domain usage:', error);
+      setAlertModal({ isOpen: true, title: 'Erro', message: 'Erro ao verificar uso do domínio', variant: 'error' });
+    } finally {
+      setCheckingUsageId(null);
+    }
   };
 
   const handleConfirmDelete = async () => {
@@ -366,10 +381,10 @@ export const Domains = () => {
 
                   <button
                     onClick={() => handleDeleteClick(domain.id, domain.domain)}
-                    disabled={removingId === domain.id}
+                    disabled={removingId === domain.id || checkingUsageId === domain.id}
                     className="p-2 hover:bg-red-500/10 rounded-lg text-gray-400 hover:text-red-500 transition-colors"
                   >
-                    {removingId === domain.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                    {(removingId === domain.id || checkingUsageId === domain.id) ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
@@ -608,6 +623,60 @@ export const Domains = () => {
         variant="danger"
         loading={removingId === deleteId}
       />
+
+      {/* USAGE WARNING MODAL */}
+      <Modal
+        isOpen={!!usageWarning}
+        onClose={() => setUsageWarning(null)}
+        title="Domínio em Uso"
+        className="max-w-md"
+      >
+        <div className="space-y-4">
+          <div className="bg-yellow-500/10 border border-yellow-500/20 p-4 rounded-xl flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-yellow-500 shrink-0 mt-0.5" />
+            <div>
+              <h3 className="text-yellow-500 font-bold text-sm mb-1">Não é possível excluir</h3>
+              <p className="text-yellow-200/80 text-xs">
+                Este domínio está vinculado aos seguintes itens. Remova os vínculos antes de excluir.
+              </p>
+            </div>
+          </div>
+
+          <div className="bg-black/30 border border-white/10 rounded-xl overflow-hidden">
+            {usageWarning?.checkouts.length > 0 && (
+              <div className="p-3 border-b border-white/5 last:border-0">
+                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Checkouts</h4>
+                <ul className="space-y-1">
+                  {usageWarning.checkouts.map((Checkout: any) => (
+                    <li key={Checkout.id} className="text-sm text-white flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                      {Checkout.name}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {usageWarning?.memberAreas.length > 0 && (
+              <div className="p-3 border-b border-white/5 last:border-0">
+                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Áreas de Membros</h4>
+                <ul className="space-y-1">
+                  {usageWarning.memberAreas.map((area: any) => (
+                    <li key={area.id} className="text-sm text-white flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-purple-500"></div>
+                      {area.name}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-end pt-2">
+            <Button onClick={() => setUsageWarning(null)}>Entendi</Button>
+          </div>
+        </div>
+      </Modal>
 
       {/* ALERT MODAL */}
       <AlertModal

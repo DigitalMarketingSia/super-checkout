@@ -791,6 +791,34 @@ class StorageService {
     return data as Domain;
   }
 
+  async getDomainUsage(domainId: string) {
+    const user = await this.getUser();
+    if (!user) throw new Error('No user logged in');
+
+    // 1. Check Use in Checkouts
+    const { data: checkouts, error: checkoutError } = await supabase
+      .from('checkouts')
+      .select('id, name')
+      .eq('domain_id', domainId)
+      .eq('user_id', user.id);
+
+    if (checkoutError) throw checkoutError;
+
+    // 2. Check Use in Member Areas
+    const { data: memberAreas, error: memberAreaError } = await supabase
+      .from('member_areas')
+      .select('id, name')
+      .eq('domain_id', domainId)
+      .eq('user_id', user.id); // Assuming member_areas also has user_id or RLS handles it
+
+    if (memberAreaError) throw memberAreaError;
+
+    return {
+      checkouts: checkouts || [],
+      memberAreas: memberAreas || []
+    };
+  }
+
   async createDomain(domain: Omit<Domain, 'id'>) {
     const user = await this.getUser();
     if (!user) throw new Error('No user logged in');
