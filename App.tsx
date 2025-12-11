@@ -219,8 +219,8 @@ const DomainDispatcher = () => {
           <Route path="profile" element={<MemberProfile />} />
         </Route>
         <Route path="/course/:id" element={<CoursePlayer />} />
-        <Route path="/login" element={<MemberLogin forcedSlug={customMemberAreaSlug} />} />
-        <Route path="/signup" element={<MemberSignup forcedSlug={customMemberAreaSlug} />} />
+        <Route path={`/app/${customMemberAreaSlug}/login`} element={<MemberLogin forcedSlug={customMemberAreaSlug} />} />
+        <Route path={`/app/${customMemberAreaSlug}/signup`} element={<MemberSignup forcedSlug={customMemberAreaSlug} />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     );
