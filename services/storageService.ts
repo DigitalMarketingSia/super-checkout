@@ -859,7 +859,7 @@ class StorageService {
       type: domain.type,
       checkout_id: domain.checkout_id,
       slug: domain.slug,
-      usage: domain.usage || 'general'
+      usage: domain.usage || 'system' // Default to system if not specified
     };
 
     const { data, error } = await supabase
