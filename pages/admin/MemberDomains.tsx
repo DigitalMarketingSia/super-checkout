@@ -36,6 +36,10 @@ export const MemberDomains: React.FC<MemberDomainsProps> = ({ area, onSave }) =>
         setSaving(true);
         try {
             await onSave({ ...area, domain_id: selectedDomainId || undefined });
+            alert('✅ Domínio vinculado com sucesso! A área de membros agora está acessível pelo domínio personalizado.');
+        } catch (error: any) {
+            console.error('Error saving domain:', error);
+            alert(`❌ Erro ao vincular domínio: ${error.message || 'Erro desconhecido'}`);
         } finally {
             setSaving(false);
         }
