@@ -1,24 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { MemberArea, Domain, DomainUsage } from '../../types';
 import { storage } from '../../services/storageService';
-import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { Globe, Check, AlertCircle } from 'lucide-react';
 
 interface MemberDomainsProps {
     area: MemberArea;
     onSave: (area: MemberArea) => Promise<void>;
+    onDomainChange: (domainId: string) => void; // New prop to update parent state
 }
 
-export const MemberDomains: React.FC<MemberDomainsProps> = ({ area, onSave }) => {
+export const MemberDomains: React.FC<MemberDomainsProps> = ({ area, onDomainChange }) => {
     const [domains, setDomains] = useState<Domain[]>([]);
     const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
     const [selectedDomainId, setSelectedDomainId] = useState<string>(area.domain_id || '');
 
     useEffect(() => {
         loadDomains();
     }, []);
+
+    useEffect(() => {
+        setSelectedDomainId(area.domain_id || '');
+    }, [area.domain_id]);
 
     const loadDomains = async () => {
         setLoading(true);
@@ -32,23 +35,15 @@ export const MemberDomains: React.FC<MemberDomainsProps> = ({ area, onSave }) =>
         }
     };
 
-    const handleSave = async () => {
-        setSaving(true);
-        try {
-            await onSave({ ...area, domain_id: selectedDomainId || undefined });
-            alert('✅ Domínio vinculado com sucesso! A área de membros agora está acessível pelo domínio personalizado.');
-        } catch (error: any) {
-            console.error('Error saving domain:', error);
-            alert(`❌ Erro ao vincular domínio: ${error.message || 'Erro desconhecido'}`);
-        } finally {
-            setSaving(false);
-        }
+    const handleDomainChange = (domainId: string) => {
+        setSelectedDomainId(domainId);
+        onDomainChange(domainId); // Update parent state immediately
     };
 
     if (loading) return <div className="p-8 text-center text-gray-500">Carregando domínios...</div>;
 
     return (
-        <div className="max-w-2xl mx-auto space-y-6">
+        <div className="max-w-2xl mx-auto">
             <Card className="p-6 bg-[#1a1a1a] border-white/10">
                 <div className="flex items-start gap-4">
                     <div className="p-3 bg-blue-500/10 rounded-lg">
@@ -68,7 +63,7 @@ export const MemberDomains: React.FC<MemberDomainsProps> = ({ area, onSave }) =>
                                 </label>
                                 <select
                                     value={selectedDomainId}
-                                    onChange={(e) => setSelectedDomainId(e.target.value)}
+                                    onChange={(e) => handleDomainChange(e.target.value)}
                                     className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
                                 >
                                     <option value="">Usar domínio do sistema</option>
@@ -78,6 +73,9 @@ export const MemberDomains: React.FC<MemberDomainsProps> = ({ area, onSave }) =>
                                         </option>
                                     ))}
                                 </select>
+                                <p className="text-xs text-gray-500 mt-2">
+                                    💡 Após selecionar, clique em "Salvar Alterações" no topo da página
+                                </p>
                             </div>
 
                             {selectedDomainId && (
@@ -95,16 +93,6 @@ export const MemberDomains: React.FC<MemberDomainsProps> = ({ area, onSave }) =>
                             )}
                         </div>
                     </div>
-                </div>
-
-                <div className="mt-8 flex justify-end">
-                    <Button
-                        onClick={handleSave}
-                        disabled={saving || (selectedDomainId === (area.domain_id || ''))}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-8"
-                    >
-                        {saving ? 'Salvando...' : 'Salvar Alterações'}
-                    </Button>
                 </div>
             </Card>
         </div>

@@ -165,7 +165,11 @@ export const MemberAreaDashboard = () => {
                                     <Globe className="w-5 h-5 text-primary" />
                                     Domínio Personalizado
                                 </h2>
-                                <MemberDomains area={area} onSave={handleSave} />
+                                <MemberDomains
+                                    area={area}
+                                    onSave={handleSave}
+                                    onDomainChange={(domainId) => setArea({ ...area, domain_id: domainId || undefined })}
+                                />
                             </div>
                         )}
                     </div>
