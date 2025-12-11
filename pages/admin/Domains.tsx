@@ -154,7 +154,6 @@ export const Domains = () => {
       }
 
       // Only update state if status actually changed
-      const currentDomain = domains.find(d => d.id === id);
       if (currentDomain && currentDomain.status !== newStatus) {
         const updatedDomains = domains.map(d =>
           d.id === id ? { ...d, status: newStatus } : d
