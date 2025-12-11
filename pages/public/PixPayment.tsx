@@ -6,7 +6,7 @@ import { Copy, Check, Clock, ShieldCheck, Smartphone, QrCode, AlertCircle, Loade
 import { storage } from '../../services/storageService';
 import { supabase } from '../../services/supabase';
 import { Order, OrderStatus } from '../../types';
-import { Button } from '../../components/ui/Button';
+
 import { AlertModal } from '../../components/ui/Modal';
 import { getApiUrl } from '../../utils/apiUtils';
 
@@ -150,17 +150,7 @@ export const PixPayment = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleSimulatePayment = async () => {
-    if (!orderId) return;
-    try {
-      const { error } = await supabase.rpc('simulate_payment', { order_id_input: orderId });
-      if (error) throw error;
-      // Polling will catch the update
-    } catch (error) {
-      console.error('Erro ao simular pagamento:', error);
-      showAlert('Erro', 'Erro ao simular pagamento', 'error');
-    }
-  };
+
 
   if (loading) {
     return (
@@ -273,43 +263,7 @@ export const PixPayment = () => {
               </div>
             </div>
 
-            {/* Botão de Simulação para Testes */}
-            <div className="space-y-3">
-              <div className="bg-indigo-50 rounded-xl border border-indigo-100 p-4">
-                <div className="text-center">
-                  <p className="text-xs text-indigo-600 font-medium mb-3">Ambiente de Teste</p>
-                  <Button
-                    onClick={handleSimulatePayment}
-                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
-                  >
-                    Simular Pagamento Aprovado
-                  </Button>
-                </div>
-              </div>
 
-              <Button
-                variant="outline"
-                onClick={async () => {
-                  setLoading(true);
-                  // Force check
-                  const { data, error } = await supabase
-                    .from('orders')
-                    .select('status')
-                    .eq('id', orderId)
-                    .single();
-
-                  if (data && data.status === OrderStatus.PAID) {
-                    navigate(`/thank-you/${orderId}`);
-                  } else {
-                    showAlert('Ainda não identificado', 'O pagamento ainda não foi confirmado. Aguarde alguns instantes.', 'info');
-                  }
-                  setLoading(false);
-                }}
-                className="w-full border-gray-200 text-gray-700 hover:bg-gray-50"
-              >
-                Já fiz o pagamento
-              </Button>
-            </div>
 
           </div>
 
