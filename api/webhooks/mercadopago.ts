@@ -207,7 +207,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 console.log(`[Webhook] Current status: ${paymentRecord.status}, New status: ${orderStatus}`);
 
                 // IDEMPOTENCY: Check if status actually changed
-                const statusChanged = paymentRecord.status !== orderStatus;
+                // We consider it changed if payment OR order status is different from new status
+                const isPaymentsynced = paymentRecord.status === orderStatus;
+                const isOrderSynced = order && order.status === orderStatus;
+                const statusChanged = !isPaymentsynced || !isOrderSynced;
+
+                console.log(`[Webhook] Sync Check - Payment: ${paymentRecord.status}, Order: ${order?.status}, New: ${orderStatus}`);
+                console.log(`[Webhook] Update required: ${statusChanged}`);
 
                 // Update Payment
                 await fetch(`${supabaseUrl}/rest/v1/payments?id=eq.${paymentRecord.id}`, {
@@ -238,16 +244,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
                 await logToSupabase('webhook.success', {
                     paymentId,
-                    oldStatus: paymentRecord.status,
+                    oldPaymentStatus: paymentRecord.status,
+                    oldOrderStatus: order?.status,
                     newStatus: orderStatus,
                     statusChanged
                 }, true, paymentRecord.gateway_id);
 
                 console.log(`[Webhook] Updated Order ${paymentRecord.order_id} to ${orderStatus}`);
 
-                // Store whether we should send email (only if status changed to paid)
+                // Store whether we should send email (only if status changed to paid AND wasn't fully processed before)
                 if (order) {
-                    order._shouldSendEmail = statusChanged && orderStatus === 'paid' && paymentRecord.status !== 'paid';
+                    // Send email/grant access if:
+                    // 1. New status IS 'paid'
+                    // 2. AND (Payment wasn't paid OR Order wasn't paid)
+                    // This creates a retry mechanism: if order failed to update to 'paid' previously, we try again.
+                    // Also checks if user was linked - if not, we need to process fulfillment.
+                    const isUserLinked = !!order.customer_user_id;
+                    order._shouldSendEmail = orderStatus === 'paid' && (!isPaymentsynced || !isOrderSynced || !isUserLinked);
                 }
             } catch (updateError: any) {
                 console.error('[Webhook] Error updating records:', updateError);
