@@ -204,6 +204,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (paymentRecord && supabaseKey) {
             try {
                 console.log(`[Webhook] Updating Payment ${paymentRecord.id} and Order ${paymentRecord.order_id}`);
+                console.log(`[Webhook] Current status: ${paymentRecord.status}, New status: ${orderStatus}`);
+
+                // IDEMPOTENCY: Check if status actually changed
+                const statusChanged = paymentRecord.status !== orderStatus;
 
                 // Update Payment
                 await fetch(`${supabaseUrl}/rest/v1/payments?id=eq.${paymentRecord.id}`, {
@@ -235,10 +239,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 await logToSupabase('webhook.success', {
                     paymentId,
                     oldStatus: paymentRecord.status,
-                    newStatus: orderStatus
+                    newStatus: orderStatus,
+                    statusChanged
                 }, true, paymentRecord.gateway_id);
 
                 console.log(`[Webhook] Updated Order ${paymentRecord.order_id} to ${orderStatus}`);
+
+                // Store whether we should send email (only if status changed to paid)
+                if (order) {
+                    order._shouldSendEmail = statusChanged && orderStatus === 'paid' && paymentRecord.status !== 'paid';
+                }
             } catch (updateError: any) {
                 console.error('[Webhook] Error updating records:', updateError);
                 await logToSupabase('webhook.error_updating_records', { error: updateError.message }, false);
@@ -254,8 +264,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
         // 6. Send Email if Payment is Approved
-
-        if (orderStatus === 'paid' && paymentRecord && order && supabaseKey) {
+        // IDEMPOTENCY: Only send if status actually changed to paid
+        if (orderStatus === 'paid' && paymentRecord && order && supabaseKey && order._shouldSendEmail) {
             try {
                 console.log(`[Webhook] Attempting to send approval email for Order ${paymentRecord.order_id}`);
 
@@ -349,8 +359,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
 
         // 7. Ensure User Exists & Grant Access
+        // IDEMPOTENCY: Only process if status actually changed to paid
         // If order doesn't have a user_id, we try to find or create one now.
-        if (order && !order.customer_user_id && order.customer_email) {
+        if (order && !order.customer_user_id && order.customer_email && order._shouldSendEmail) {
             try {
                 console.log(`[Webhook] Order ${order.id} has no user_id. Checking if user exists for ${order.customer_email}`);
 
@@ -470,7 +481,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
         // 8. Grant Access (using updated order.customer_user_id)
-        if (order && order.customer_user_id) {
+        // IDEMPOTENCY: Only grant access if status actually changed to paid
+        if (order && order.customer_user_id && order._shouldSendEmail) {
             try {
                 console.log(`[Webhook] Granting access for Order ${order.id} to User ${order.customer_user_id}`);
 

@@ -132,10 +132,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // Note: order.status might be 'PENDING' (uppercase) in some legacy, so normalize
         const currentStatusNorm = order.status.toLowerCase();
 
-        if (newStatus !== currentStatusNorm && newStatus !== 'pending') {
-            // Status changed to something final (paid, failed, refunded)
-            // OR status changed from failed back to pending (unlikely)
-
+        // FIX: Changed logic - update if status changed AND it's not staying as pending
+        // This allows pending -> paid transitions
+        if (newStatus !== currentStatusNorm) {
             console.log(`[CheckStatus] Updating Order ${orderId}: ${currentStatusNorm} -> ${newStatus}`);
 
             // Update Order
@@ -165,29 +164,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 })
             });
 
-            // If Paid, trigger email and access grant (call webhook handler logic manually or rely on webhook?)
-            // Ideally we should call the same logic as the webhook.
-            // For now, to keep it simple and safe, we just update the status. 
-            // The webhook usually fires anyway. 
-            // BUT if the webhook failed, this ensures the UI unblocks.
-            // We will rely on the UI redirection to "Thank You" page.
-            // Does the Thank You page/logic handle access granting? 
-            // Usually access grant happens on webhook. 
-            // If we update status here, we might miss access grant if we don't trigger it.
-
-            // CRITICAL: We need to ensure access is granted.
-            // We can replicate the grant logic here or trigger the webhook endpoint ourselves?
-            // Let's replicate the basic grant logic if it's PAID.
-
-
             // Trigger Webhook Logic for Side Effects (Email, Access Grant)
-            // If the webhook failed or wasn't delivered, this ensures the system processes the sale
-            if (newStatus === 'paid') {
+            // ONLY if status changed from pending to paid to avoid duplicates
+            // The webhook from Mercado Pago will also fire, but we add idempotency here
+            if (newStatus === 'paid' && currentStatusNorm === 'pending') {
                 const protocol = req.headers['x-forwarded-proto'] || 'https';
                 const host = req.headers.host;
                 const webhookUrl = `${protocol}://${host}/api/webhooks/mercadopago`;
 
-                console.log(`[CheckStatus] Triggering webhook manually at ${webhookUrl}`);
+                console.log(`[CheckStatus] Status changed to paid, triggering webhook once at ${webhookUrl}`);
 
                 // Fire and await to ensure it runs
                 try {
