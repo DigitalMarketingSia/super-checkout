@@ -210,6 +210,11 @@ const DomainDispatcher = () => {
     // We pass the 'forcedSlug' prop to the wrapper (requires update in MemberAreaWrapper)
     return (
       <Routes>
+        {/* Login and Signup at root level for custom domain */}
+        <Route path="/login" element={<MemberLogin forcedSlug={customMemberAreaSlug} />} />
+        <Route path="/signup" element={<MemberSignup forcedSlug={customMemberAreaSlug} />} />
+
+        {/* Member Area Routes */}
         <Route path="/" element={<MemberAreaWrapper forcedSlug={customMemberAreaSlug} />}>
           <Route index element={<MemberDashboard />} />
           <Route path="products" element={<MemberProducts />} />
@@ -219,8 +224,6 @@ const DomainDispatcher = () => {
           <Route path="profile" element={<MemberProfile />} />
         </Route>
         <Route path="/course/:id" element={<CoursePlayer />} />
-        <Route path={`/app/${customMemberAreaSlug}/login`} element={<MemberLogin forcedSlug={customMemberAreaSlug} />} />
-        <Route path={`/app/${customMemberAreaSlug}/signup`} element={<MemberSignup forcedSlug={customMemberAreaSlug} />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     );
