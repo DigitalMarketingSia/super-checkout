@@ -272,6 +272,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 if (order && order.customer_email) {
                     const productName = order.items?.[0]?.name || 'seu produto';
 
+                    // Get member area URL from environment or construct from host
+                    const memberAreaUrl = process.env.VITE_APP_URL || process.env.PUBLIC_URL || 'https://seu-dominio.vercel.app';
+                    const loginUrl = `${memberAreaUrl}/login`;
+
+                    // Default password for new users
+                    const defaultPassword = '123456';
+
                     const html = `
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -287,29 +294,47 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             <tr>
                 <td style="padding: 20px; font-family: Arial, sans-serif; background-color: #ffffff; text-align: center;">
                     <p style="font-size: 24px; font-weight: bold; color: #1a1a1a; margin-top: 0; margin-bottom: 20px;">
-                        Olá, ${order.customer_name}!
+                        🎉 Olá, ${order.customer_name}!
                     </p>
                     <p style="font-size: 16px; line-height: 1.5; color: #555555; margin-bottom: 30px;">
-                        Seu pagamento para o produto <strong>${productName}</strong> foi aprovado com sucesso!
-                        <br>Você já pode acessar seu produto e começar agora mesmo.
+                        Seu pagamento para <strong>${productName}</strong> foi aprovado com sucesso!
+                        <br><br>Você já pode acessar a área de membros e começar agora mesmo.
                     </p>
-                    <div style="margin: 0 auto 40px auto; display: block;">
+                    
+                    <!-- Credentials Box -->
+                    <div style="background-color: #f8f9fa; border: 2px solid #007bff; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: left;">
+                        <p style="font-size: 14px; font-weight: bold; color: #007bff; margin: 0 0 15px 0; text-align: center;">🔐 SEUS DADOS DE ACESSO</p>
+                        <p style="font-size: 14px; color: #333; margin: 8px 0;">
+                            <strong>Email:</strong> ${order.customer_email}
+                        </p>
+                        <p style="font-size: 14px; color: #333; margin: 8px 0;">
+                            <strong>Senha:</strong> ${defaultPassword}
+                        </p>
+                        <p style="font-size: 12px; color: #666; margin: 15px 0 0 0; font-style: italic;">
+                            💡 Recomendamos alterar sua senha após o primeiro acesso.
+                        </p>
+                    </div>
+                    
+                    <div style="margin: 30px auto; display: block;">
                         <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" style="margin: auto;">
                             <tr>
                                 <td style="border-radius: 6px; background: #007bff; text-align: center;">
-                                    <a href="#" target="_blank" 
-                                       style="background: #007bff; border: 1px solid #007bff; padding: 12px 25px; color: #ffffff; display: inline-block; 
-                                              font-family: Arial, sans-serif; font-size: 17px; font-weight: bold; text-decoration: none; border-radius: 6px;">
-                                        ACESSAR ÁREA DE MEMBROS
+                                    <a href="${loginUrl}" target="_blank" 
+                                       style="background: #007bff; border: 1px solid #007bff; padding: 14px 30px; color: #ffffff; display: inline-block; 
+                                              font-family: Arial, sans-serif; font-size: 16px; font-weight: bold; text-decoration: none; border-radius: 6px;">
+                                        🚀 ACESSAR ÁREA DE MEMBROS
                                     </a>
                                 </td>
                             </tr>
                         </table>
                     </div>
-                    <p style="font-size: 14px; line-height: 1.5; color: #555555; margin-top: 0; margin-bottom: 20px;">
-                        Conte com nosso time de suporte se precisar de qualquer ajuda.<br>
+                    
+                    <p style="font-size: 13px; line-height: 1.5; color: #777; margin-top: 30px; margin-bottom: 10px;">
+                        Precisa de ajuda? Nossa equipe de suporte está à disposição!
+                    </p>
+                    <p style="font-size: 12px; color: #999; margin: 5px 0;">
                         Atenciosamente,<br>
-                        <strong>Super Checkout</strong>
+                        <strong>Equipe Super Checkout</strong>
                     </p>
                 </td>
             </tr>
@@ -318,7 +343,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             <tr>
                 <td style="padding: 20px; font-family: Arial, sans-serif; font-size: 11px; color: #AAAAAA; text-align: center; border-top: 1px solid #eeeeee; margin-top: 30px;">
                     Este é um e-mail automático transacional e não deve ser respondido.<br>
-                    Seu ${productName} é um lançamento da Super Checkout.
+                    ${productName} - Powered by Super Checkout
                 </td>
             </tr>
         </table>
@@ -379,8 +404,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 let isNewUser = false;
                 let password = null;
 
-                // Attempt to create user
-                const tempPassword = Math.random().toString(36).slice(-12) + "A1!"; // Simple logic
+                // Use default password for all new users
+                const tempPassword = '123456'; // Simple default password
 
                 const createUserRes = await fetch(`${supabaseUrl}/auth/v1/admin/users`, {
                     method: 'POST',
@@ -450,28 +475,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     // Update local order object for next steps
                     order.customer_user_id = userId;
 
-                    // If New User, Send Welcome Email (Password)
-                    if (isNewUser && password) {
-                        const welcomeHtml = `
-                            <h1>Bem-vindo à Área de Membros!</h1>
-                            <p>Sua conta foi criada com sucesso.</p>
-                            <p><strong>Email:</strong> ${order.customer_email}</p>
-                            <p><strong>Senha Temporária:</strong> ${password}</p>
-                            <p>Por favor, altere sua senha após o primeiro login.</p>
-                            <a href="https://your-platform-url.com/login">Acessar Plataforma</a>
-                         `;
-
-                        // Send Welcome Email
-                        await fetch(`${supabaseUrl}/functions/v1/send-email`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${supabaseKey}` },
-                            body: JSON.stringify({
-                                to: order.customer_email,
-                                subject: 'Seus dados de acesso',
-                                html: welcomeHtml
-                            })
-                        });
-                    }
+                    // Note: Welcome email with password is now included in the approval email above
+                    // No need to send a separate welcome email
                 }
 
             } catch (err: any) {
