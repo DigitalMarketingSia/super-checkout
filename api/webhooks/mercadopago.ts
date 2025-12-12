@@ -272,8 +272,75 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 if (order && order.customer_email) {
                     const productName = order.items?.[0]?.name || 'seu produto';
 
-                    // Get member area URL from environment or construct from host
-                    const memberAreaUrl = process.env.VITE_APP_URL || process.env.PUBLIC_URL || 'https://seu-dominio.vercel.app';
+                    // Get member area domain from database
+                    // Chain: order -> checkout -> product -> content -> member_area -> domain
+                    let memberAreaUrl = process.env.VITE_APP_URL || process.env.PUBLIC_URL || 'https://seu-dominio.vercel.app';
+
+                    try {
+                        // 1. Get checkout to find product_id
+                        const checkoutRes = await fetch(`${supabaseUrl}/rest/v1/checkouts?id=eq.${order.checkout_id}&select=product_id`, {
+                            headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
+                        });
+
+                        if (checkoutRes.ok) {
+                            const checkouts = await checkoutRes.json();
+                            if (checkouts && checkouts.length > 0) {
+                                const productId = checkouts[0].product_id;
+
+                                // 2. Get content linked to this product
+                                const pcRes = await fetch(`${supabaseUrl}/rest/v1/product_contents?product_id=eq.${productId}&select=content_id`, {
+                                    headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
+                                });
+
+                                if (pcRes.ok) {
+                                    const productContents = await pcRes.json();
+                                    if (productContents && productContents.length > 0) {
+                                        const contentId = productContents[0].content_id;
+
+                                        // 3. Get member_area_id from content
+                                        const contentRes = await fetch(`${supabaseUrl}/rest/v1/contents?id=eq.${contentId}&select=member_area_id`, {
+                                            headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
+                                        });
+
+                                        if (contentRes.ok) {
+                                            const contents = await contentRes.json();
+                                            if (contents && contents.length > 0) {
+                                                const memberAreaId = contents[0].member_area_id;
+
+                                                // 4. Get domain_id from member_area
+                                                const maRes = await fetch(`${supabaseUrl}/rest/v1/member_areas?id=eq.${memberAreaId}&select=domain_id`, {
+                                                    headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
+                                                });
+
+                                                if (maRes.ok) {
+                                                    const memberAreas = await maRes.json();
+                                                    if (memberAreas && memberAreas.length > 0 && memberAreas[0].domain_id) {
+                                                        const domainId = memberAreas[0].domain_id;
+
+                                                        // 5. Get actual domain
+                                                        const domainRes = await fetch(`${supabaseUrl}/rest/v1/domains?id=eq.${domainId}&select=domain`, {
+                                                            headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
+                                                        });
+
+                                                        if (domainRes.ok) {
+                                                            const domains = await domainRes.json();
+                                                            if (domains && domains.length > 0) {
+                                                                memberAreaUrl = `https://${domains[0].domain}`;
+                                                                console.log(`[Webhook] Using custom member area domain: ${memberAreaUrl}`);
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } catch (domainError: any) {
+                        console.warn('[Webhook] Could not fetch member area domain, using fallback:', domainError.message);
+                    }
+
                     const loginUrl = `${memberAreaUrl}/login`;
 
                     // Default password for new users
