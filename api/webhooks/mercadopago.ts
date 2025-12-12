@@ -185,6 +185,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         else if (status === 'in_process' || status === 'pending') orderStatus = 'pending';
         else if (status === 'refunded' || status === 'charged_back') orderStatus = 'refunded';
 
+        // Fetch order details early so we can use it throughout
+        let order: any = null;
+        if (paymentRecord && supabaseKey) {
+            try {
+                const orderRes = await fetch(`${supabaseUrl}/rest/v1/orders?id=eq.${paymentRecord.order_id}&select=*`, {
+                    headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
+                });
+                if (orderRes.ok) {
+                    const orders = await orderRes.json();
+                    order = orders[0];
+                }
+            } catch (fetchError: any) {
+                console.error('[Webhook] Error fetching order:', fetchError);
+            }
+        }
+
         if (paymentRecord && supabaseKey) {
             try {
                 console.log(`[Webhook] Updating Payment ${paymentRecord.id} and Order ${paymentRecord.order_id}`);
@@ -239,23 +255,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         // 6. Send Email if Payment is Approved
 
-        if (orderStatus === 'paid' && paymentRecord && supabaseKey) {
+        if (orderStatus === 'paid' && paymentRecord && order && supabaseKey) {
             try {
                 console.log(`[Webhook] Attempting to send approval email for Order ${paymentRecord.order_id}`);
 
-                // Fetch full order details
-                const orderRes = await fetch(`${supabaseUrl}/rest/v1/orders?id=eq.${paymentRecord.order_id}&select=*`, {
-                    headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
-                });
+                if (order && order.customer_email) {
+                    const productName = order.items?.[0]?.name || 'seu produto';
 
-                if (orderRes.ok) {
-                    const orders = await orderRes.json();
-                    const order = orders[0];
-
-                    if (order && order.customer_email) {
-                        const productName = order.items?.[0]?.name || 'seu produto';
-
-                        const html = `
+                    const html = `
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -311,28 +318,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 </html>
                         `;
 
-                        // Call Edge Function to send email
-                        const emailRes = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${supabaseKey}`
-                            },
-                            body: JSON.stringify({
-                                to: order.customer_email,
-                                subject: `Pagamento Aprovado - Acesso Liberado!`,
-                                html
-                            })
-                        });
+                    // Call Edge Function to send email
+                    const emailRes = await fetch(`${supabaseUrl}/functions/v1/send-email`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${supabaseKey}`
+                        },
+                        body: JSON.stringify({
+                            to: order.customer_email,
+                            subject: `Pagamento Aprovado - Acesso Liberado!`,
+                            html
+                        })
+                    });
 
-                        if (emailRes.ok) {
-                            console.log(`[Webhook] Email sent successfully to ${order.customer_email}`);
-                            await logToSupabase('webhook.email_sent', { orderId: order.id, email: order.customer_email }, true, paymentRecord.gateway_id);
-                        } else {
-                            const errText = await emailRes.text();
-                            console.error(`[Webhook] Failed to send email: ${errText}`);
-                            await logToSupabase('webhook.error_sending_email', { error: errText }, false);
-                        }
+                    if (emailRes.ok) {
+                        console.log(`[Webhook] Email sent successfully to ${order.customer_email}`);
+                        await logToSupabase('webhook.email_sent', { orderId: order.id, email: order.customer_email }, true, paymentRecord.gateway_id);
+                    } else {
+                        const errText = await emailRes.text();
+                        console.error(`[Webhook] Failed to send email: ${errText}`);
+                        await logToSupabase('webhook.error_sending_email', { error: errText }, false);
                     }
                 }
             } catch (emailError: any) {
@@ -340,6 +346,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 await logToSupabase('webhook.error_email_flow', { error: emailError.message }, false);
             }
         }
+
 
         // 7. Ensure User Exists & Grant Access
         // If order doesn't have a user_id, we try to find or create one now.
@@ -534,16 +541,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             console.warn('[Webhook] No customer_user_id in order, skipping access grant');
             await logToSupabase('webhook.warning_no_user_id', { orderId: paymentRecord.order_id }, false);
         }
+
+        return res.status(200).json({ success: true });
+
+
+    } catch (error: any) {
+        console.error('[Webhook] Critical Error:', error);
+        // Try to log the critical error if possible
+        try {
+            await logToSupabase('webhook.critical_error', { error: error.message }, false);
+        } catch (e) { }
+
+        return res.status(500).json({ error: error.message });
     }
-return res.status(200).json({ success: true });
-
-} catch (error: any) {
-    console.error('[Webhook] Critical Error:', error);
-    // Try to log the critical error if possible
-    try {
-        await logToSupabase('webhook.critical_error', { error: error.message }, false);
-    } catch (e) { }
-
-    return res.status(500).json({ error: error.message });
-}
 }
