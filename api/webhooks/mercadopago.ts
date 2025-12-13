@@ -470,15 +470,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             try {
                 console.log(`[Webhook] Order ${order.id} has no user_id. Checking if user exists for ${order.customer_email}`);
 
-                // A. Check if user exists in Auth
-                const { data: { users }, error: userSearchError } = await fetch(`${supabaseUrl}/auth/v1/admin/users`, {
-                    headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
-                }).then(r => r.json()).catch(() => ({ data: { users: [] } }));
-                // Note: The above raw fetch is tricky for admin list users without proper client. 
-                // Better to use a direct rpc or just try to create and catch error, 
-                // OR use the 'listUsers' if we had the admin client initialized.
-                // Since we are using raw fetch for everything else, let's try 'createUser' directly. 
-                // If it fails with "Email already registered", we assume they exist.
+                // Simplified approach: Try to create user directly.
+                // If user already exists, we'll handle it in the error response.
 
                 let userId = null;
                 let isNewUser = false;
@@ -513,29 +506,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     await logToSupabase('webhook.user_created', { userId, email: order.customer_email }, true);
                 } else {
                     const errorText = await createUserRes.text();
-                    if (errorText.includes('already registered')) {
-                        console.log('[Webhook] User already exists, looking up ID...');
-                        // We need to get the ID. Since we can't easily search via raw REST auth admin without proper setup,
-                        // we will try to look at 'profiles' table if it exists (which we created!)
-                        // or use the 'rpc' to get user id by email if we had one.
+                    console.log(`[Webhook] User creation response: ${createUserRes.status} - ${errorText}`);
 
-                        // Fallback: Query 'profiles' public table for this email
+                    if (errorText.includes('already registered') || errorText.includes('User already registered')) {
+                        console.log('[Webhook] User already exists, looking up ID...');
+
+                        // Query 'profiles' table to get the user ID
                         const profileRes = await fetch(`${supabaseUrl}/rest/v1/profiles?email=eq.${order.customer_email}&select=id`, {
                             headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
                         });
-                        const profiles = await profileRes.json();
-                        if (profiles && profiles.length > 0) {
-                            userId = profiles[0].id;
-                            console.log(`[Webhook] Found existing user ID via profiles: ${userId}`);
+
+                        if (profileRes.ok) {
+                            const profiles = await profileRes.json();
+                            if (profiles && profiles.length > 0) {
+                                userId = profiles[0].id;
+                                console.log(`[Webhook] Found existing user ID via profiles: ${userId}`);
+                                await logToSupabase('webhook.user_found', { userId, email: order.customer_email }, true);
+                            } else {
+                                console.error('[Webhook] User exists in Auth but not found in Profiles table.');
+                                await logToSupabase('webhook.error_user_not_in_profiles', { email: order.customer_email }, false);
+                            }
                         } else {
-                            // Critical: User exists in Auth but not in Profiles? 
-                            // We should probably rely on the auth user search properly in a real backend.
-                            // For now, let's assume we can't find them if not in profiles.
-                            console.warn('[Webhook] User exists in Auth but not found in Profiles.');
+                            console.error('[Webhook] Failed to query profiles table:', await profileRes.text());
                         }
                     } else {
+                        // Other error - log it but don't crash the webhook
                         console.error('[Webhook] Failed to create user:', errorText);
-                        throw new Error(`Failed to create user: ${errorText}`);
+                        await logToSupabase('webhook.error_user_creation_failed', { error: errorText, email: order.customer_email }, false);
                     }
                 }
 
