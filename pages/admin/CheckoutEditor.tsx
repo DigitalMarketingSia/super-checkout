@@ -55,6 +55,10 @@ export const CheckoutEditor = () => {
    const [orderBumpIds, setOrderBumpIds] = useState<string[]>([]);
    const [upsellProductId, setUpsellProductId] = useState('');
 
+   // Thank You Page Customization
+   const [thankYouButtonUrl, setThankYouButtonUrl] = useState('');
+   const [thankYouButtonText, setThankYouButtonText] = useState('');
+
    const [config, setConfig] = useState<CheckoutConfig>(initialConfig);
    const [loading, setLoading] = useState(true);
 
@@ -99,6 +103,8 @@ export const CheckoutEditor = () => {
                setSlug(found.custom_url_slug);
                setOrderBumpIds(found.order_bump_ids || []);
                setUpsellProductId(found.upsell_product_id || '');
+               setThankYouButtonUrl((found as any).thank_you_button_url || '');
+               setThankYouButtonText((found as any).thank_you_button_text || '');
                setConfig(found.config || initialConfig);
             }
          }
@@ -128,6 +134,8 @@ export const CheckoutEditor = () => {
             custom_url_slug: slug || (isNew ? `chk-${Date.now()}` : id!),
             order_bump_ids: orderBumpIds,
             upsell_product_id: upsellProductId || undefined,
+            thank_you_button_url: thankYouButtonUrl || null,
+            thank_you_button_text: thankYouButtonText || null,
             config,
             offer_id: undefined // Legacy field, not used in current implementation
          };
@@ -672,6 +680,49 @@ export const CheckoutEditor = () => {
                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${active ? 'translate-x-6' : 'translate-x-1'
                               }`} />
                         </button>
+                     </Card>
+                  </section>
+
+                  {/* 10. Página de Agradecimento */}
+                  <section className="space-y-4">
+                     <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                        <span className="bg-primary/20 w-6 h-6 rounded flex items-center justify-center text-xs text-primary">10</span>
+                        Página de Agradecimento
+                     </h2>
+                     <Card>
+                        <div className="space-y-4">
+                           <p className="text-sm text-gray-400">Personalize o botão exibido na página de agradecimento após a compra.</p>
+
+                           {/* Button URL */}
+                           <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-1.5">URL do Botão (opcional)</label>
+                              <input
+                                 type="text"
+                                 className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-primary/50 outline-none"
+                                 placeholder="https://wa.me/5511999999999 ou /login"
+                                 value={thankYouButtonUrl}
+                                 onChange={e => setThankYouButtonUrl(e.target.value)}
+                              />
+                              <p className="text-xs text-gray-500 mt-1.5">
+                                 Deixe vazio para usar a área de membros (/login). Use links externos (WhatsApp, Telegram) ou rotas internas.
+                              </p>
+                           </div>
+
+                           {/* Button Text */}
+                           <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-1.5">Texto do Botão (opcional)</label>
+                              <input
+                                 type="text"
+                                 className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-primary/50 outline-none"
+                                 placeholder="Acessar"
+                                 value={thankYouButtonText}
+                                 onChange={e => setThankYouButtonText(e.target.value)}
+                              />
+                              <p className="text-xs text-gray-500 mt-1.5">
+                                 Texto exibido no botão. Padrão: "Acessar"
+                              </p>
+                           </div>
+                        </div>
                      </Card>
                   </section>
 

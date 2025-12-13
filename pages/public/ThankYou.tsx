@@ -9,6 +9,7 @@ export const ThankYou = () => {
   const { orderId } = useParams<{ orderId: string }>();
   const navigate = useNavigate();
   const [order, setOrder] = useState<Order | null>(null);
+  const [checkout, setCheckout] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -16,14 +17,28 @@ export const ThankYou = () => {
       if (!orderId) return;
 
       try {
-        const { data, error } = await supabase
+        // Fetch order
+        const { data: orderData, error: orderError } = await supabase
           .from('orders')
           .select('*')
           .eq('id', orderId)
           .single();
 
-        if (error) throw error;
-        setOrder(data);
+        if (orderError) throw orderError;
+        setOrder(orderData);
+
+        // Fetch checkout to get custom button settings
+        if (orderData?.checkout_id) {
+          const { data: checkoutData, error: checkoutError } = await supabase
+            .from('checkouts')
+            .select('thank_you_button_url, thank_you_button_text')
+            .eq('id', orderData.checkout_id)
+            .single();
+
+          if (!checkoutError && checkoutData) {
+            setCheckout(checkoutData);
+          }
+        }
       } catch (error) {
         console.error('Error fetching order:', error);
       } finally {
@@ -114,9 +129,21 @@ export const ThankYou = () => {
             </div>
           </div>
 
-          <div className="mt-10">
-            <Button onClick={() => navigate('/')} className="w-full sm:w-auto min-w-[200px]">
-              Voltar para a Loja
+          <div className="mt-10 flex justify-center">
+            <Button
+              onClick={() => {
+                const buttonUrl = checkout?.thank_you_button_url || '/login';
+                if (buttonUrl.startsWith('http')) {
+                  // External URL - open in new tab
+                  window.open(buttonUrl, '_blank');
+                } else {
+                  // Internal route - navigate
+                  navigate(buttonUrl);
+                }
+              }}
+              className="w-full sm:w-auto min-w-[200px]"
+            >
+              {checkout?.thank_you_button_text || 'Acessar'}
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           </div>
