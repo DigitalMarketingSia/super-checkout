@@ -1790,6 +1790,52 @@ class StorageService {
     return data as MemberArea;
   }
 
+  async getMemberAreaBySlug(slug: string): Promise<MemberArea | null> {
+    const { data, error } = await supabase
+      .from('member_areas')
+      .select('*')
+      .eq('slug', slug)
+      .single();
+
+    if (error) return null;
+    return data as MemberArea;
+  }
+
+  async getMemberAreaByDomain(domainIdentifier: string): Promise<MemberArea | null> {
+    // Check if identifier is a UUID (Domain ID)
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(domainIdentifier);
+
+    if (isUUID) {
+      const { data, error } = await supabase
+        .from('member_areas')
+        .select('*')
+        .eq('domain_id', domainIdentifier)
+        .single();
+
+      if (error) return null;
+      return data as MemberArea;
+    } else {
+      // It's a hostname -> Resolve Domain ID first
+      const { data: domainData, error: domainError } = await supabase
+        .from('domains')
+        .select('id')
+        .eq('domain', domainIdentifier)
+        .single();
+
+      if (domainError || !domainData) return null;
+
+      // Now get Member Area
+      const { data, error } = await supabase
+        .from('member_areas')
+        .select('*')
+        .eq('domain_id', domainData.id)
+        .single();
+
+      if (error) return null;
+      return data as MemberArea;
+    }
+  }
+
 
 
   async getMemberAreaMembers(areaId: string): Promise<Member[]> {
