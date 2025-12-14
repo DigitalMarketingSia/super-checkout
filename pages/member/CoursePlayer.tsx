@@ -455,10 +455,14 @@ export const CoursePlayer = () => {
                                                     <button
                                                         key={lesson.id}
                                                         onClick={() => handleLessonSelect(lesson)}
-                                                        className={`group w-full text-left p-2 flex items-center gap-3 rounded-xl transition-all border border-transparent ${isActive
-                                                            ? 'bg-[#1c212c] border-white/10 shadow-lg'
+                                                        className={`group w-full text-left p-2 flex items-center gap-3 rounded-xl transition-all border ${isActive
+                                                            ? 'shadow-lg'
                                                             : 'bg-[#131720] hover:bg-[#1a1e26] border-transparent'
                                                             }`}
+                                                        style={isActive ? {
+                                                            backgroundColor: `${primaryColor}20`, // 20% opacity
+                                                            borderColor: primaryColor,
+                                                        } : {}}
                                                     >
                                                         {/* Thumbnail */}
                                                         <div className="relative w-24 aspect-video flex-shrink-0 bg-gray-800 rounded-lg overflow-hidden shadow-sm">

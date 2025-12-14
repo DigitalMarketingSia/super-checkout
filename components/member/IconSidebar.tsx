@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, ShoppingBag, Package, User, Search, Menu, ChevronLeft } from 'lucide-react';
+import { Home, ShoppingBag, Package, User, Search, Menu, ChevronLeft, BookOpen } from 'lucide-react';
 
 interface IconSidebarProps {
     onToggleMenu: () => void;
@@ -74,16 +74,9 @@ export const IconSidebar: React.FC<IconSidebarProps> = ({ onToggleMenu, isMenuOp
 
     return (
         <div className="fixed left-0 top-0 h-screen w-16 bg-[#0E1012] border-r border-white/10 flex flex-col items-center py-6 gap-3 z-[100]">
-            {/* Logo/Brand */}
-            <div className="mb-4">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-600 to-red-700 flex items-center justify-center text-white font-bold text-lg shadow-lg">
-                    S
-                </div>
-            </div>
-
             {/* Menu Toggle */}
             <IconButton
-                icon={isMenuOpen ? ChevronLeft : Menu}
+                icon={isMenuOpen ? ChevronLeft : BookOpen}
                 label={isMenuOpen ? 'Fechar Menu' : 'Abrir Menu'}
                 onClick={onToggleMenu}
                 isActive={isMenuOpen}
@@ -116,13 +109,6 @@ export const IconSidebar: React.FC<IconSidebarProps> = ({ onToggleMenu, isMenuOp
             />
 
             <div className="flex-1"></div>
-
-            {/* Search (Future) */}
-            <IconButton
-                icon={Search}
-                label="Buscar (em breve)"
-                disabled
-            />
 
             {/* Profile */}
             <IconButton

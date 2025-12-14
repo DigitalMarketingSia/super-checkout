@@ -79,7 +79,7 @@ export const MemberProfile = () => {
                         <div className="space-y-4">
                             <div>
                                 <label className="block text-xs text-gray-500 uppercase mb-1">Email</label>
-                                <div className="flex items-center gap-2 text-gray-300 bg-black/20 p-3 rounded-lg border border-white/5">
+                                <div className="flex items-center gap-2 text-gray-300 bg-black/20 p-3 rounded-lg border border-white/5 break-all">
                                     <Mail className="w-4 h-4 text-gray-500" />
                                     {user?.email}
                                 </div>
