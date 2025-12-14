@@ -14,7 +14,7 @@ export const CoursePlayer = () => {
 
     const [loading, setLoading] = useState(true);
     const [content, setContent] = useState<Content | null>(null);
-    const [allContents, setAllContents] = useState<Content[]>([]); // NEW: Store all contents
+    const [allContents, setAllContents] = useState<Content[]>([]); // Store all contents
     const [memberArea, setMemberArea] = useState<MemberArea | null>(null);
     const [modules, setModules] = useState<Module[]>([]);
     const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
@@ -27,6 +27,7 @@ export const CoursePlayer = () => {
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [expandedModuleId, setExpandedModuleId] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [isContentExpanded, setIsContentExpanded] = useState(true); // Toggle content modules
 
     useEffect(() => {
         if (id) {
@@ -35,8 +36,6 @@ export const CoursePlayer = () => {
     }, [id, slug]);
 
     const loadData = async (contentId: string) => {
-        // Only set loading if initially loading content to prevent flash if switching efficiently
-        // But for safe nav let's keep it simple
         setLoading(true);
         try {
             if (slug) {
@@ -45,11 +44,15 @@ export const CoursePlayer = () => {
             }
 
             const contents = await storage.getContents();
-            setAllContents(contents); // Store all
+            setAllContents(contents);
 
             const foundContent = contents.find(c => c.id === contentId);
 
             if (!foundContent) {
+                console.warn('Content not found:', contentId);
+                // If content not found, maybe redirect to first available content? 
+                // Or just show nothing? 
+                // For now, redirect to app home to avoid broken state
                 navigate(slug ? `/app/${slug}` : '/app');
                 return;
             }
@@ -67,7 +70,6 @@ export const CoursePlayer = () => {
             const moduleIdParam = searchParams.get('module_id');
 
             if (lessonIdParam) {
-                // Find specific lesson
                 for (const m of modulesData) {
                     const l = m.lessons?.find(l => l.id === lessonIdParam);
                     if (l) {
@@ -76,14 +78,13 @@ export const CoursePlayer = () => {
                     }
                 }
             } else if (moduleIdParam) {
-                // Find first lesson of specific module
                 const m = modulesData.find(m => m.id === moduleIdParam);
                 if (m && m.lessons && m.lessons.length > 0) {
                     lessonToPlay = m.lessons[0];
                 }
             }
 
-            // Fallback to first lesson of first module
+            // Fallback to first lesson
             if (!lessonToPlay && modulesData.length > 0 && modulesData[0].lessons && modulesData[0].lessons.length > 0) {
                 lessonToPlay = modulesData[0].lessons[0];
             }
@@ -93,7 +94,7 @@ export const CoursePlayer = () => {
                 setExpandedModuleId(lessonToPlay.module_id);
                 checkProgress(lessonToPlay.id);
             } else if (modulesData.length > 0) {
-                // Expand first module by default if no lesson selected
+                // Expand first module by default
                 setExpandedModuleId(modulesData[0].id);
             }
 
@@ -111,21 +112,17 @@ export const CoursePlayer = () => {
         }
     };
 
-    // Check access when currentLesson changes (for direct URL access)
+    // Check access when currentLesson changes
     useEffect(() => {
         if (!loading && currentLesson) {
-            // Find the module for the current lesson
             const currentModule = modules.find(m => m.lessons?.some(l => l.id === currentLesson.id));
 
-            console.log('CoursePlayer Access Check:', {
-                lesson: currentLesson,
-                module: currentModule,
-                content: content,
-                grants: accessGrants
-            });
-
+            // Just check access, don't trigger modal automatically on load unles strictly required?
+            // Actually requirement says "if accessed directly", handleAccess should run.
+            // But we pass empty onSalesModal here to avoid loop if URL is shared? 
+            // No, user wants it to trigger.
             handleAccess(currentLesson, {
-                onAccess: () => { }, // Do nothing, already here
+                onAccess: () => { },
                 onSalesModal: (product) => {
                     setSelectedProduct(product);
                     setIsModalOpen(true);
@@ -141,7 +138,6 @@ export const CoursePlayer = () => {
             onAccess: () => {
                 setCurrentLesson(lesson);
                 checkProgress(lesson.id);
-                // On mobile, close sidebar
                 if (window.innerWidth < 768) {
                     setSidebarOpen(false);
                 }
@@ -154,18 +150,32 @@ export const CoursePlayer = () => {
     };
 
     const handleContentSelect = (targetContent: Content) => {
-        if (targetContent.id === content?.id) return; // Already on this content
+        // 1. Toggle Collapse if same content
+        if (targetContent.id === content?.id) {
+            setIsContentExpanded(!isContentExpanded);
+            return;
+        }
 
-        // Check Access for the Content itself
+        // 2. Check Access 
         handleAccess(targetContent, {
             onAccess: () => {
-                // Navigate to the content player
+                setIsContentExpanded(true); // Reset to open
+                // Use REPLACE to avoid history stack issues if needed, requires state reset
+                // Force full reload? No, SPA nav is better.
+                setLoading(true); // Show loading state immediately
                 const newSlug = slug ? `/app/${slug}/${targetContent.id}` : `/app/content/${targetContent.id}`;
                 navigate(newSlug);
             },
             onSalesModal: (product) => {
-                setSelectedProduct(product);
-                setIsModalOpen(true);
+                // Ensure we have a product to show
+                const effectiveProduct = product || targetContent.associated_product;
+                if (effectiveProduct) {
+                    setSelectedProduct(effectiveProduct);
+                    setIsModalOpen(true);
+                } else {
+                    console.warn('No product associated with this content to sell');
+                    // Maybe show a generic "Not Available" modal?
+                }
             }
         });
     };
@@ -373,7 +383,6 @@ export const CoursePlayer = () => {
     const filteredContents = React.useMemo(() => {
         if (!searchTerm) return allContents;
         const lowerTerm = searchTerm.toLowerCase();
-        // Return contents that match title OR (if it's the current content) let the modules filter handle it inside
         return allContents.filter(c => c.title.toLowerCase().includes(lowerTerm) || c.id === content?.id);
     }, [allContents, searchTerm, content]);
 
@@ -431,6 +440,8 @@ export const CoursePlayer = () => {
                             {/* Loop through all contents */}
                             {filteredContents.map((c) => {
                                 const isCurrentContent = c.id === content?.id;
+                                // NEW: Fallback image logic (content image -> associated product image)
+                                const imageUrl = c.image_url || c.associated_product?.imageUrl || c.associated_product?.image_url;
 
                                 return (
                                     <div key={c.id} className="border-b border-white/5 last:mb-0">
@@ -440,8 +451,8 @@ export const CoursePlayer = () => {
                                             onClick={() => handleContentSelect(c)}
                                         >
                                             <div className="flex items-center gap-3">
-                                                {c.image_url ? (
-                                                    <img src={c.image_url} className="w-10 h-10 rounded-lg object-cover" />
+                                                {imageUrl ? (
+                                                    <img src={imageUrl} className="w-10 h-10 rounded-lg object-cover" />
                                                 ) : (
                                                     <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center">
                                                         <FileText size={16} />
@@ -459,14 +470,18 @@ export const CoursePlayer = () => {
                                                 </div>
                                             </div>
                                             {isCurrentContent ? (
-                                                <ChevronDown size={16} style={{ color: primaryColor }} />
+                                                isContentExpanded ? (
+                                                    <ChevronUp size={16} style={{ color: primaryColor }} />
+                                                ) : (
+                                                    <ChevronDown size={16} style={{ color: primaryColor }} />
+                                                )
                                             ) : (
                                                 <ChevronRight size={16} className="text-gray-600" />
                                             )}
                                         </div>
 
                                         {/* Modules List (Only for current content) */}
-                                        {isCurrentContent && filteredModules.map((module, index) => (
+                                        {isCurrentContent && isContentExpanded && filteredModules.map((module, index) => (
                                             <div key={module.id} className="mb-1 ml-4 border-l border-white/10">
                                                 <div
                                                     onClick={() => toggleModule(module.id)}
