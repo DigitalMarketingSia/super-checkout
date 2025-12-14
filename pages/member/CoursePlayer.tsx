@@ -382,7 +382,7 @@ export const CoursePlayer = () => {
           ${sidebarOpen ? 'translate-x-0 w-80' : '-translate-x-full md:translate-x-0 md:w-0'}
         `}
             >
-                {sidebarOpen ? (
+                {sidebarOpen && (
                     <>
                         <div className="p-4 flex items-center justify-between sticky top-0 bg-[#0f131a]/95 backdrop-blur-sm z-20">
                             <h2 className="font-bold truncate pr-4 text-sm uppercase tracking-wider text-gray-400">{content?.title || 'Carregando...'}</h2>
