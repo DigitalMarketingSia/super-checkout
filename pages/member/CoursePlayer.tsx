@@ -384,30 +384,25 @@ export const CoursePlayer = () => {
             >
                 {sidebarOpen && (
                     <>
-                        <div className="p-4 flex items-center justify-between sticky top-0 bg-[#0f131a]/95 backdrop-blur-sm z-20">
-                            <h2 className="font-bold truncate pr-4 text-sm uppercase tracking-wider text-gray-400">{content?.title || 'Carregando...'}</h2>
-                            <button
-                                onClick={() => setSidebarOpen(false)}
-                                className="p-2 text-white hover:bg-white/10 rounded-lg transition-colors"
-                                style={{ backgroundColor: primaryColor }}
-                            >
-                                <PanelLeftClose className="w-5 h-5" />
-                            </button>
-                        </div>
-
-                        {/* Search Bar */}
-                        <div className="px-4 pb-4 border-b border-white/5 sticky top-[61px] bg-[#0f131a]/95 backdrop-blur-sm z-20">
-                            <div className="relative">
-                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
+                        <div className="p-4 flex items-center justify-between gap-2 sticky top-0 bg-[#0f131a]/95 backdrop-blur-sm z-20 border-b border-white/5">
+                            <div className="relative flex-1">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
                                 <input
                                     id="search-input"
                                     type="text"
                                     placeholder="Buscar conteúdo"
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full bg-[#1a1e26] border-none rounded-full py-2.5 pl-10 pr-4 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-white/20 transition-all"
+                                    className="w-full bg-[#1a1e26] border-none rounded-lg py-2 pl-9 pr-4 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-white/20 transition-all"
                                 />
                             </div>
+                            <button
+                                onClick={() => setSidebarOpen(false)}
+                                className="p-2 text-white hover:bg-white/10 rounded-lg transition-colors flex-shrink-0"
+                                style={{ backgroundColor: primaryColor }}
+                            >
+                                <PanelLeftClose className="w-5 h-5" />
+                            </button>
                         </div>
 
                         <div className="flex-1 overflow-y-auto custom-scrollbar">
@@ -509,16 +504,6 @@ export const CoursePlayer = () => {
                                     )}
                                 </div>
                             ))}
-                        </div>
-
-                        <div className="border-t border-white/10">
-                            <button
-                                onClick={() => navigate(slug ? `/app/${slug}` : '/app')}
-                                className="flex items-center justify-center gap-2 w-full py-4 font-medium text-sm transition-all bg-white/5 hover:bg-white/10 text-white"
-                                style={{ backgroundColor: primaryColor }}
-                            >
-                                <Home className="w-4 h-4" /> Ir para Vitrine
-                            </button>
                         </div>
                     </>
                 )}
