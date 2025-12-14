@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams, useOutletContext } from 'react-router-dom';
 import { storage } from '../../services/storageService';
 import { Content, Module, Lesson, MemberArea, AccessGrant } from '../../types';
 import { ChevronLeft, CheckCircle, Circle, PlayCircle, FileText, Download, Menu, X, ChevronDown, ChevronUp, PanelLeftClose, PanelLeftOpen, Search, Play, ChevronRight, Home } from 'lucide-react';
@@ -14,7 +14,7 @@ export const CoursePlayer = () => {
 
     const [loading, setLoading] = useState(true);
     const [content, setContent] = useState<Content | null>(null);
-    const [allContents, setAllContents] = useState<Content[]>([]); // Store all contents
+    const [allContents, setAllContents] = useState<Content[]>([]);
     const [memberArea, setMemberArea] = useState<MemberArea | null>(null);
     const [modules, setModules] = useState<Module[]>([]);
     const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
@@ -27,7 +27,7 @@ export const CoursePlayer = () => {
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [expandedModuleId, setExpandedModuleId] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
-    const [isContentExpanded, setIsContentExpanded] = useState(true); // Toggle content modules
+    const [isContentExpanded, setIsContentExpanded] = useState(true);
 
     useEffect(() => {
         if (id) {
@@ -38,30 +38,41 @@ export const CoursePlayer = () => {
     const loadData = async (contentId: string) => {
         setLoading(true);
         try {
-            if (slug) {
-                const area = await storage.getMemberAreaBySlug(slug);
-                setMemberArea(area);
+            let currentMemberArea = memberArea;
+
+            // 1. Ensure Member Area is Loaded
+            if (slug && !currentMemberArea) {
+                currentMemberArea = await storage.getMemberAreaBySlug(slug);
+                setMemberArea(currentMemberArea);
             }
 
-            const contents = await storage.getContents();
+            // 2. Fetch Contents (Filtered by Area if possible)
+            // If we are in a member area, rely on that ID to filter contents strictly
+            const areaId = currentMemberArea?.id;
+            const contents = await storage.getContents(areaId);
             setAllContents(contents);
 
+            // 3. Find Target Content
             const foundContent = contents.find(c => c.id === contentId);
 
             if (!foundContent) {
-                console.warn('Content not found:', contentId);
+                console.error(`Content not found: ${contentId} in area ${slug || 'global'}`);
+                // Only redirect if absolutely necessary. Logic: if no content found, maybe wrong ID?
+                // Try to find ANY content to show instead of home? No, home is safer.
                 navigate(slug ? `/app/${slug}` : '/app');
                 return;
             }
 
             setContent(foundContent);
+
+            // 4. Load Modules & Access
             const modulesData = await storage.getModules(contentId);
             setModules(modulesData);
 
             const grants = await storage.getAccessGrants();
             setAccessGrants(grants);
 
-            // Find lesson to play
+            // 5. Determine Lesson to Play
             let lessonToPlay: Lesson | null = null;
             const lessonIdParam = searchParams.get('lesson_id');
             const moduleIdParam = searchParams.get('module_id');
@@ -81,7 +92,7 @@ export const CoursePlayer = () => {
                 }
             }
 
-            // Fallback to first lesson
+            // Fallback to first lesson of first module
             if (!lessonToPlay && modulesData.length > 0 && modulesData[0].lessons && modulesData[0].lessons.length > 0) {
                 lessonToPlay = modulesData[0].lessons[0];
             }
@@ -91,7 +102,7 @@ export const CoursePlayer = () => {
                 setExpandedModuleId(lessonToPlay.module_id);
                 checkProgress(lessonToPlay.id);
             } else if (modulesData.length > 0) {
-                // Expand first module by default
+                // Determine first module to expand even if no lesson selected
                 setExpandedModuleId(modulesData[0].id);
             }
 
@@ -143,21 +154,26 @@ export const CoursePlayer = () => {
     };
 
     const handleContentSelect = (targetContent: Content) => {
-        // 1. Toggle Collapse if same content
+        // 1. Same Content: Toggle Collapse
         if (targetContent.id === content?.id) {
             setIsContentExpanded(!isContentExpanded);
             return;
         }
 
-        // 2. Check Access 
+        // 2. Different Content: Navigate
+        // We check access first. 
+        // NOTE: if user does NOT have access, we show modal. 
+        // If they DO have access, we navigate.
         handleAccess(targetContent, {
             onAccess: () => {
-                setIsContentExpanded(true); // Reset to open
+                setIsContentExpanded(true); // Ensure expanded when entering new content
                 setLoading(true);
+                // Force navigation to the new content URL
                 const newSlug = slug ? `/app/${slug}/${targetContent.id}` : `/app/content/${targetContent.id}`;
                 navigate(newSlug);
             },
             onSalesModal: (product) => {
+                // Ensure we have a product to show
                 const effectiveProduct = product || targetContent.associated_product;
                 if (effectiveProduct) {
                     setSelectedProduct(effectiveProduct);
@@ -370,10 +386,17 @@ export const CoursePlayer = () => {
     }, [modules, searchTerm]);
 
     const filteredContents = React.useMemo(() => {
-        if (!searchTerm) return allContents;
+        // We filter contents based on current member area only
+        let displayContents = allContents;
+        if (memberArea) {
+            displayContents = allContents.filter(c => c.member_area_id === memberArea.id);
+        }
+
+        if (!searchTerm) return displayContents;
+
         const lowerTerm = searchTerm.toLowerCase();
-        return allContents.filter(c => c.title.toLowerCase().includes(lowerTerm) || c.id === content?.id);
-    }, [allContents, searchTerm, content]);
+        return displayContents.filter(c => c.title.toLowerCase().includes(lowerTerm) || c.id === content?.id);
+    }, [allContents, searchTerm, content, memberArea]);
 
 
     // Auto-expand modules when searching
