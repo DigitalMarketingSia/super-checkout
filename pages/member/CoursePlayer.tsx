@@ -528,103 +528,110 @@ export const CoursePlayer = () => {
                                             )}
                                         </div>
 
-                                        {isCurrentContent && isContentExpanded && filteredModules.map((module, index) => (
-                                            <div key={module.id} className="mb-1 ml-4 border-l border-white/10">
-                                                <div
-                                                    onClick={() => toggleModule(module.id)}
-                                                    className="relative overflow-hidden group cursor-pointer transition-all pr-4 py-6 md:py-8 rounded-lg mb-2 border border-white/5"
-                                                    style={{
-                                                        backgroundImage: module.image_url ? `url(${module.image_url})` : undefined,
-                                                        backgroundSize: 'cover',
-                                                        backgroundPosition: 'center',
-                                                        backgroundColor: '#1a1e26'
-                                                    }}
-                                                >
-                                                    <div className={`absolute inset-0 bg-gradient-to-r from-black/95 via-black/80 to-transparent transition-opacity ${expandedModuleId === module.id ? 'opacity-95' : 'opacity-90 group-hover:opacity-95'}`} />
+                                        {isCurrentContent && isContentExpanded && (
+                                            <div className="relative ml-6 pl-6 pt-4 pb-2 space-y-4 border-l border-white/10">
+                                                {filteredModules.map((module, index) => (
+                                                    <div key={module.id} className="relative">
+                                                        {/* Horizontal Connector Line */}
+                                                        <div className="absolute top-[2.5rem] -left-6 w-6 h-[1px] bg-white/10"></div>
 
-                                                    <div className="relative z-10 flex items-center justify-between px-4">
-                                                        <div className="flex-1 min-w-0 mr-4">
-                                                            <span
-                                                                className="text-[10px] font-bold uppercase tracking-wider mb-1 inline-block px-1.5 py-0.5 rounded bg-black/40 backdrop-blur-sm border border-white/10"
-                                                                style={{ color: primaryColor, borderColor: `${primaryColor}40` }}
-                                                            >
-                                                                Módulo {modules.findIndex(m => m.id === module.id) + 1}
-                                                            </span>
-                                                            <h3 className="text-base md:text-lg font-bold text-white leading-tight drop-shadow-md">{module.title}</h3>
+                                                        <div
+                                                            onClick={() => toggleModule(module.id)}
+                                                            className="relative overflow-hidden group cursor-pointer transition-all pr-4 py-6 md:py-8 rounded-lg border border-white/5 shadow-lg hover:shadow-xl hover:border-white/10 transform hover:translate-x-1 duration-300"
+                                                            style={{
+                                                                backgroundImage: module.image_url ? `url(${module.image_url})` : undefined,
+                                                                backgroundSize: 'cover',
+                                                                backgroundPosition: 'center',
+                                                                backgroundColor: '#1a1e26'
+                                                            }}
+                                                        >
+                                                            <div className={`absolute inset-0 bg-gradient-to-r from-black/95 via-black/80 to-transparent transition-opacity ${expandedModuleId === module.id ? 'opacity-95' : 'opacity-90 group-hover:opacity-95'}`} />
+
+                                                            <div className="relative z-10 flex items-center justify-between px-4">
+                                                                <div className="flex-1 min-w-0 mr-4">
+                                                                    <span
+                                                                        className="text-[10px] font-bold uppercase tracking-wider mb-1 inline-block px-1.5 py-0.5 rounded bg-black/40 backdrop-blur-sm border border-white/10"
+                                                                        style={{ color: primaryColor, borderColor: `${primaryColor}40` }}
+                                                                    >
+                                                                        Módulo {modules.findIndex(m => m.id === module.id) + 1}
+                                                                    </span>
+                                                                    <h3 className="text-base md:text-lg font-bold text-white leading-tight drop-shadow-md">{module.title}</h3>
+                                                                </div>
+                                                                <div className="bg-black/40 backdrop-blur-sm p-1.5 rounded-full border border-white/10 flex-shrink-0 transition-transform duration-300">
+                                                                    {expandedModuleId === module.id ? <ChevronUp size={16} style={{ color: primaryColor }} /> : <ChevronDown size={16} className="text-gray-300" />}
+                                                                </div>
+                                                            </div>
                                                         </div>
-                                                        <div className="bg-black/40 backdrop-blur-sm p-1.5 rounded-full border border-white/10 flex-shrink-0">
-                                                            {expandedModuleId === module.id ? <ChevronUp size={16} style={{ color: primaryColor }} /> : <ChevronDown size={16} className="text-gray-300" />}
-                                                        </div>
-                                                    </div>
-                                                </div>
 
-                                                {expandedModuleId === module.id && (
-                                                    <div className="bg-transparent px-2 pb-2 space-y-1">
-                                                        {module.lessons?.map((lesson, lIndex) => {
-                                                            const isActive = currentLesson?.id === lesson.id;
-                                                            const isCompleted = progressMap[lesson.id];
-                                                            let thumbnailUrl = lesson.image_url;
-                                                            if (!thumbnailUrl && lesson.video_url) {
-                                                                const videoId = lesson.video_url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/)?.[1];
-                                                                if (videoId) {
-                                                                    thumbnailUrl = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
-                                                                }
-                                                            }
+                                                        {expandedModuleId === module.id && (
+                                                            <div className="bg-transparent pl-4 mt-2 space-y-1 ml-2 border-l border-white/5">
+                                                                {module.lessons?.map((lesson, lIndex) => {
+                                                                    const isActive = currentLesson?.id === lesson.id;
+                                                                    const isCompleted = progressMap[lesson.id];
+                                                                    let thumbnailUrl = lesson.image_url;
+                                                                    if (!thumbnailUrl && lesson.video_url) {
+                                                                        const videoId = lesson.video_url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/)?.[1];
+                                                                        if (videoId) {
+                                                                            thumbnailUrl = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
+                                                                        }
+                                                                    }
 
-                                                            return (
-                                                                <button
-                                                                    key={lesson.id}
-                                                                    onClick={() => handleLessonSelect(lesson)}
-                                                                    className={`group w-full text-left p-2 flex items-center gap-3 rounded-xl transition-all border ${isActive
-                                                                        ? 'shadow-lg'
-                                                                        : 'bg-transparent hover:bg-[#1a1e26] border-transparent'
-                                                                        }`}
-                                                                    style={isActive ? {
-                                                                        backgroundColor: `${primaryColor}15`,
-                                                                        borderColor: primaryColor,
-                                                                    } : {}}
-                                                                >
-                                                                    <div className="relative w-16 aspect-video flex-shrink-0 bg-gray-800 rounded-lg overflow-hidden shadow-sm">
-                                                                        {thumbnailUrl ? (
-                                                                            <img src={thumbnailUrl} className={`w-full h-full object-cover transition-opacity ${isActive ? 'opacity-40' : 'opacity-80 group-hover:opacity-100'}`} alt="" />
-                                                                        ) : (
-                                                                            <div className="w-full h-full flex items-center justify-center text-gray-600">
-                                                                                <FileText size={14} />
+                                                                    return (
+                                                                        <button
+                                                                            key={lesson.id}
+                                                                            onClick={() => handleLessonSelect(lesson)}
+                                                                            className={`group w-full text-left p-2 flex items-center gap-3 rounded-xl transition-all border ${isActive
+                                                                                ? 'shadow-lg relative z-10'
+                                                                                : 'bg-transparent hover:bg-[#1a1e26] border-transparent'
+                                                                                }`}
+                                                                            style={isActive ? {
+                                                                                backgroundColor: `${primaryColor}15`,
+                                                                                borderColor: primaryColor,
+                                                                            } : {}}
+                                                                        >
+                                                                            <div className="relative w-16 aspect-video flex-shrink-0 bg-gray-800 rounded-lg overflow-hidden shadow-sm">
+                                                                                {thumbnailUrl ? (
+                                                                                    <img src={thumbnailUrl} className={`w-full h-full object-cover transition-opacity ${isActive ? 'opacity-40' : 'opacity-80 group-hover:opacity-100'}`} alt="" />
+                                                                                ) : (
+                                                                                    <div className="w-full h-full flex items-center justify-center text-gray-600">
+                                                                                        <FileText size={14} />
+                                                                                    </div>
+                                                                                )}
+
+                                                                                {isActive && (
+                                                                                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-[1px]">
+                                                                                        <Play size={10} className="text-white fill-white" />
+                                                                                    </div>
+                                                                                )}
                                                                             </div>
-                                                                        )}
 
-                                                                        {isActive && (
-                                                                            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-[1px]">
-                                                                                <Play size={10} className="text-white fill-white" />
+                                                                            <div className="flex-1 min-w-0 py-0.5">
+                                                                                <p className={`text-xs font-medium line-clamp-2 leading-snug ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-white'}`}>
+                                                                                    {lesson.title}
+                                                                                </p>
                                                                             </div>
-                                                                        )}
-                                                                    </div>
 
-                                                                    <div className="flex-1 min-w-0 py-0.5">
-                                                                        <p className={`text-xs font-medium line-clamp-2 leading-snug ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-white'}`}>
-                                                                            {lesson.title}
-                                                                        </p>
-                                                                    </div>
-
-                                                                    <div className="flex-shrink-0 pr-1">
-                                                                        {isCompleted ? (
-                                                                            <div className="bg-green-500/20 rounded-full p-0.5">
-                                                                                <CheckCircle className="w-3 h-3 text-green-500 fill-green-500/20" />
+                                                                            <div className="flex-shrink-0 pr-1">
+                                                                                {isCompleted ? (
+                                                                                    <div className="bg-green-500/20 rounded-full p-0.5">
+                                                                                        <CheckCircle className="w-3 h-3 text-green-500 fill-green-500/20" />
+                                                                                    </div>
+                                                                                ) : (
+                                                                                    <div className={`w-3 h-3 rounded-full border-2 ${isActive ? 'border-white/20' : 'border-gray-700/50'}`} />
+                                                                                )}
                                                                             </div>
-                                                                        ) : (
-                                                                            <div className={`w-3 h-3 rounded-full border-2 ${isActive ? 'border-white/20' : 'border-gray-700/50'}`} />
-                                                                        )}
-                                                                    </div>
-                                                                </button>
-                                                            );
-                                                        })}
-                                                        {(!module.lessons || module.lessons.length === 0) && (
-                                                            <div className="p-4 text-xs text-gray-500 text-center">Nenhuma aula neste módulo.</div>
+                                                                        </button>
+                                                                    );
+                                                                })}
+                                                                {(!module.lessons || module.lessons.length === 0) && (
+                                                                    <div className="p-4 text-xs text-gray-500 text-center">Nenhuma aula neste módulo.</div>
+                                                                )}
+                                                            </div>
                                                         )}
                                                     </div>
-                                                )}
+                                                ))}
                                             </div>
-                                        ))}
+                                        )}
                                     </div>
                                 );
                             })}
