@@ -59,6 +59,37 @@ export const MemberDashboard = () => {
 
     const handleItemClick = async (item: any) => {
         console.log('Item clicked:', item);
+        // Handle product clicks - navigate to first content
+        if (item.product) {
+            console.log('Product clicked:', item.product);
+
+            try {
+                // Get product contents (returns array of content IDs)
+                const productContentIds = await storage.getProductContents(item.product.id);
+
+                if (productContentIds && productContentIds.length > 0) {
+                    const firstContentId = productContentIds[0];
+
+                    // Detect if we're on a custom domain
+                    const isCustomDomain = typeof window !== 'undefined' &&
+                        !window.location.hostname.includes('vercel.app') &&
+                        !window.location.hostname.includes('localhost') &&
+                        window.location.pathname.startsWith('/app/') === false;
+
+                    const appLink = isCustomDomain ? '' : (memberArea ? `/app/${memberArea.slug}` : '/app');
+
+                    // Navigate to first content
+                    navigate(`${appLink}/course/${firstContentId}`);
+                } else {
+                    alert('Este produto ainda não tem conteúdo disponível.');
+                }
+            } catch (error) {
+                console.error('Error loading product contents:', error);
+                alert('Erro ao carregar conteúdo do produto.');
+            }
+            return;
+        }
+
         handleAccess(item, {
             onAccess: () => {
                 console.log('Access granted');
