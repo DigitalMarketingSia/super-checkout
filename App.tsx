@@ -288,17 +288,21 @@ const DomainDispatcher = () => {
   );
 };
 
+import { GlobalErrorBoundary } from './components/GlobalErrorBoundary';
+
 const App = () => {
   return (
-    <AuthProvider>
-      <ThemeProvider>
-        <BrowserRouter>
-          <LicenseGuard>
-            <DomainDispatcher />
-          </LicenseGuard>
-        </BrowserRouter>
-      </ThemeProvider>
-    </AuthProvider>
+    <GlobalErrorBoundary>
+      <AuthProvider>
+        <ThemeProvider>
+          <BrowserRouter>
+            <LicenseGuard>
+              <DomainDispatcher />
+            </LicenseGuard>
+          </BrowserRouter>
+        </ThemeProvider>
+      </AuthProvider>
+    </GlobalErrorBoundary>
   );
 };
 
