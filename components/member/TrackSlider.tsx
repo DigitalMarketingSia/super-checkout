@@ -19,17 +19,14 @@ export const TrackSlider: React.FC<TrackSliderProps> = ({ track, onItemClick, ac
 
     const [canScrollLeft, setCanScrollLeft] = React.useState(false);
     const [canScrollRight, setCanScrollRight] = React.useState(false);
-
-    // Drag to scroll state
-    const [isDragging, setIsDragging] = React.useState(false);
-    const [startX, setStartX] = React.useState(0);
-    const [scrollLeft, setScrollLeft] = React.useState(0);
+    const [hasOverflow, setHasOverflow] = React.useState(false);
 
     const checkScroll = () => {
         if (scrollContainerRef.current) {
             const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
             setCanScrollLeft(scrollLeft > 0);
             setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1);
+            setHasOverflow(scrollWidth > clientWidth);
         }
     };
 
@@ -47,37 +44,6 @@ export const TrackSlider: React.FC<TrackSliderProps> = ({ track, onItemClick, ac
                 behavior: 'smooth',
             });
         }
-    };
-
-    // Drag to scroll handlers
-    const handleMouseDown = (e: React.MouseEvent) => {
-        if (!scrollContainerRef.current) return;
-        setIsDragging(true);
-        setStartX(e.pageX - scrollContainerRef.current.offsetLeft);
-        setScrollLeft(scrollContainerRef.current.scrollLeft);
-        scrollContainerRef.current.style.cursor = 'grabbing';
-    };
-
-    const handleMouseLeave = () => {
-        setIsDragging(false);
-        if (scrollContainerRef.current) {
-            scrollContainerRef.current.style.cursor = 'grab';
-        }
-    };
-
-    const handleMouseUp = () => {
-        setIsDragging(false);
-        if (scrollContainerRef.current) {
-            scrollContainerRef.current.style.cursor = 'grab';
-        }
-    };
-
-    const handleMouseMove = (e: React.MouseEvent) => {
-        if (!isDragging || !scrollContainerRef.current) return;
-        e.preventDefault();
-        const x = e.pageX - scrollContainerRef.current.offsetLeft;
-        const walk = (x - startX) * 2; // Scroll speed multiplier
-        scrollContainerRef.current.scrollLeft = scrollLeft - walk;
     };
 
     return (
@@ -99,60 +65,41 @@ export const TrackSlider: React.FC<TrackSliderProps> = ({ track, onItemClick, ac
                 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
                     background: ${primaryColor ? `color-mix(in srgb, ${primaryColor} 80%, white)` : '#E91E63'};
                 }
-                .custom-scrollbar {
-                    cursor: grab;
-                    user-select: none;
-                }
-                .custom-scrollbar:active {
-                    cursor: grabbing;
-                }
             `}</style>
 
             {/* Header with Title and Navigation Arrows */}
             <div className="flex items-center justify-between mb-4 px-4 md:px-0">
                 <h3 className="text-xl font-semibold text-white">{track.title}</h3>
 
-                {/* Navigation Arrows - Together on the right */}
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={() => scroll('left')}
-                        disabled={!canScrollLeft}
-                        className={`p-2 rounded-full transition-all ${canScrollLeft
-                                ? 'bg-white/10 hover:bg-white/20 text-white'
-                                : 'bg-white/5 text-gray-600 cursor-not-allowed'
-                            }`}
-                        style={canScrollLeft && primaryColor ? {
-                            backgroundColor: `${primaryColor}20`,
-                            color: primaryColor
-                        } : {}}
-                    >
-                        <ChevronLeft size={20} strokeWidth={2} />
-                    </button>
-                    <button
-                        onClick={() => scroll('right')}
-                        disabled={!canScrollRight}
-                        className={`p-2 rounded-full transition-all ${canScrollRight
-                                ? 'bg-white/10 hover:bg-white/20 text-white'
-                                : 'bg-white/5 text-gray-600 cursor-not-allowed'
-                            }`}
-                        style={canScrollRight && primaryColor ? {
-                            backgroundColor: `${primaryColor}20`,
-                            color: primaryColor
-                        } : {}}
-                    >
-                        <ChevronRight size={20} strokeWidth={2} />
-                    </button>
-                </div>
+                {/* Navigation Arrows - Only show if there's overflow */}
+                {hasOverflow && (
+                    <div className="flex items-center gap-1">
+                        <button
+                            onClick={() => scroll('left')}
+                            disabled={!canScrollLeft}
+                            className={`p-1 transition-opacity ${canScrollLeft ? 'opacity-100' : 'opacity-30 cursor-not-allowed'
+                                }`}
+                            style={{ color: primaryColor || '#D4143C' }}
+                        >
+                            <ChevronLeft size={24} strokeWidth={2.5} />
+                        </button>
+                        <button
+                            onClick={() => scroll('right')}
+                            disabled={!canScrollRight}
+                            className={`p-1 transition-opacity ${canScrollRight ? 'opacity-100' : 'opacity-30 cursor-not-allowed'
+                                }`}
+                            style={{ color: primaryColor || '#D4143C' }}
+                        >
+                            <ChevronRight size={24} strokeWidth={2.5} />
+                        </button>
+                    </div>
+                )}
             </div>
 
             <div className="relative">
                 <div
                     ref={scrollContainerRef}
                     onScroll={checkScroll}
-                    onMouseDown={handleMouseDown}
-                    onMouseLeave={handleMouseLeave}
-                    onMouseUp={handleMouseUp}
-                    onMouseMove={handleMouseMove}
                     className="flex overflow-x-auto gap-4 pb-4 px-4 md:px-0 snap-x custom-scrollbar"
                 >
                     {track.items?.map((item) => (
@@ -160,7 +107,6 @@ export const TrackSlider: React.FC<TrackSliderProps> = ({ track, onItemClick, ac
                             key={item.id}
                             item={item}
                             onClick={() => {
-                                if (isDragging) return; // Don't trigger click if dragging
                                 handleAccess(item, {
                                     onAccess: () => onItemClick(item),
                                     onSalesModal: (product) => {
