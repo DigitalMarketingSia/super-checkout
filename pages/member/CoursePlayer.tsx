@@ -710,6 +710,19 @@ return (
                     <div className="flex items-center justify-center h-64 w-full">
                         <div className="animate-spin w-8 h-8 border-2 border-t-transparent rounded-full" style={{ borderColor: `${primaryColor} transparent transparent transparent` }}></div>
                     </div>
+                ) : error ? (
+                    <div className="flex items-center justify-center h-64 w-full text-center">
+                        <div>
+                            <p className="text-red-500 font-bold mb-2">Erro</p>
+                            <p className="text-gray-400">{error}</p>
+                            <button
+                                onClick={() => window.location.reload()}
+                                className="mt-4 px-4 py-2 bg-white/10 rounded-lg hover:bg-white/20 text-sm font-medium"
+                            >
+                                Tentar Novamente
+                            </button>
+                        </div>
+                    </div>
                 ) : (
                     renderContent()
                 )}
