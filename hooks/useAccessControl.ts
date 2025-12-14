@@ -154,8 +154,14 @@ export const useAccessControl = (accessGrants: AccessGrant[] = []): UseAccessCon
         const action = checkAccess(item, context);
 
         if (action === 'LOGIN') {
-            const appLink = memberArea ? `/app/${memberArea.slug}` : '/app';
-            navigate(`${appLink}/login`);
+            // Detect custom domain
+            const isCustomDomain = typeof window !== 'undefined' &&
+                !window.location.hostname.includes('vercel.app') &&
+                !window.location.hostname.includes('localhost') &&
+                !window.location.pathname.startsWith('/app/');
+
+            const appLink = isCustomDomain ? '' : (memberArea ? `/app/${memberArea.slug}` : '/app');
+            navigate(`${appLink}/signup`); // Redirect to signup for free content
         } else if (action === 'SUSPENDED') {
             if (callbacks.onSuspended) {
                 callbacks.onSuspended();

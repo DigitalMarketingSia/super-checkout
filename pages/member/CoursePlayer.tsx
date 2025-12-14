@@ -38,6 +38,12 @@ export const CoursePlayer = () => {
     const loadData = async (contentId: string) => {
         setLoading(true);
         try {
+            // Detect custom domain
+            const isCustomDomain = typeof window !== 'undefined' &&
+                !window.location.hostname.includes('vercel.app') &&
+                !window.location.hostname.includes('localhost') &&
+                !window.location.pathname.startsWith('/app/');
+
             let currentMemberArea = memberArea;
             let areaId: string | undefined = memberArea?.id;
 
@@ -45,6 +51,14 @@ export const CoursePlayer = () => {
             if (slug && !currentMemberArea) {
                 // Scenario A: Standard URL with Slug
                 currentMemberArea = await storage.getMemberAreaBySlug(slug);
+                if (currentMemberArea) {
+                    setMemberArea(currentMemberArea);
+                    areaId = currentMemberArea.id;
+                }
+            } else if (isCustomDomain && !currentMemberArea) {
+                // Scenario B: Custom Domain - fetch by hostname
+                const hostname = window.location.hostname;
+                currentMemberArea = await storage.getMemberAreaByDomain(hostname);
                 if (currentMemberArea) {
                     setMemberArea(currentMemberArea);
                     areaId = currentMemberArea.id;
@@ -61,7 +75,7 @@ export const CoursePlayer = () => {
             if (areaId) {
                 fetchedContents = await storage.getContents(areaId);
             } else {
-                // Scenario B: Custom Domain (No Slug, No Area ID yet)
+                // Scenario C: Custom Domain (No Slug, No Area ID yet)
                 // Fetch ALL contents is risky if we have many areas (admin context), 
                 // but storage.getContents() usually filters by RLS anyway?
                 // Actually storage.getContents checks for memberAreaId argument.
@@ -84,7 +98,8 @@ export const CoursePlayer = () => {
             if (!targetContent) {
                 console.error(`Content not found: ${contentId}`);
                 // If not found, maybe redirect home
-                navigate(slug ? `/app/${slug}` : '/');
+                const redirectPath = isCustomDomain ? '/' : (slug ? `/app/${slug}` : '/');
+                navigate(redirectPath);
                 return;
             }
 
