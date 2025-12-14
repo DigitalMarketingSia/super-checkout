@@ -97,6 +97,16 @@ export const TrackSlider: React.FC<TrackSliderProps> = ({ track, onItemClick, ac
             </div>
 
             <div className="relative">
+                {/* Fade-out gradient on the right when there's more content */}
+                {canScrollRight && (
+                    <div
+                        className="absolute right-0 top-0 bottom-4 w-32 md:w-48 pointer-events-none z-10"
+                        style={{
+                            background: `linear-gradient(to right, transparent, #0E1012 70%)`
+                        }}
+                    />
+                )}
+
                 <div
                     ref={scrollContainerRef}
                     onScroll={checkScroll}
