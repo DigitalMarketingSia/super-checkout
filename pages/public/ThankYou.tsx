@@ -132,7 +132,7 @@ export const ThankYou = () => {
           <div className="mt-10 flex justify-center">
             <Button
               onClick={() => {
-                const buttonUrl = checkout?.thank_you_button_url || '/login';
+                const buttonUrl = checkout?.thank_you_button_url || 'https://clube.discow.com.br/login';
                 if (buttonUrl.startsWith('http')) {
                   // External URL - open in new tab
                   window.open(buttonUrl, '_blank');

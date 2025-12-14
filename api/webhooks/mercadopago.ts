@@ -376,10 +376,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     <p style="font-size: 24px; font-weight: bold; color: #1a1a1a; margin-top: 0; margin-bottom: 20px;">
                         🎉 Olá, ${order.customer_name}!
                     </p>
-                    <p style="font-size: 16px; line-height: 1.5; color: #555555; margin-bottom: 30px;">
-                        Seu pagamento para <strong>${productName}</strong> foi aprovado com sucesso!
+                    <p style="font-size: 16px; line-height: 1.5; color: #555555; margin-bottom: 20px;">
+                        Seu pagamento foi aprovado com sucesso!
                         <br><br>Você já pode acessar a área de membros e começar agora mesmo.
                     </p>
+                    
+                    <!-- Purchased Items -->
+                    <div style="background-color: #f0f9ff; border-left: 4px solid #007bff; padding: 15px; margin: 20px 0; text-align: left;">
+                        <p style="font-size: 14px; font-weight: bold; color: #007bff; margin: 0 0 10px 0;">📦 PRODUTOS ADQUIRIDOS:</p>
+                        ${order.items && Array.isArray(order.items)
+                            ? order.items.map((item: any) => `
+                                <p style="font-size: 14px; color: #333; margin: 5px 0;">
+                                    ✓ <strong>${item.name}</strong> - R$ ${item.price?.toFixed(2) || '0.00'}
+                                </p>
+                            `).join('')
+                            : `<p style="font-size: 14px; color: #333; margin: 5px 0;">✓ <strong>${productName}</strong></p>`
+                        }
+                    </div>
                     
                     <!-- Credentials Box -->
                     <div style="background-color: #f8f9fa; border: 2px solid #007bff; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: left;">
@@ -509,25 +522,51 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     console.log(`[Webhook] User creation response: ${createUserRes.status} - ${errorText}`);
 
                     if (errorText.includes('already registered') || errorText.includes('User already registered')) {
-                        console.log('[Webhook] User already exists, looking up ID...');
+                        console.log('[Webhook] User already exists, looking up ID via Auth API...');
 
-                        // Query 'profiles' table to get the user ID
-                        const profileRes = await fetch(`${supabaseUrl}/rest/v1/profiles?email=eq.${order.customer_email}&select=id`, {
-                            headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
+                        // Use Auth Admin API to find user by email
+                        const listUsersRes = await fetch(`${supabaseUrl}/auth/v1/admin/users`, {
+                            headers: {
+                                'apikey': supabaseKey,
+                                'Authorization': `Bearer ${supabaseKey}`
+                            }
                         });
 
-                        if (profileRes.ok) {
-                            const profiles = await profileRes.json();
-                            if (profiles && profiles.length > 0) {
-                                userId = profiles[0].id;
-                                console.log(`[Webhook] Found existing user ID via profiles: ${userId}`);
-                                await logToSupabase('webhook.user_found', { userId, email: order.customer_email }, true);
+                        if (listUsersRes.ok) {
+                            const { users } = await listUsersRes.json();
+                            const existingUser = users?.find((u: any) => u.email === order.customer_email);
+
+                            if (existingUser) {
+                                userId = existingUser.id;
+                                console.log(`[Webhook] Found existing user ID via Auth API: ${userId}`);
+                                await logToSupabase('webhook.user_found_auth', { userId, email: order.customer_email }, true);
                             } else {
-                                console.error('[Webhook] User exists in Auth but not found in Profiles table.');
-                                await logToSupabase('webhook.error_user_not_in_profiles', { email: order.customer_email }, false);
+                                console.warn('[Webhook] User not found in Auth API users list');
                             }
                         } else {
-                            console.error('[Webhook] Failed to query profiles table:', await profileRes.text());
+                            console.error('[Webhook] Failed to list users from Auth API:', await listUsersRes.text());
+                        }
+
+                        // Fallback: try profiles table if Auth API didn't work
+                        if (!userId) {
+                            console.log('[Webhook] Fallback: trying profiles table...');
+                            const profileRes = await fetch(`${supabaseUrl}/rest/v1/profiles?email=eq.${order.customer_email}&select=id`, {
+                                headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
+                            });
+
+                            if (profileRes.ok) {
+                                const profiles = await profileRes.json();
+                                if (profiles && profiles.length > 0) {
+                                    userId = profiles[0].id;
+                                    console.log(`[Webhook] Found existing user ID via profiles: ${userId}`);
+                                    await logToSupabase('webhook.user_found_profiles', { userId, email: order.customer_email }, true);
+                                } else {
+                                    console.error('[Webhook] User exists in Auth but not found in Profiles table.');
+                                    await logToSupabase('webhook.error_user_not_in_profiles', { email: order.customer_email }, false);
+                                }
+                            } else {
+                                console.error('[Webhook] Failed to query profiles table:', await profileRes.text());
+                            }
                         }
                     } else {
                         // Other error - log it but don't crash the webhook
