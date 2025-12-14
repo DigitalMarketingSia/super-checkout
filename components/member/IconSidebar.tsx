@@ -6,6 +6,7 @@ interface IconSidebarProps {
     onToggleMenu: () => void;
     isMenuOpen: boolean;
     memberAreaSlug?: string;
+    primaryColor?: string;
 }
 
 interface IconButtonProps {
@@ -15,9 +16,10 @@ interface IconButtonProps {
     onClick?: () => void;
     isActive?: boolean;
     disabled?: boolean;
+    color?: string;
 }
 
-const IconButton: React.FC<IconButtonProps> = ({ icon: Icon, label, to, onClick, isActive, disabled }) => {
+const IconButton: React.FC<IconButtonProps> = ({ icon: Icon, label, to, onClick, isActive, disabled, color }) => {
     const content = (
         <div className="relative group">
             <button
@@ -27,12 +29,13 @@ const IconButton: React.FC<IconButtonProps> = ({ icon: Icon, label, to, onClick,
                     w-12 h-12 rounded-xl flex items-center justify-center
                     transition-all duration-200
                     ${isActive
-                        ? 'bg-red-600 text-white shadow-lg shadow-red-600/50'
+                        ? 'bg-white/10 text-white shadow-lg'
                         : disabled
                             ? 'text-gray-600 cursor-not-allowed'
                             : 'text-gray-400 hover:text-white hover:bg-white/10'
                     }
                 `}
+                style={isActive && color ? { backgroundColor: `${color}20`, color: color, borderColor: color, border: '1px solid' } : { color: color }}
             >
                 <Icon className="w-5 h-5" />
             </button>
@@ -54,7 +57,7 @@ const IconButton: React.FC<IconButtonProps> = ({ icon: Icon, label, to, onClick,
     return content;
 };
 
-export const IconSidebar: React.FC<IconSidebarProps> = ({ onToggleMenu, isMenuOpen, memberAreaSlug }) => {
+export const IconSidebar: React.FC<IconSidebarProps> = ({ onToggleMenu, isMenuOpen, memberAreaSlug, primaryColor }) => {
     const location = useLocation();
 
     // Detect if we're on a custom domain
@@ -80,6 +83,7 @@ export const IconSidebar: React.FC<IconSidebarProps> = ({ onToggleMenu, isMenuOp
                 label={isMenuOpen ? 'Fechar Menu' : 'Abrir Menu'}
                 onClick={onToggleMenu}
                 isActive={isMenuOpen}
+                color={primaryColor}
             />
 
             <div className="w-8 h-px bg-white/10 my-2"></div>

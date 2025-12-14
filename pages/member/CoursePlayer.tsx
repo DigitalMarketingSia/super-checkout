@@ -14,6 +14,7 @@ export const CoursePlayer = () => {
 
     const [loading, setLoading] = useState(true);
     const [content, setContent] = useState<Content | null>(null);
+    const [allContents, setAllContents] = useState<Content[]>([]); // NEW: Store all contents
     const [memberArea, setMemberArea] = useState<MemberArea | null>(null);
     const [modules, setModules] = useState<Module[]>([]);
     const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
@@ -34,6 +35,8 @@ export const CoursePlayer = () => {
     }, [id, slug]);
 
     const loadData = async (contentId: string) => {
+        // Only set loading if initially loading content to prevent flash if switching efficiently
+        // But for safe nav let's keep it simple
         setLoading(true);
         try {
             if (slug) {
@@ -42,6 +45,8 @@ export const CoursePlayer = () => {
             }
 
             const contents = await storage.getContents();
+            setAllContents(contents); // Store all
+
             const foundContent = contents.find(c => c.id === contentId);
 
             if (!foundContent) {
@@ -146,6 +151,23 @@ export const CoursePlayer = () => {
                 setIsModalOpen(true);
             }
         }, { content: content || undefined, module: currentModule });
+    };
+
+    const handleContentSelect = (targetContent: Content) => {
+        if (targetContent.id === content?.id) return; // Already on this content
+
+        // Check Access for the Content itself
+        handleAccess(targetContent, {
+            onAccess: () => {
+                // Navigate to the content player
+                const newSlug = slug ? `/app/${slug}/${targetContent.id}` : `/app/content/${targetContent.id}`;
+                navigate(newSlug);
+            },
+            onSalesModal: (product) => {
+                setSelectedProduct(product);
+                setIsModalOpen(true);
+            }
+        });
     };
 
     const toggleModule = (moduleId: string) => {
@@ -301,7 +323,7 @@ export const CoursePlayer = () => {
                             <button
                                 onClick={handleNext}
                                 disabled={!hasNext}
-                                className={`p-3 rounded-full border transition-colors ${!hasNext ? 'border-white/5 text-gray-600 cursor-not-allowed' : 'border-white/10 text-white hover:bg-white/10 hover:border-white/20'}`}
+                                className={`p-3 rounded-full border transition-colors ${hasNext ? 'border-white/10 text-white hover:bg-white/10 hover:border-white/20' : 'border-white/5 text-gray-600 cursor-not-allowed'}`}
                             >
                                 <ChevronRight className="w-5 h-5" />
                             </button>
@@ -348,18 +370,17 @@ export const CoursePlayer = () => {
         }).filter(Boolean) as Module[];
     }, [modules, searchTerm]);
 
+    const filteredContents = React.useMemo(() => {
+        if (!searchTerm) return allContents;
+        const lowerTerm = searchTerm.toLowerCase();
+        // Return contents that match title OR (if it's the current content) let the modules filter handle it inside
+        return allContents.filter(c => c.title.toLowerCase().includes(lowerTerm) || c.id === content?.id);
+    }, [allContents, searchTerm, content]);
+
+
     // Auto-expand modules when searching
     useEffect(() => {
         if (searchTerm && filteredModules.length > 0) {
-            const newExpanded: Record<string, boolean> = {};
-            filteredModules.forEach(m => newExpanded[m.id] = true);
-            // We don't setExpandedModuleId here because that controls the accordion state which is single-expand in the current UI logic? 
-            // Actually the current UI uses `expandedModuleId` state which is a string (single expansion). 
-            // The user might want to see multiple results. 
-            // Let's check the state definition: const [expandedModuleId, setExpandedModuleId] = useState<string | null>(null);
-            // It only supports one open module at a time. 
-            // For search, it might be better to allow multiple or just expand the first one.
-            // Let's just expand the first match for now to keep it simple and consistent with current state type.
             if (filteredModules.length > 0) {
                 setExpandedModuleId(filteredModules[0].id);
             }
@@ -373,6 +394,7 @@ export const CoursePlayer = () => {
                 onToggleMenu={() => setSidebarOpen(!sidebarOpen)}
                 isMenuOpen={sidebarOpen}
                 memberAreaSlug={slug}
+                primaryColor={primaryColor}
             />
 
             {/* Sidebar */}
@@ -399,115 +421,146 @@ export const CoursePlayer = () => {
                             <button
                                 onClick={() => setSidebarOpen(false)}
                                 className="p-2 text-white hover:bg-white/10 rounded-lg transition-colors flex-shrink-0"
-                                style={{ backgroundColor: primaryColor }}
+                                style={{ color: primaryColor }}
                             >
                                 <PanelLeftClose className="w-5 h-5" />
                             </button>
                         </div>
 
                         <div className="flex-1 overflow-y-auto custom-scrollbar">
-                            {filteredModules.map((module, index) => (
-                                <div key={module.id} className="border-b border-white/5 mb-6 last:mb-0">
-                                    <div
-                                        onClick={() => toggleModule(module.id)}
-                                        className="p-0 cursor-pointer hover:bg-white/5 transition-colors"
-                                    >
-                                        {/* Module Card Header */}
-                                        <div className="relative h-24 w-full overflow-hidden">
-                                            {module.image_horizontal_url ? (
-                                                <img src={module.image_horizontal_url} className="w-full h-full object-cover opacity-60" />
-                                            ) : (
-                                                <div className="w-full h-full bg-gradient-to-r from-gray-800 to-gray-900" />
-                                            )}
-                                            <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/60 to-transparent flex items-center justify-between p-4">
-                                                <div className="flex-1 pr-4">
-                                                    <span
-                                                        className="text-[10px] text-white font-bold uppercase tracking-wider mb-1.5 inline-block px-2 py-0.5 rounded shadow-sm"
-                                                        style={{ backgroundColor: primaryColor }}
+                            {/* Loop through all contents */}
+                            {filteredContents.map((c) => {
+                                const isCurrentContent = c.id === content?.id;
+
+                                return (
+                                    <div key={c.id} className="border-b border-white/5 last:mb-0">
+                                        {/* Content Header */}
+                                        <div
+                                            className={`p-4 cursor-pointer hover:bg-white/5 flex items-center justify-between ${isCurrentContent ? 'bg-[#1a1e26]/50' : ''}`}
+                                            onClick={() => handleContentSelect(c)}
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                {c.image_url ? (
+                                                    <img src={c.image_url} className="w-10 h-10 rounded-lg object-cover" />
+                                                ) : (
+                                                    <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center">
+                                                        <FileText size={16} />
+                                                    </div>
+                                                )}
+                                                <div className="flex-1 min-w-0">
+                                                    <h3 className={`text-sm font-bold truncate leading-tight ${isCurrentContent ? 'text-white' : 'text-gray-400'}`}
+                                                        style={isCurrentContent ? { color: primaryColor } : {}}
                                                     >
-                                                        Módulo {modules.findIndex(m => m.id === module.id) + 1}
-                                                    </span>
-                                                    <h3 className="text-sm font-bold text-white line-clamp-2 leading-tight">{module.title}</h3>
+                                                        {c.title}
+                                                    </h3>
+                                                    {!isCurrentContent && (
+                                                        <p className="text-[10px] text-gray-500 uppercase tracking-wide">Clique para acessar</p>
+                                                    )}
                                                 </div>
-                                                {expandedModuleId === module.id ? <ChevronUp size={18} className="text-white" /> : <ChevronDown size={18} className="text-white" />}
                                             </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Lessons List (Accordion) */}
-                                    {expandedModuleId === module.id && (
-                                        <div className="bg-transparent px-2 pb-2 pt-6 space-y-4">
-                                            {module.lessons?.map((lesson, lIndex) => {
-                                                const isActive = currentLesson?.id === lesson.id;
-                                                const isCompleted = progressMap[lesson.id];
-
-                                                // Determine thumbnail
-                                                let thumbnailUrl = lesson.image_url;
-                                                if (!thumbnailUrl && lesson.video_url) {
-                                                    // Try to get YT thumbnail
-                                                    const videoId = lesson.video_url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/)?.[1];
-                                                    if (videoId) {
-                                                        thumbnailUrl = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
-                                                    }
-                                                }
-
-                                                return (
-                                                    <button
-                                                        key={lesson.id}
-                                                        onClick={() => handleLessonSelect(lesson)}
-                                                        className={`group w-full text-left p-2 flex items-center gap-3 rounded-xl transition-all border ${isActive
-                                                            ? 'shadow-lg'
-                                                            : 'bg-[#131720] hover:bg-[#1a1e26] border-transparent'
-                                                            }`}
-                                                        style={isActive ? {
-                                                            backgroundColor: `${primaryColor}20`, // 20% opacity
-                                                            borderColor: primaryColor,
-                                                        } : {}}
-                                                    >
-                                                        {/* Thumbnail */}
-                                                        <div className="relative w-24 aspect-video flex-shrink-0 bg-gray-800 rounded-lg overflow-hidden shadow-sm">
-                                                            {thumbnailUrl ? (
-                                                                <img src={thumbnailUrl} className={`w-full h-full object-cover transition-opacity ${isActive ? 'opacity-40' : 'opacity-80 group-hover:opacity-100'}`} alt="" />
-                                                            ) : (
-                                                                <div className="w-full h-full flex items-center justify-center text-gray-600">
-                                                                    <FileText size={20} />
-                                                                </div>
-                                                            )}
-
-                                                            {isActive && (
-                                                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-[1px]">
-                                                                    <span className="text-[9px] font-bold text-white uppercase tracking-wider bg-black/60 px-1.5 py-0.5 rounded-full">Tocando</span>
-                                                                </div>
-                                                            )}
-                                                        </div>
-
-                                                        {/* Info */}
-                                                        <div className="flex-1 min-w-0 py-1">
-                                                            <p className={`text-sm font-medium line-clamp-2 leading-snug ${isActive ? 'text-white' : 'text-gray-300 group-hover:text-white'}`}>
-                                                                {lesson.title}
-                                                            </p>
-                                                        </div>
-
-                                                        {/* Status */}
-                                                        <div className="flex-shrink-0 pr-1">
-                                                            {isCompleted ? (
-                                                                <div className="bg-green-500/20 rounded-full p-0.5">
-                                                                    <CheckCircle className="w-5 h-5 text-green-500 fill-green-500/20" />
-                                                                </div>
-                                                            ) : (
-                                                                <div className="w-5 h-5 rounded-full border-2 border-gray-700/50 group-hover:border-gray-600" />
-                                                            )}
-                                                        </div>
-                                                    </button>
-                                                );
-                                            })}
-                                            {(!module.lessons || module.lessons.length === 0) && (
-                                                <div className="p-4 text-xs text-gray-500 text-center">Nenhuma aula neste módulo.</div>
+                                            {isCurrentContent ? (
+                                                <ChevronDown size={16} style={{ color: primaryColor }} />
+                                            ) : (
+                                                <ChevronRight size={16} className="text-gray-600" />
                                             )}
                                         </div>
-                                    )}
-                                </div>
-                            ))}
+
+                                        {/* Modules List (Only for current content) */}
+                                        {isCurrentContent && filteredModules.map((module, index) => (
+                                            <div key={module.id} className="mb-1 ml-4 border-l border-white/10">
+                                                <div
+                                                    onClick={() => toggleModule(module.id)}
+                                                    className="p-3 cursor-pointer hover:bg-white/5 transition-colors flex items-center justify-between pr-4"
+                                                >
+                                                    <div className="flex-1">
+                                                        <span
+                                                            className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5 inline-block"
+                                                            style={{ color: primaryColor }}
+                                                        >
+                                                            Módulo {modules.findIndex(m => m.id === module.id) + 1}
+                                                        </span>
+                                                        <h3 className="text-sm font-semibold text-gray-200 line-clamp-2 leading-tight">{module.title}</h3>
+                                                    </div>
+                                                    {expandedModuleId === module.id ? <ChevronUp size={14} style={{ color: primaryColor }} /> : <ChevronDown size={14} className="text-gray-600" />}
+                                                </div>
+
+                                                {/* Lessons List (Accordion) */}
+                                                {expandedModuleId === module.id && (
+                                                    <div className="bg-transparent px-2 pb-2 space-y-1">
+                                                        {module.lessons?.map((lesson, lIndex) => {
+                                                            const isActive = currentLesson?.id === lesson.id;
+                                                            const isCompleted = progressMap[lesson.id];
+
+                                                            // Determine thumbnail
+                                                            let thumbnailUrl = lesson.image_url;
+                                                            if (!thumbnailUrl && lesson.video_url) {
+                                                                // Try to get YT thumbnail
+                                                                const videoId = lesson.video_url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/)?.[1];
+                                                                if (videoId) {
+                                                                    thumbnailUrl = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
+                                                                }
+                                                            }
+
+                                                            return (
+                                                                <button
+                                                                    key={lesson.id}
+                                                                    onClick={() => handleLessonSelect(lesson)}
+                                                                    className={`group w-full text-left p-2 flex items-center gap-3 rounded-xl transition-all border ${isActive
+                                                                        ? 'shadow-lg'
+                                                                        : 'bg-transparent hover:bg-[#1a1e26] border-transparent'
+                                                                        }`}
+                                                                    style={isActive ? {
+                                                                        backgroundColor: `${primaryColor}15`, // 15% opacity
+                                                                        borderColor: primaryColor,
+                                                                    } : {}}
+                                                                >
+                                                                    {/* Thumbnail */}
+                                                                    <div className="relative w-16 aspect-video flex-shrink-0 bg-gray-800 rounded-lg overflow-hidden shadow-sm">
+                                                                        {thumbnailUrl ? (
+                                                                            <img src={thumbnailUrl} className={`w-full h-full object-cover transition-opacity ${isActive ? 'opacity-40' : 'opacity-80 group-hover:opacity-100'}`} alt="" />
+                                                                        ) : (
+                                                                            <div className="w-full h-full flex items-center justify-center text-gray-600">
+                                                                                <FileText size={14} />
+                                                                            </div>
+                                                                        )}
+
+                                                                        {isActive && (
+                                                                            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-[1px]">
+                                                                                <Play size={10} className="text-white fill-white" />
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+
+                                                                    {/* Info */}
+                                                                    <div className="flex-1 min-w-0 py-0.5">
+                                                                        <p className={`text-xs font-medium line-clamp-2 leading-snug ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-white'}`}>
+                                                                            {lesson.title}
+                                                                        </p>
+                                                                    </div>
+
+                                                                    {/* Status */}
+                                                                    <div className="flex-shrink-0 pr-1">
+                                                                        {isCompleted ? (
+                                                                            <div className="bg-green-500/20 rounded-full p-0.5">
+                                                                                <CheckCircle className="w-3 h-3 text-green-500 fill-green-500/20" />
+                                                                            </div>
+                                                                        ) : (
+                                                                            <div className={`w-3 h-3 rounded-full border-2 ${isActive ? 'border-white/20' : 'border-gray-700/50'}`} />
+                                                                        )}
+                                                                    </div>
+                                                                </button>
+                                                            );
+                                                        })}
+                                                        {(!module.lessons || module.lessons.length === 0) && (
+                                                            <div className="p-4 text-xs text-gray-500 text-center">Nenhuma aula neste módulo.</div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                );
+                            })}
                         </div>
                     </>
                 )}
@@ -515,8 +568,6 @@ export const CoursePlayer = () => {
 
             {/* Main Content */}
             <main className="flex-1 flex flex-col h-full relative">
-                {/* Mobile Toggle */}
-
 
                 <div className="LESSON-WRAP flex-1 overflow-y-auto bg-[#0D1118] p-4 md:p-8 pt-12 md:pt-16 flex justify-center">
                     {loading ? (
