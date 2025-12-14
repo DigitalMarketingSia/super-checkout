@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { LogOut, User, Menu, X, ChevronDown, ChevronRight, ExternalLink, Home, ShoppingBag, LinkIcon, ChevronUp, Instagram, ArrowUpRight, HelpCircle, Ban } from 'lucide-react';
+import { LogOut, User, Menu, X, ChevronDown, ChevronRight, ExternalLink, Home, ShoppingBag, LinkIcon, ChevronUp, Instagram, ArrowUpRight, HelpCircle, Ban, Package } from 'lucide-react';
 import { MemberArea, SidebarItem } from '../../types';
 
 interface MemberAreaLayoutProps {
@@ -259,7 +259,23 @@ export const MemberAreaLayout: React.FC<MemberAreaLayoutProps> = ({ children, me
                             </Link>
                         </li>
 
-                        {/* 2. Produtos à Venda */}
+                        {/* 2. Meus Produtos */}
+                        <li>
+                            <Link
+                                to={`${appLink}/my-products`}
+                                onClick={() => setIsSidebarOpen(false)}
+                                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 group ${location.pathname.includes('/my-products')
+                                    ? 'bg-[#D4143C] text-white shadow-lg shadow-red-900/20'
+                                    : 'text-gray-400 hover:text-white hover:bg-white/5'
+                                    }`}
+                                style={location.pathname.includes('/my-products') && memberArea?.primary_color ? { backgroundColor: memberArea.primary_color } : {}}
+                            >
+                                <Package className="w-5 h-5" />
+                                <span className="font-medium">Meus Produtos</span>
+                            </Link>
+                        </li>
+
+                        {/* 3. Produtos à Venda */}
                         <li>
                             <Link
                                 to={`${appLink}/products`}
@@ -275,7 +291,7 @@ export const MemberAreaLayout: React.FC<MemberAreaLayoutProps> = ({ children, me
                             </Link>
                         </li>
 
-                        {/* 3. Links (Dropdown) */}
+                        {/* 4. Links (Dropdown) */}
                         <li>
                             <button
                                 onClick={() => toggleSection('links')}

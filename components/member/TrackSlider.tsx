@@ -140,12 +140,15 @@ const TrackItemCard: React.FC<TrackItemCardProps> = ({ item, onClick, accessGran
     let imageUrl = '';
     let Icon = Package;
     let isFree = false;
+    let isOwned = false; // NEW: Track if product is owned
     const isVertical = cardStyle === 'vertical';
 
     if (item.product) {
         title = item.product.name;
         imageUrl = item.product.imageUrl || '';
         Icon = Package;
+        // Check if user owns this product
+        isOwned = accessGrants.some(g => g.product_id === item.product!.id && g.status === 'active');
     } else if (item.content) {
         title = item.content.title;
         isFree = item.content.is_free || false;
@@ -209,6 +212,14 @@ const TrackItemCard: React.FC<TrackItemCardProps> = ({ item, onClick, accessGran
                     <div className="absolute top-2 left-2 bg-green-500/20 text-green-500 border border-green-500/20 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wide shadow-sm flex items-center gap-1 backdrop-blur-sm">
                         <CheckCircle size={10} strokeWidth={3} />
                         Gratuito
+                    </div>
+                )}
+
+                {/* Owned Product Badge */}
+                {isOwned && (
+                    <div className="absolute top-2 left-2 bg-orange-500/20 text-orange-500 border border-orange-500/20 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wide shadow-sm flex items-center gap-1 backdrop-blur-sm">
+                        <Package size={10} strokeWidth={3} />
+                        Adquirido
                     </div>
                 )}
 

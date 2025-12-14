@@ -103,8 +103,8 @@ export const MyProducts: React.FC = () => {
                             onClick={() => handleProductClick(product)}
                         >
                             {/* Owned Badge */}
-                            <div className="absolute top-3 right-3 z-10 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg flex items-center gap-1">
-                                <div className="w-2 h-2 bg-white rounded-full"></div>
+                            <div className="absolute top-3 left-3 z-10 bg-orange-500/20 text-orange-500 border border-orange-500/20 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wide shadow-sm flex items-center gap-1 backdrop-blur-sm">
+                                <Package className="w-3 h-3" strokeWidth={3} />
                                 Adquirido
                             </div>
 
