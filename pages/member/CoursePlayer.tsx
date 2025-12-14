@@ -529,11 +529,11 @@ export const CoursePlayer = () => {
                                         </div>
 
                                         {isCurrentContent && isContentExpanded && (
-                                            <div className="relative ml-6 pl-6 pt-4 pb-2 space-y-4 border-l border-white/10">
+                                            <div className="relative ml-4 pl-4 pt-4 pb-2 space-y-4 border-l border-white/10">
                                                 {filteredModules.map((module, index) => (
-                                                    <div key={module.id} className="relative">
+                                                    <div key={module.id} className="relative pr-2">
                                                         {/* Horizontal Connector Line */}
-                                                        <div className="absolute top-[2.5rem] -left-6 w-6 h-[1px] bg-white/10"></div>
+                                                        <div className="absolute top-[2.5rem] -left-4 w-4 h-[1px] bg-white/10"></div>
 
                                                         <div
                                                             onClick={() => toggleModule(module.id)}
