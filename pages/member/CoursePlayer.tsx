@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, useSearchParams, useOutletContext } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { storage } from '../../services/storageService';
 import { Content, Module, Lesson, MemberArea, AccessGrant } from '../../types';
 import { ChevronLeft, CheckCircle, Circle, FileText, Download, ChevronDown, ChevronUp, PanelLeftClose, Search, Play, ChevronRight, Menu } from 'lucide-react';
@@ -48,26 +48,24 @@ export const CoursePlayer = () => {
                 !window.location.hostname.includes('localhost') &&
                 !window.location.pathname.startsWith('/app/');
 
-            let currentMemberArea = contextMemberArea || memberArea;
-            let areaId: string | undefined = currentMemberArea?.id;
+            let currentMemberArea = memberArea;
+            let areaId: string | undefined = memberArea?.id;
 
-            // 1. Resolve Member Area (only if not already from context)
-            if (!currentMemberArea) {
-                if (slug) {
-                    // Scenario A: Standard URL with Slug
-                    currentMemberArea = await storage.getMemberAreaBySlug(slug);
-                    if (currentMemberArea) {
-                        setMemberArea(currentMemberArea);
-                        areaId = currentMemberArea.id;
-                    }
-                } else if (isCustomDomain) {
-                    // Scenario B: Custom Domain - fetch by hostname
-                    const hostname = window.location.hostname;
-                    currentMemberArea = await storage.getMemberAreaByDomain(hostname);
-                    if (currentMemberArea) {
-                        setMemberArea(currentMemberArea);
-                        areaId = currentMemberArea.id;
-                    }
+            // 1. Resolve Member Area
+            if (effectiveSlug && !currentMemberArea) {
+                // Scenario A: Standard URL with Slug OR Custom Domain with forcedSlug
+                currentMemberArea = await storage.getMemberAreaBySlug(effectiveSlug);
+                if (currentMemberArea) {
+                    setMemberArea(currentMemberArea);
+                    areaId = currentMemberArea.id;
+                }
+            } else if (isCustomDomain && !effectiveSlug && !currentMemberArea) {
+                // Scenario B: Custom Domain fallback - fetch by hostname
+                const hostname = window.location.hostname;
+                currentMemberArea = await storage.getMemberAreaByDomain(hostname);
+                if (currentMemberArea) {
+                    setMemberArea(currentMemberArea);
+                    areaId = currentMemberArea.id;
                 }
             }
 

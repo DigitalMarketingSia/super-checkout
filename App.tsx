@@ -223,9 +223,12 @@ const DomainDispatcher = () => {
           <Route path="faq" element={<MemberFAQ />} />
           <Route path="my-list" element={<MemberDashboard />} />
           <Route path="content/:id" element={<ContentModules />} />
-          <Route path="course/:id" element={<CoursePlayer />} />
           <Route path="profile" element={<MemberProfile />} />
         </Route>
+
+        {/* Course Player - Outside wrapper to avoid layout */}
+        <Route path="/course/:id" element={<CoursePlayer forcedSlug={customMemberAreaSlug} />} />
+
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     );
