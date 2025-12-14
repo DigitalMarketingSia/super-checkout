@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams, useOutletContext } from 'react-router-dom';
 import { storage } from '../../services/storageService';
 import { Content, Module, Lesson, MemberArea, AccessGrant } from '../../types';
 import { ChevronLeft, CheckCircle, Circle, FileText, Download, ChevronDown, ChevronUp, PanelLeftClose, Search, Play, ChevronRight, Menu } from 'lucide-react';
@@ -12,10 +12,14 @@ export const CoursePlayer = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
 
+    // Get member area from outlet context (if inside MemberAreaWrapper)
+    const outletContext = useOutletContext<{ memberArea: MemberArea }>() || {};
+    const contextMemberArea = outletContext.memberArea;
+
     const [loading, setLoading] = useState(true);
     const [content, setContent] = useState<Content | null>(null);
     const [allContents, setAllContents] = useState<Content[]>([]);
-    const [memberArea, setMemberArea] = useState<MemberArea | null>(null);
+    const [memberArea, setMemberArea] = useState<MemberArea | null>(contextMemberArea || null);
     const [modules, setModules] = useState<Module[]>([]);
     const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
     const [progressMap, setProgressMap] = useState<Record<string, boolean>>({});
@@ -44,24 +48,26 @@ export const CoursePlayer = () => {
                 !window.location.hostname.includes('localhost') &&
                 !window.location.pathname.startsWith('/app/');
 
-            let currentMemberArea = memberArea;
-            let areaId: string | undefined = memberArea?.id;
+            let currentMemberArea = contextMemberArea || memberArea;
+            let areaId: string | undefined = currentMemberArea?.id;
 
-            // 1. Resolve Member Area
-            if (slug && !currentMemberArea) {
-                // Scenario A: Standard URL with Slug
-                currentMemberArea = await storage.getMemberAreaBySlug(slug);
-                if (currentMemberArea) {
-                    setMemberArea(currentMemberArea);
-                    areaId = currentMemberArea.id;
-                }
-            } else if (isCustomDomain && !currentMemberArea) {
-                // Scenario B: Custom Domain - fetch by hostname
-                const hostname = window.location.hostname;
-                currentMemberArea = await storage.getMemberAreaByDomain(hostname);
-                if (currentMemberArea) {
-                    setMemberArea(currentMemberArea);
-                    areaId = currentMemberArea.id;
+            // 1. Resolve Member Area (only if not already from context)
+            if (!currentMemberArea) {
+                if (slug) {
+                    // Scenario A: Standard URL with Slug
+                    currentMemberArea = await storage.getMemberAreaBySlug(slug);
+                    if (currentMemberArea) {
+                        setMemberArea(currentMemberArea);
+                        areaId = currentMemberArea.id;
+                    }
+                } else if (isCustomDomain) {
+                    // Scenario B: Custom Domain - fetch by hostname
+                    const hostname = window.location.hostname;
+                    currentMemberArea = await storage.getMemberAreaByDomain(hostname);
+                    if (currentMemberArea) {
+                        setMemberArea(currentMemberArea);
+                        areaId = currentMemberArea.id;
+                    }
                 }
             }
 
