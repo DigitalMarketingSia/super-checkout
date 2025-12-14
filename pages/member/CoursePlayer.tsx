@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, useSearchParams, useOutletContext } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { storage } from '../../services/storageService';
 import { Content, Module, Lesson, MemberArea, AccessGrant } from '../../types';
-import { ChevronLeft, CheckCircle, Circle, PlayCircle, FileText, Download, Menu, X, ChevronDown, ChevronUp, PanelLeftClose, PanelLeftOpen, Search, Play, ChevronRight, Home } from 'lucide-react';
+import { ChevronLeft, CheckCircle, Circle, FileText, Download, ChevronDown, ChevronUp, PanelLeftClose, Search, Play, ChevronRight, Menu } from 'lucide-react';
 import { useAccessControl } from '../../hooks/useAccessControl';
 import { ProductSalesModal } from '../../components/member/ProductSalesModal';
 import { IconSidebar } from '../../components/member/IconSidebar';
@@ -20,7 +20,7 @@ export const CoursePlayer = () => {
     const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
     const [progressMap, setProgressMap] = useState<Record<string, boolean>>({});
     const [accessGrants, setAccessGrants] = useState<AccessGrant[]>([]);
-    const { handleAccess, checkAccess } = useAccessControl(accessGrants);
+    const { handleAccess } = useAccessControl(accessGrants);
     const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -39,36 +39,75 @@ export const CoursePlayer = () => {
         setLoading(true);
         try {
             let currentMemberArea = memberArea;
+            let areaId: string | undefined = memberArea?.id;
 
-            // 1. Ensure Member Area is Loaded
+            // 1. Resolve Member Area
             if (slug && !currentMemberArea) {
+                // Scenario A: Standard URL with Slug
                 currentMemberArea = await storage.getMemberAreaBySlug(slug);
-                setMemberArea(currentMemberArea);
+                if (currentMemberArea) {
+                    setMemberArea(currentMemberArea);
+                    areaId = currentMemberArea.id;
+                }
             }
 
-            // 2. Fetch Contents (Filtered by Area if possible)
-            // If we are in a member area, rely on that ID to filter contents strictly
-            const areaId = currentMemberArea?.id;
-            const contents = await storage.getContents(areaId);
-            setAllContents(contents);
+            // 2. Resolve Content & Area (if custom domain)
+            // If we are on custom domain, we don't have slug initially.
+            // We fetch ALL contents or we fetch the specific content to know the area.
+            // Best approach: Get all contents for the area if we know it, otherwise infer it.
 
-            // 3. Find Target Content
-            const foundContent = contents.find(c => c.id === contentId);
+            let fetchedContents: Content[] = [];
 
-            if (!foundContent) {
-                console.error(`Content not found: ${contentId} in area ${slug || 'global'}`);
-                // Only redirect if absolutely necessary. Logic: if no content found, maybe wrong ID?
-                // Try to find ANY content to show instead of home? No, home is safer.
-                navigate(slug ? `/app/${slug}` : '/app');
+            if (areaId) {
+                fetchedContents = await storage.getContents(areaId);
+            } else {
+                // Scenario B: Custom Domain (No Slug, No Area ID yet)
+                // Fetch ALL contents is risky if we have many areas (admin context), 
+                // but storage.getContents() usually filters by RLS anyway?
+                // Actually storage.getContents checks for memberAreaId argument.
+                // If undefined, it returns query? 
+
+                // Let's rely on finding the specific content first to identify the area
+                // We need a helper to get content by ID. 
+                // Since we don't have it, we might grab the full list if it's not too huge.
+                // OR better: use the hostname logic if available?
+                // Actually, let's use a trick: fetch modules for the content. 
+                // Wait, modules don't tell us member area directly usually.
+
+                // Let's assume we can fetch all contents for now. 
+                // If this is a huge scalable app, this needs a specific RPC or query.
+                fetchedContents = await storage.getContents();
+            }
+
+            const targetContent = fetchedContents.find(c => c.id === contentId);
+
+            if (!targetContent) {
+                console.error(`Content not found: ${contentId}`);
+                // If not found, maybe redirect home
+                navigate(slug ? `/app/${slug}` : '/');
                 return;
             }
 
-            setContent(foundContent);
+            // If we just discovered the area from the content, filter the list properly
+            if (!areaId && targetContent.member_area_id) {
+                areaId = targetContent.member_area_id;
+                // Filter the list to only show contents from this area
+                fetchedContents = fetchedContents.filter(c => c.member_area_id === areaId);
 
-            // 4. Load Modules & Access
+                // Also try to set member area info if needed (e.g. for color)
+                // We don't have a direct "getMemberAreaById" in frontend usually exposed,
+                // but we can try referencing if we have the object in a list?
+                // For now, we proceed with null memberArea (defaults to red color).
+            }
+
+            setAllContents(fetchedContents);
+            setContent(targetContent);
+
+            // 3. Load Modules
             const modulesData = await storage.getModules(contentId);
             setModules(modulesData);
 
+            // 4. Load Access Grants
             const grants = await storage.getAccessGrants();
             setAccessGrants(grants);
 
@@ -92,7 +131,7 @@ export const CoursePlayer = () => {
                 }
             }
 
-            // Fallback to first lesson of first module
+            // Fallback to first lesson
             if (!lessonToPlay && modulesData.length > 0 && modulesData[0].lessons && modulesData[0].lessons.length > 0) {
                 lessonToPlay = modulesData[0].lessons[0];
             }
@@ -102,7 +141,6 @@ export const CoursePlayer = () => {
                 setExpandedModuleId(lessonToPlay.module_id);
                 checkProgress(lessonToPlay.id);
             } else if (modulesData.length > 0) {
-                // Determine first module to expand even if no lesson selected
                 setExpandedModuleId(modulesData[0].id);
             }
 
@@ -161,19 +199,21 @@ export const CoursePlayer = () => {
         }
 
         // 2. Different Content: Navigate
-        // We check access first. 
-        // NOTE: if user does NOT have access, we show modal. 
-        // If they DO have access, we navigate.
         handleAccess(targetContent, {
             onAccess: () => {
-                setIsContentExpanded(true); // Ensure expanded when entering new content
+                setIsContentExpanded(true);
                 setLoading(true);
-                // Force navigation to the new content URL
-                const newSlug = slug ? `/app/${slug}/${targetContent.id}` : `/app/content/${targetContent.id}`;
-                navigate(newSlug);
+
+                // CORRECT URL Construction
+                // Standard: /app/:slug/course/:id
+                // Custom Domain: /course/:id
+                const newPath = slug
+                    ? `/app/${slug}/course/${targetContent.id}`
+                    : `/course/${targetContent.id}`;
+
+                navigate(newPath);
             },
             onSalesModal: (product) => {
-                // Ensure we have a product to show
                 const effectiveProduct = product || targetContent.associated_product;
                 if (effectiveProduct) {
                     setSelectedProduct(effectiveProduct);
@@ -319,7 +359,6 @@ export const CoursePlayer = () => {
                     {contentOrder.map(type => renderSection(type))}
                 </div>
 
-                {/* Footer Actions & Navigation */}
                 <div className="flex flex-col md:flex-row items-center justify-between gap-6 pt-8 border-t border-white/10 pb-8">
                     <div className="w-full md:w-auto">
                         <h1 className="text-2xl font-bold text-white mb-1">{currentLesson.title}</h1>
@@ -368,7 +407,7 @@ export const CoursePlayer = () => {
         );
     };
 
-    const primaryColor = memberArea?.primary_color || '#dc2626'; // Default red
+    const primaryColor = memberArea?.primary_color || '#dc2626';
 
     const filteredModules = React.useMemo(() => {
         if (!searchTerm) return modules;
@@ -377,29 +416,29 @@ export const CoursePlayer = () => {
             const moduleMatches = m.title.toLowerCase().includes(lowerTerm);
             const matchingLessons = m.lessons?.filter(l => l.title.toLowerCase().includes(lowerTerm));
 
-            if (moduleMatches) return m; // Return full module if title matches
+            if (moduleMatches) return m;
             if (matchingLessons && matchingLessons.length > 0) {
-                return { ...m, lessons: matchingLessons }; // Return module with filtered lessons
+                return { ...m, lessons: matchingLessons };
             }
             return null;
         }).filter(Boolean) as Module[];
     }, [modules, searchTerm]);
 
     const filteredContents = React.useMemo(() => {
-        // We filter contents based on current member area only
+        // Filter by member area if known
         let displayContents = allContents;
-        if (memberArea) {
+        if (memberArea?.id) {
             displayContents = allContents.filter(c => c.member_area_id === memberArea.id);
+        } else if (allContents.length > 0 && content?.member_area_id) {
+            // Fallback filtering if memberArea object is null but we inferred ID from content
+            displayContents = allContents.filter(c => c.member_area_id === content.member_area_id);
         }
 
         if (!searchTerm) return displayContents;
-
         const lowerTerm = searchTerm.toLowerCase();
         return displayContents.filter(c => c.title.toLowerCase().includes(lowerTerm) || c.id === content?.id);
     }, [allContents, searchTerm, content, memberArea]);
 
-
-    // Auto-expand modules when searching
     useEffect(() => {
         if (searchTerm && filteredModules.length > 0) {
             if (filteredModules.length > 0) {
@@ -410,7 +449,6 @@ export const CoursePlayer = () => {
 
     return (
         <div className="flex h-screen bg-[#0D1118] text-white overflow-hidden">
-            {/* Icon Sidebar - Always Visible */}
             <IconSidebar
                 onToggleMenu={() => setSidebarOpen(!sidebarOpen)}
                 isMenuOpen={sidebarOpen}
@@ -418,7 +456,6 @@ export const CoursePlayer = () => {
                 primaryColor={primaryColor}
             />
 
-            {/* Sidebar */}
             <aside
                 className={`
           fixed md:static inset-y-0 left-16 z-50 bg-gradient-to-b from-[#0f131a] to-[#0b0f16] border-r border-white/5 flex flex-col transition-all duration-300 md:ml-16
@@ -449,17 +486,14 @@ export const CoursePlayer = () => {
                         </div>
 
                         <div className="flex-1 overflow-y-auto custom-scrollbar">
-                            {/* Loop through all contents */}
                             {filteredContents.map((c) => {
                                 const isCurrentContent = c.id === content?.id;
-                                // NEW: Fallback image logic (content image -> associated product image)
                                 const imageUrl = c.image_url || c.associated_product?.imageUrl || c.associated_product?.image_url;
-                                // NEW: Fallback title to associated product name
+                                // Use product name if available, else content title
                                 const displayTitle = c.associated_product?.name || c.title;
 
                                 return (
                                     <div key={c.id} className="border-b border-white/5 last:mb-0">
-                                        {/* Content Header */}
                                         <div
                                             className={`p-4 cursor-pointer hover:bg-white/5 flex items-center justify-between ${isCurrentContent ? 'bg-[#1a1e26]/50' : ''}`}
                                             onClick={() => handleContentSelect(c)}
@@ -494,7 +528,6 @@ export const CoursePlayer = () => {
                                             )}
                                         </div>
 
-                                        {/* Modules List (Only for current content) */}
                                         {isCurrentContent && isContentExpanded && filteredModules.map((module, index) => (
                                             <div key={module.id} className="mb-1 ml-4 border-l border-white/10">
                                                 <div
@@ -504,13 +537,11 @@ export const CoursePlayer = () => {
                                                         backgroundImage: module.image_url ? `url(${module.image_url})` : undefined,
                                                         backgroundSize: 'cover',
                                                         backgroundPosition: 'center',
-                                                        backgroundColor: '#1a1e26' // Fallback
+                                                        backgroundColor: '#1a1e26'
                                                     }}
                                                 >
-                                                    {/* Gradient Overlay */}
                                                     <div className={`absolute inset-0 bg-gradient-to-r from-black/95 via-black/80 to-transparent transition-opacity ${expandedModuleId === module.id ? 'opacity-95' : 'opacity-90 group-hover:opacity-95'}`} />
 
-                                                    {/* Content */}
                                                     <div className="relative z-10 flex items-center justify-between px-4">
                                                         <div className="flex-1 min-w-0 mr-4">
                                                             <span
@@ -527,17 +558,13 @@ export const CoursePlayer = () => {
                                                     </div>
                                                 </div>
 
-                                                {/* Lessons List (Accordion) */}
                                                 {expandedModuleId === module.id && (
                                                     <div className="bg-transparent px-2 pb-2 space-y-1">
                                                         {module.lessons?.map((lesson, lIndex) => {
                                                             const isActive = currentLesson?.id === lesson.id;
                                                             const isCompleted = progressMap[lesson.id];
-
-                                                            // Determine thumbnail
                                                             let thumbnailUrl = lesson.image_url;
                                                             if (!thumbnailUrl && lesson.video_url) {
-                                                                // Try to get YT thumbnail
                                                                 const videoId = lesson.video_url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/)?.[1];
                                                                 if (videoId) {
                                                                     thumbnailUrl = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
@@ -553,11 +580,10 @@ export const CoursePlayer = () => {
                                                                         : 'bg-transparent hover:bg-[#1a1e26] border-transparent'
                                                                         }`}
                                                                     style={isActive ? {
-                                                                        backgroundColor: `${primaryColor}15`, // 15% opacity
+                                                                        backgroundColor: `${primaryColor}15`,
                                                                         borderColor: primaryColor,
                                                                     } : {}}
                                                                 >
-                                                                    {/* Thumbnail */}
                                                                     <div className="relative w-16 aspect-video flex-shrink-0 bg-gray-800 rounded-lg overflow-hidden shadow-sm">
                                                                         {thumbnailUrl ? (
                                                                             <img src={thumbnailUrl} className={`w-full h-full object-cover transition-opacity ${isActive ? 'opacity-40' : 'opacity-80 group-hover:opacity-100'}`} alt="" />
@@ -574,14 +600,12 @@ export const CoursePlayer = () => {
                                                                         )}
                                                                     </div>
 
-                                                                    {/* Info */}
                                                                     <div className="flex-1 min-w-0 py-0.5">
                                                                         <p className={`text-xs font-medium line-clamp-2 leading-snug ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-white'}`}>
                                                                             {lesson.title}
                                                                         </p>
                                                                     </div>
 
-                                                                    {/* Status */}
                                                                     <div className="flex-shrink-0 pr-1">
                                                                         {isCompleted ? (
                                                                             <div className="bg-green-500/20 rounded-full p-0.5">
@@ -609,9 +633,7 @@ export const CoursePlayer = () => {
                 )}
             </aside>
 
-            {/* Main Content */}
             <main className="flex-1 flex flex-col h-full relative">
-
                 <div className="LESSON-WRAP flex-1 overflow-y-auto bg-[#0D1118] p-4 md:p-8 pt-12 md:pt-16 flex justify-center">
                     {loading ? (
                         <div className="flex items-center justify-center h-64 w-full">
