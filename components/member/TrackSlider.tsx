@@ -102,7 +102,7 @@ export const TrackSlider: React.FC<TrackSliderProps> = ({ track, onItemClick, ac
                     <div
                         className="absolute right-0 top-0 bottom-4 w-32 md:w-48 pointer-events-none z-10"
                         style={{
-                            background: `linear-gradient(to right, transparent, #0E1012 70%)`
+                            background: `linear-gradient(to right, transparent, #0E1012 100%)`
                         }}
                     />
                 )}
@@ -211,11 +211,31 @@ const TrackItemCard: React.FC<TrackItemCardProps> = ({ item, onClick, accessGran
         >
             <div className={`${isVertical ? 'aspect-[3/4]' : 'aspect-video'} rounded-lg overflow-hidden bg-gray-800 relative ${isLocked ? 'grayscale' : ''}`}>
                 {imageUrl ? (
-                    <img
-                        src={imageUrl}
-                        alt={title}
-                        className={`w-full h-full ${item.product ? 'object-contain bg-black/20' : 'object-cover'}`}
-                    />
+                    <>
+                        {item.product ? (
+                            // Product Card: Blurred Background + Contained Image
+                            <>
+                                <img
+                                    src={imageUrl}
+                                    alt=""
+                                    className="absolute inset-0 w-full h-full object-cover opacity-50 blur-xl scale-110"
+                                />
+                                <div className="absolute inset-0 bg-black/20" /> {/* Dim overlay */}
+                                <img
+                                    src={imageUrl}
+                                    alt={title}
+                                    className="relative w-full h-full object-contain p-4 z-10"
+                                />
+                            </>
+                        ) : (
+                            // Content/Lesson Card: Standard Cover
+                            <img
+                                src={imageUrl}
+                                alt={title}
+                                className="w-full h-full object-cover"
+                            />
+                        )}
+                    </>
                 ) : (
                     <div className="w-full h-full flex items-center justify-center text-gray-500">
                         <Icon size={48} />
@@ -223,13 +243,13 @@ const TrackItemCard: React.FC<TrackItemCardProps> = ({ item, onClick, accessGran
                 )}
 
                 {isLocked && (
-                    <div className="absolute top-2 right-2 bg-black/60 p-1 rounded-full text-white">
+                    <div className="absolute top-2 right-2 bg-black/60 p-1 rounded-full text-white z-20">
                         <Lock size={16} />
                     </div>
                 )}
 
                 {isFree && (
-                    <div className="absolute top-2 left-2 bg-green-500/20 text-green-500 border border-green-500/20 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wide shadow-sm flex items-center gap-1 backdrop-blur-sm">
+                    <div className="absolute top-2 left-2 bg-green-500/20 text-green-500 border border-green-500/20 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wide shadow-sm flex items-center gap-1 backdrop-blur-sm z-20">
                         <CheckCircle size={10} strokeWidth={3} />
                         Gratuito
                     </div>
@@ -237,13 +257,13 @@ const TrackItemCard: React.FC<TrackItemCardProps> = ({ item, onClick, accessGran
 
                 {/* Owned Product Badge */}
                 {isOwned && (
-                    <div className="absolute top-2 left-2 bg-orange-500/20 text-orange-500 border border-orange-500/20 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wide shadow-sm flex items-center gap-1 backdrop-blur-sm">
+                    <div className="absolute top-2 left-2 bg-orange-500/20 text-orange-500 border border-orange-500/20 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wide shadow-sm flex items-center gap-1 backdrop-blur-sm z-20">
                         <Package size={10} strokeWidth={3} />
                         Adquirido
                     </div>
                 )}
 
-                <div className="absolute inset-0 bg-black/0 group-hover/card:bg-black/20 transition-colors" />
+                <div className="absolute inset-0 bg-black/0 group-hover/card:bg-black/20 transition-colors z-20" />
             </div>
 
             <div className="mt-2">

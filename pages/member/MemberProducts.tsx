@@ -125,20 +125,31 @@ export const MemberProducts: React.FC = () => {
                         >
                             <div className="aspect-video relative overflow-hidden bg-black/40">
                                 {product.imageUrl ? (
-                                    <img
-                                        src={product.imageUrl}
-                                        alt={product.name}
-                                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                                    />
+                                    <>
+                                        {/* Blurred Background */}
+                                        <img
+                                            src={product.imageUrl}
+                                            alt=""
+                                            className="absolute inset-0 w-full h-full object-cover opacity-50 blur-xl scale-110 group-hover:scale-125 transition-transform duration-500"
+                                        />
+                                        <div className="absolute inset-0 bg-black/20" />
+
+                                        {/* Main Contained Image */}
+                                        <img
+                                            src={product.imageUrl}
+                                            alt={product.name}
+                                            className="relative w-full h-full object-contain p-2 z-10 transition-transform duration-500 group-hover:scale-105"
+                                        />
+                                    </>
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center text-gray-600">
                                         <ShoppingBag className="w-12 h-12 opacity-20" />
                                     </div>
                                 )}
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20" />
 
                                 {/* Lock indicator */}
-                                <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-sm rounded-full p-2">
+                                <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-sm rounded-full p-2 z-30">
                                     <Lock className="w-4 h-4 text-white" />
                                 </div>
                             </div>
