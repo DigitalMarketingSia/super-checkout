@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useOutletContext } from 'react-router-dom';
-import { MemberArea, Product } from '../../types';
+import { useOutletContext, useNavigate, useParams } from 'react-router-dom';
+import { MemberArea, Product, AccessGrant } from '../../types';
 import { storage } from '../../services/storageService';
-import { ShoppingBag, ExternalLink, Loader2 } from 'lucide-react';
+import { ShoppingBag, ExternalLink, Loader2, Lock } from 'lucide-react';
 import { ProductSalesModal } from '../../components/member/ProductSalesModal';
+import { useAccessControl } from '../../hooks/useAccessControl';
 
 interface MemberAreaContextType {
     memberArea: MemberArea | null;
@@ -11,20 +12,42 @@ interface MemberAreaContextType {
 
 export const MemberProducts: React.FC = () => {
     const { memberArea } = useOutletContext<MemberAreaContextType>();
+    const { slug } = useParams<{ slug: string }>();
+    const navigate = useNavigate();
+
     const [products, setProducts] = useState<Product[]>([]);
+    const [accessGrants, setAccessGrants] = useState<AccessGrant[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
+    const { handleAccess } = useAccessControl(accessGrants);
+
     useEffect(() => {
         loadProducts();
-    }, []);
+    }, [memberArea]);
 
     const loadProducts = async () => {
         try {
             if (memberArea?.id) {
-                const data = await storage.getMemberAreaProducts(memberArea.id);
-                setProducts(data);
+                // Load products and access grants in parallel
+                const [productsData, grants] = await Promise.all([
+                    storage.getMemberAreaProducts(memberArea.id),
+                    storage.getAccessGrants()
+                ]);
+
+                setAccessGrants(grants);
+
+                // Filter out products user already owns
+                const activeProductIds = grants
+                    .filter(g => g.product_id && g.status === 'active')
+                    .map(g => g.product_id);
+
+                const availableProducts = productsData.filter(
+                    product => !activeProductIds.includes(product.id)
+                );
+
+                setProducts(availableProducts);
             }
         } catch (error) {
             console.error('Erro ao carregar produtos:', error);
@@ -33,23 +56,42 @@ export const MemberProducts: React.FC = () => {
         }
     };
 
-    const handleProductClick = (product: Product, e: React.MouseEvent) => {
-        e.preventDefault();
-        console.log('Product clicked:', product);
+    const handleProductClick = async (product: Product) => {
+        // Use access control to determine action
+        handleAccess(product, {
+            onAccess: async () => {
+                // User has access - navigate to content
+                try {
+                    const productContents = await storage.getProductContents(product.id);
+                    if (productContents.length > 0) {
+                        const firstContent = productContents[0];
+                        const path = slug
+                            ? `/app/${slug}/course/${firstContent.content_id}`
+                            : `/course/${firstContent.content_id}`;
+                        navigate(path);
+                    }
+                } catch (error) {
+                    console.error('Erro ao navegar:', error);
+                }
+            },
+            onSalesModal: (prod) => {
+                // User doesn't have access - show sales modal
+                const productToShow = prod || product;
 
-        if (product.member_area_action === 'sales_page') {
-            console.log('Opening sales modal');
-            setSelectedProduct(product);
-            setIsModalOpen(true);
-        } else {
-            console.log('Redirecting to checkout:', product.redirect_link);
-            // Default to checkout redirect
-            if (product.redirect_link) {
-                window.open(product.redirect_link, '_blank');
-            } else {
-                console.warn('No redirect link found for product:', product.name);
+                // Check member_area_action
+                if (product.member_area_action === 'sales_page') {
+                    setSelectedProduct(productToShow);
+                    setIsModalOpen(true);
+                } else if (product.redirect_link) {
+                    // Redirect to external checkout
+                    window.open(product.redirect_link, '_blank');
+                } else {
+                    // Fallback to modal
+                    setSelectedProduct(productToShow);
+                    setIsModalOpen(true);
+                }
             }
-        }
+        });
     };
 
     if (loading) {
@@ -71,7 +113,7 @@ export const MemberProducts: React.FC = () => {
                 <div className="text-center py-12 bg-white/5 rounded-xl border border-white/10">
                     <ShoppingBag className="w-12 h-12 text-gray-500 mx-auto mb-4" />
                     <h3 className="text-xl font-bold text-white mb-2">Nenhum produto disponível</h3>
-                    <p className="text-gray-400">No momento não há produtos à venda.</p>
+                    <p className="text-gray-400">Você já possui acesso a todos os produtos ou não há produtos à venda no momento.</p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -79,7 +121,7 @@ export const MemberProducts: React.FC = () => {
                         <div
                             key={product.id}
                             className="bg-[#1A1D21] rounded-xl overflow-hidden border border-white/10 hover:border-white/20 transition-all hover:transform hover:scale-[1.02] group cursor-pointer"
-                            onClick={(e) => handleProductClick(product, e)}
+                            onClick={() => handleProductClick(product)}
                         >
                             <div className="aspect-video relative overflow-hidden bg-black/40">
                                 {product.imageUrl ? (
@@ -94,6 +136,11 @@ export const MemberProducts: React.FC = () => {
                                     </div>
                                 )}
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                                {/* Lock indicator */}
+                                <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-sm rounded-full p-2">
+                                    <Lock className="w-4 h-4 text-white" />
+                                </div>
                             </div>
 
                             <div className="p-5">
@@ -126,3 +173,4 @@ export const MemberProducts: React.FC = () => {
         </div>
     );
 };
+

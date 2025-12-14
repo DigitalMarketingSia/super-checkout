@@ -31,6 +31,7 @@ import { MemberLogin } from './pages/member/MemberLogin';
 import { MemberSignup } from './pages/member/MemberSignup';
 import { MemberAreaWrapper } from './pages/member/MemberAreaWrapper';
 import { MemberProducts } from './pages/member/MemberProducts';
+import { MyProducts } from './pages/member/MyProducts';
 import { MemberFAQ } from './pages/member/MemberFAQ';
 import { MemberProfile } from './pages/member/MemberProfile';
 import { ThemeProvider } from './context/ThemeContext';
@@ -218,6 +219,7 @@ const DomainDispatcher = () => {
         <Route path="/" element={<MemberAreaWrapper forcedSlug={customMemberAreaSlug} />}>
           <Route index element={<MemberDashboard />} />
           <Route path="products" element={<MemberProducts />} />
+          <Route path="my-products" element={<MyProducts />} />
           <Route path="faq" element={<MemberFAQ />} />
           <Route path="my-list" element={<MemberDashboard />} />
           <Route path="content/:id" element={<ContentModules />} />
@@ -266,6 +268,7 @@ const DomainDispatcher = () => {
       <Route path="/app/:slug" element={<MemberAreaWrapper />}>
         <Route index element={<MemberDashboard />} />
         <Route path="products" element={<MemberProducts />} />
+        <Route path="my-products" element={<MyProducts />} />
         <Route path="faq" element={<MemberFAQ />} />
         <Route path="my-list" element={<MemberDashboard />} />
         <Route path="new" element={<MemberDashboard />} />
