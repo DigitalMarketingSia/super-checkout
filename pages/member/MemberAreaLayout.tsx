@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { LogOut, User, Menu, X, ChevronDown, ChevronRight, ExternalLink, Home, ShoppingBag, LinkIcon, ChevronUp, Instagram, ArrowUpRight, HelpCircle, Ban } from 'lucide-react';
 import { MemberArea, SidebarItem } from '../../types';
+import { IconSidebar } from '../../components/member/IconSidebar';
 
 interface MemberAreaLayoutProps {
     children: React.ReactNode;
@@ -15,6 +16,7 @@ export const MemberAreaLayout: React.FC<MemberAreaLayoutProps> = ({ children, me
     const navigate = useNavigate();
     const location = useLocation();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [isContentMenuOpen, setIsContentMenuOpen] = useState(true);
     const [scrolled, setScrolled] = useState(false);
     const [expandedSections, setExpandedSections] = useState<string[]>([]);
 
@@ -139,9 +141,15 @@ export const MemberAreaLayout: React.FC<MemberAreaLayoutProps> = ({ children, me
 
     return (
         <div className="min-h-screen bg-[#0E1012] text-white font-sans selection:bg-red-600 selection:text-white">
+            {/* Icon Sidebar - Always Visible */}
+            <IconSidebar
+                onToggleMenu={() => setIsContentMenuOpen(!isContentMenuOpen)}
+                isMenuOpen={isContentMenuOpen}
+                memberAreaSlug={memberArea?.slug}
+            />
             {/* Navbar */}
             <nav
-                className={`fixed top-0 w-full z-50 px-4 md:px-8 py-4 flex items-center justify-between transition-all duration-300 ${scrolled ? 'bg-[#0E1012]/80 backdrop-blur-md shadow-lg' : 'bg-gradient-to-b from-black/80 to-transparent'
+                className={`fixed top-0 w-full z-50 px-4 md:px-8 py-4 flex items-center justify-between transition-all duration-300 ml-16 ${scrolled ? 'bg-[#0E1012]/80 backdrop-blur-md shadow-lg' : 'bg-gradient-to-b from-black/80 to-transparent'
                     }`}
             >
                 <div className="flex items-center gap-6">
@@ -356,7 +364,7 @@ export const MemberAreaLayout: React.FC<MemberAreaLayoutProps> = ({ children, me
             </div>
 
             {/* Main Content */}
-            <main className="pt-20 pb-20 min-h-screen">
+            <main className="pt-20 pb-20 min-h-screen ml-16">
                 {children}
             </main>
 
