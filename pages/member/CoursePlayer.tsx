@@ -50,9 +50,6 @@ export const CoursePlayer = () => {
 
             if (!foundContent) {
                 console.warn('Content not found:', contentId);
-                // If content not found, maybe redirect to first available content? 
-                // Or just show nothing? 
-                // For now, redirect to app home to avoid broken state
                 navigate(slug ? `/app/${slug}` : '/app');
                 return;
             }
@@ -117,10 +114,6 @@ export const CoursePlayer = () => {
         if (!loading && currentLesson) {
             const currentModule = modules.find(m => m.lessons?.some(l => l.id === currentLesson.id));
 
-            // Just check access, don't trigger modal automatically on load unles strictly required?
-            // Actually requirement says "if accessed directly", handleAccess should run.
-            // But we pass empty onSalesModal here to avoid loop if URL is shared? 
-            // No, user wants it to trigger.
             handleAccess(currentLesson, {
                 onAccess: () => { },
                 onSalesModal: (product) => {
@@ -160,21 +153,17 @@ export const CoursePlayer = () => {
         handleAccess(targetContent, {
             onAccess: () => {
                 setIsContentExpanded(true); // Reset to open
-                // Use REPLACE to avoid history stack issues if needed, requires state reset
-                // Force full reload? No, SPA nav is better.
-                setLoading(true); // Show loading state immediately
+                setLoading(true);
                 const newSlug = slug ? `/app/${slug}/${targetContent.id}` : `/app/content/${targetContent.id}`;
                 navigate(newSlug);
             },
             onSalesModal: (product) => {
-                // Ensure we have a product to show
                 const effectiveProduct = product || targetContent.associated_product;
                 if (effectiveProduct) {
                     setSelectedProduct(effectiveProduct);
                     setIsModalOpen(true);
                 } else {
                     console.warn('No product associated with this content to sell');
-                    // Maybe show a generic "Not Available" modal?
                 }
             }
         });
@@ -442,6 +431,8 @@ export const CoursePlayer = () => {
                                 const isCurrentContent = c.id === content?.id;
                                 // NEW: Fallback image logic (content image -> associated product image)
                                 const imageUrl = c.image_url || c.associated_product?.imageUrl || c.associated_product?.image_url;
+                                // NEW: Fallback title to associated product name
+                                const displayTitle = c.associated_product?.name || c.title;
 
                                 return (
                                     <div key={c.id} className="border-b border-white/5 last:mb-0">
@@ -462,7 +453,7 @@ export const CoursePlayer = () => {
                                                     <h3 className={`text-sm font-bold truncate leading-tight ${isCurrentContent ? 'text-white' : 'text-gray-400'}`}
                                                         style={isCurrentContent ? { color: primaryColor } : {}}
                                                     >
-                                                        {c.title}
+                                                        {displayTitle}
                                                     </h3>
                                                     {!isCurrentContent && (
                                                         <p className="text-[10px] text-gray-500 uppercase tracking-wide">Clique para acessar</p>
@@ -485,18 +476,32 @@ export const CoursePlayer = () => {
                                             <div key={module.id} className="mb-1 ml-4 border-l border-white/10">
                                                 <div
                                                     onClick={() => toggleModule(module.id)}
-                                                    className="p-3 cursor-pointer hover:bg-white/5 transition-colors flex items-center justify-between pr-4"
+                                                    className="relative overflow-hidden group cursor-pointer transition-all pr-4 py-6 md:py-8 rounded-lg mb-2 border border-white/5"
+                                                    style={{
+                                                        backgroundImage: module.image_url ? `url(${module.image_url})` : undefined,
+                                                        backgroundSize: 'cover',
+                                                        backgroundPosition: 'center',
+                                                        backgroundColor: '#1a1e26' // Fallback
+                                                    }}
                                                 >
-                                                    <div className="flex-1">
-                                                        <span
-                                                            className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mb-0.5 inline-block"
-                                                            style={{ color: primaryColor }}
-                                                        >
-                                                            Módulo {modules.findIndex(m => m.id === module.id) + 1}
-                                                        </span>
-                                                        <h3 className="text-sm font-semibold text-gray-200 line-clamp-2 leading-tight">{module.title}</h3>
+                                                    {/* Gradient Overlay */}
+                                                    <div className={`absolute inset-0 bg-gradient-to-r from-black/95 via-black/80 to-transparent transition-opacity ${expandedModuleId === module.id ? 'opacity-95' : 'opacity-90 group-hover:opacity-95'}`} />
+
+                                                    {/* Content */}
+                                                    <div className="relative z-10 flex items-center justify-between px-4">
+                                                        <div className="flex-1 min-w-0 mr-4">
+                                                            <span
+                                                                className="text-[10px] font-bold uppercase tracking-wider mb-1 inline-block px-1.5 py-0.5 rounded bg-black/40 backdrop-blur-sm border border-white/10"
+                                                                style={{ color: primaryColor, borderColor: `${primaryColor}40` }}
+                                                            >
+                                                                Módulo {modules.findIndex(m => m.id === module.id) + 1}
+                                                            </span>
+                                                            <h3 className="text-base md:text-lg font-bold text-white leading-tight drop-shadow-md">{module.title}</h3>
+                                                        </div>
+                                                        <div className="bg-black/40 backdrop-blur-sm p-1.5 rounded-full border border-white/10 flex-shrink-0">
+                                                            {expandedModuleId === module.id ? <ChevronUp size={16} style={{ color: primaryColor }} /> : <ChevronDown size={16} className="text-gray-300" />}
+                                                        </div>
                                                     </div>
-                                                    {expandedModuleId === module.id ? <ChevronUp size={14} style={{ color: primaryColor }} /> : <ChevronDown size={14} className="text-gray-600" />}
                                                 </div>
 
                                                 {/* Lessons List (Accordion) */}
