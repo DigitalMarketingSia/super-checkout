@@ -5,6 +5,7 @@ import { Content, Module, Lesson, MemberArea, AccessGrant } from '../../types';
 import { ChevronLeft, CheckCircle, Circle, PlayCircle, FileText, Download, Menu, X, ChevronDown, ChevronUp, PanelLeftClose, PanelLeftOpen, Search, Play, ChevronRight, Home } from 'lucide-react';
 import { useAccessControl } from '../../hooks/useAccessControl';
 import { ProductSalesModal } from '../../components/member/ProductSalesModal';
+import { IconSidebar } from '../../components/member/IconSidebar';
 
 export const CoursePlayer = () => {
     const { slug, id } = useParams<{ slug: string; id: string }>();
@@ -367,11 +368,18 @@ export const CoursePlayer = () => {
 
     return (
         <div className="flex h-screen bg-[#0D1118] text-white overflow-hidden">
+            {/* Icon Sidebar - Always Visible */}
+            <IconSidebar
+                onToggleMenu={() => setSidebarOpen(!sidebarOpen)}
+                isMenuOpen={sidebarOpen}
+                memberAreaSlug={slug}
+            />
+
             {/* Sidebar */}
             <aside
                 className={`
-          fixed md:static inset-y-0 left-0 z-50 bg-gradient-to-b from-[#0f131a] to-[#0b0f16] border-r border-white/5 flex flex-col transition-all duration-300
-          ${sidebarOpen ? 'translate-x-0 w-80' : '-translate-x-full md:translate-x-0 md:w-20'}
+          fixed md:static inset-y-0 left-16 z-50 bg-gradient-to-b from-[#0f131a] to-[#0b0f16] border-r border-white/5 flex flex-col transition-all duration-300
+          ${sidebarOpen ? 'translate-x-0 w-80' : '-translate-x-full md:translate-x-0 md:w-0'}
         `}
             >
                 {sidebarOpen ? (
@@ -513,37 +521,6 @@ export const CoursePlayer = () => {
                             </button>
                         </div>
                     </>
-                ) : (
-                    <div className="flex flex-col items-center py-6 space-y-6">
-                        <button
-                            onClick={() => setSidebarOpen(true)}
-                            className="p-3 text-white hover:bg-white/10 rounded-xl transition-all"
-                            title="Expandir menu"
-                            style={{ backgroundColor: primaryColor }}
-                        >
-                            <PanelLeftOpen className="w-6 h-6" />
-                        </button>
-
-                        <button
-                            onClick={() => {
-                                setSidebarOpen(true);
-                                setTimeout(() => document.getElementById('search-input')?.focus(), 100);
-                            }}
-                            className="p-3 text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition-all"
-                            title="Buscar"
-                        >
-                            <Search className="w-6 h-6" />
-                        </button>
-
-                        <button
-                            onClick={() => navigate(slug ? `/app/${slug}` : '/app')}
-                            className="p-3 text-white hover:bg-white/10 rounded-xl transition-all"
-                            title="Ir para Vitrine"
-                            style={{ backgroundColor: primaryColor }}
-                        >
-                            <Home className="w-6 h-6" />
-                        </button>
-                    </div>
                 )}
             </aside>
 

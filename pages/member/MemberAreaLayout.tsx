@@ -3,7 +3,6 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { LogOut, User, Menu, X, ChevronDown, ChevronRight, ExternalLink, Home, ShoppingBag, LinkIcon, ChevronUp, Instagram, ArrowUpRight, HelpCircle, Ban } from 'lucide-react';
 import { MemberArea, SidebarItem } from '../../types';
-import { IconSidebar } from '../../components/member/IconSidebar';
 
 interface MemberAreaLayoutProps {
     children: React.ReactNode;
@@ -16,7 +15,6 @@ export const MemberAreaLayout: React.FC<MemberAreaLayoutProps> = ({ children, me
     const navigate = useNavigate();
     const location = useLocation();
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-    const [isContentMenuOpen, setIsContentMenuOpen] = useState(true);
     const [scrolled, setScrolled] = useState(false);
     const [expandedSections, setExpandedSections] = useState<string[]>([]);
 
@@ -364,7 +362,7 @@ export const MemberAreaLayout: React.FC<MemberAreaLayoutProps> = ({ children, me
             </div>
 
             {/* Main Content */}
-            <main className="pt-20 pb-20 min-h-screen ml-16">
+            <main className="pt-20 pb-20 min-h-screen">
                 {children}
             </main>
 
