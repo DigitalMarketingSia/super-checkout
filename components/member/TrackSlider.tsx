@@ -20,11 +20,16 @@ export const TrackSlider: React.FC<TrackSliderProps> = ({ track, onItemClick, ac
     const [canScrollLeft, setCanScrollLeft] = React.useState(false);
     const [canScrollRight, setCanScrollRight] = React.useState(false);
 
+    // Drag to scroll state
+    const [isDragging, setIsDragging] = React.useState(false);
+    const [startX, setStartX] = React.useState(0);
+    const [scrollLeft, setScrollLeft] = React.useState(0);
+
     const checkScroll = () => {
         if (scrollContainerRef.current) {
             const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current;
             setCanScrollLeft(scrollLeft > 0);
-            setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1); // -1 for tolerance
+            setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1);
         }
     };
 
@@ -36,7 +41,7 @@ export const TrackSlider: React.FC<TrackSliderProps> = ({ track, onItemClick, ac
 
     const scroll = (direction: 'left' | 'right') => {
         if (scrollContainerRef.current) {
-            const scrollAmount = 300; // Adjust based on card width
+            const scrollAmount = 300;
             scrollContainerRef.current.scrollBy({
                 left: direction === 'left' ? -scrollAmount : scrollAmount,
                 behavior: 'smooth',
@@ -44,41 +49,110 @@ export const TrackSlider: React.FC<TrackSliderProps> = ({ track, onItemClick, ac
         }
     };
 
+    // Drag to scroll handlers
+    const handleMouseDown = (e: React.MouseEvent) => {
+        if (!scrollContainerRef.current) return;
+        setIsDragging(true);
+        setStartX(e.pageX - scrollContainerRef.current.offsetLeft);
+        setScrollLeft(scrollContainerRef.current.scrollLeft);
+        scrollContainerRef.current.style.cursor = 'grabbing';
+    };
+
+    const handleMouseLeave = () => {
+        setIsDragging(false);
+        if (scrollContainerRef.current) {
+            scrollContainerRef.current.style.cursor = 'grab';
+        }
+    };
+
+    const handleMouseUp = () => {
+        setIsDragging(false);
+        if (scrollContainerRef.current) {
+            scrollContainerRef.current.style.cursor = 'grab';
+        }
+    };
+
+    const handleMouseMove = (e: React.MouseEvent) => {
+        if (!isDragging || !scrollContainerRef.current) return;
+        e.preventDefault();
+        const x = e.pageX - scrollContainerRef.current.offsetLeft;
+        const walk = (x - startX) * 2; // Scroll speed multiplier
+        scrollContainerRef.current.scrollLeft = scrollLeft - walk;
+    };
+
     return (
         <div className="mb-8">
             <style>{`
                 .custom-scrollbar::-webkit-scrollbar {
-                    height: 6px;
+                    height: 8px;
                 }
                 .custom-scrollbar::-webkit-scrollbar-track {
                     background: rgba(255, 255, 255, 0.05);
-                    border-radius: 3px;
+                    border-radius: 4px;
+                    margin: 0 16px;
                 }
                 .custom-scrollbar::-webkit-scrollbar-thumb {
-                    background: ${primaryColor || '#374151'};
-                    border-radius: 3px;
+                    background: ${primaryColor || '#D4143C'};
+                    border-radius: 4px;
+                    transition: background 0.2s;
                 }
                 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-                    filter: brightness(1.2);
+                    background: ${primaryColor ? `color-mix(in srgb, ${primaryColor} 80%, white)` : '#E91E63'};
+                }
+                .custom-scrollbar {
+                    cursor: grab;
+                    user-select: none;
+                }
+                .custom-scrollbar:active {
+                    cursor: grabbing;
                 }
             `}</style>
-            <h3 className="text-xl font-semibold text-white mb-4 px-4 md:px-0">{track.title}</h3>
 
-            <div className="relative group">
-                {/* Left Button */}
-                {canScrollLeft && (
+            {/* Header with Title and Navigation Arrows */}
+            <div className="flex items-center justify-between mb-4 px-4 md:px-0">
+                <h3 className="text-xl font-semibold text-white">{track.title}</h3>
+
+                {/* Navigation Arrows - Together on the right */}
+                <div className="flex items-center gap-2">
                     <button
                         onClick={() => scroll('left')}
-                        className="absolute -left-12 top-1/2 -translate-y-1/2 z-10 text-gray-400 hover:text-white p-2 transition-all hidden md:block opacity-0 group-hover:opacity-100 hover:scale-125"
-                        style={{ color: primaryColor }}
+                        disabled={!canScrollLeft}
+                        className={`p-2 rounded-full transition-all ${canScrollLeft
+                                ? 'bg-white/10 hover:bg-white/20 text-white'
+                                : 'bg-white/5 text-gray-600 cursor-not-allowed'
+                            }`}
+                        style={canScrollLeft && primaryColor ? {
+                            backgroundColor: `${primaryColor}20`,
+                            color: primaryColor
+                        } : {}}
                     >
-                        <ChevronLeft size={40} strokeWidth={1.5} />
+                        <ChevronLeft size={20} strokeWidth={2} />
                     </button>
-                )}
+                    <button
+                        onClick={() => scroll('right')}
+                        disabled={!canScrollRight}
+                        className={`p-2 rounded-full transition-all ${canScrollRight
+                                ? 'bg-white/10 hover:bg-white/20 text-white'
+                                : 'bg-white/5 text-gray-600 cursor-not-allowed'
+                            }`}
+                        style={canScrollRight && primaryColor ? {
+                            backgroundColor: `${primaryColor}20`,
+                            color: primaryColor
+                        } : {}}
+                    >
+                        <ChevronRight size={20} strokeWidth={2} />
+                    </button>
+                </div>
+            </div>
 
+            <div className="relative">
                 <div
                     ref={scrollContainerRef}
                     onScroll={checkScroll}
+                    onMouseDown={handleMouseDown}
+                    onMouseLeave={handleMouseLeave}
+                    onMouseUp={handleMouseUp}
+                    onMouseMove={handleMouseMove}
                     className="flex overflow-x-auto gap-4 pb-4 px-4 md:px-0 snap-x custom-scrollbar"
                 >
                     {track.items?.map((item) => (
@@ -86,6 +160,7 @@ export const TrackSlider: React.FC<TrackSliderProps> = ({ track, onItemClick, ac
                             key={item.id}
                             item={item}
                             onClick={() => {
+                                if (isDragging) return; // Don't trigger click if dragging
                                 handleAccess(item, {
                                     onAccess: () => onItemClick(item),
                                     onSalesModal: (product) => {
@@ -104,17 +179,6 @@ export const TrackSlider: React.FC<TrackSliderProps> = ({ track, onItemClick, ac
                         />
                     ))}
                 </div>
-
-                {/* Right Button */}
-                {canScrollRight && (
-                    <button
-                        onClick={() => scroll('right')}
-                        className="absolute -right-12 top-1/2 -translate-y-1/2 z-10 text-gray-400 hover:text-white p-2 transition-all hidden md:block opacity-0 group-hover:opacity-100 hover:scale-125"
-                        style={{ color: primaryColor }}
-                    >
-                        <ChevronRight size={40} strokeWidth={1.5} />
-                    </button>
-                )}
             </div>
 
             <ProductSalesModal
