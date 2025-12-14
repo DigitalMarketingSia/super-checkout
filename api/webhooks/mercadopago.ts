@@ -568,65 +568,83 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             try {
                 console.log(`[Webhook] Granting access for Order ${order.id} to User ${order.customer_user_id}`);
 
-                // A. Get Checkout to find Product
-                const checkoutRes = await fetch(`${supabaseUrl}/rest/v1/checkouts?id=eq.${order.checkout_id}&select=product_id,order_bump_ids`, {
-                    headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
-                });
+                // Get all product IDs from order items
+                const productsToGrant: string[] = [];
 
-                if (checkoutRes.ok) {
-                    const checkouts = await checkoutRes.json();
-                    const checkout = checkouts[0];
-
-                    if (checkout) {
-                        const productsToGrant = [checkout.product_id];
-
-                        // Handle Bumps (simplified: if order has items with type 'bump', try to match)
-                        // ideally we should match items to product IDs, but for now let's grant main product + all bumps if present in order
-                        // A safer way is to just grant the main product for now, or iterate bumps.
-                        // Let's stick to Main Product to ensure core value is delivered.
-                        // TODO: Robust Bump Matching
-
-                        for (const productId of productsToGrant) {
-                            // B. Get Contents for Product
-                            // We need to query product_contents
-                            const pcRes = await fetch(`${supabaseUrl}/rest/v1/product_contents?product_id=eq.${productId}&select=content_id`, {
-                                headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
-                            });
-
-                            if (pcRes.ok) {
-                                const productContents = await pcRes.json();
-
-                                for (const pc of productContents) {
-                                    // C. Create Access Grant
-                                    const grantRes = await fetch(`${supabaseUrl}/rest/v1/access_grants`, {
-                                        method: 'POST',
-                                        headers: {
-                                            'Content-Type': 'application/json',
-                                            'apikey': supabaseKey,
-                                            'Authorization': `Bearer ${supabaseKey}`,
-                                            'Prefer': 'return=minimal'
-                                        },
-                                        body: JSON.stringify({
-                                            user_id: order.customer_user_id,
-                                            content_id: pc.content_id,
-                                            product_id: productId,
-                                            status: 'active',
-                                            granted_at: new Date().toISOString()
-                                        })
-                                    });
-
-                                    if (!grantRes.ok) {
-                                        console.error(`[Webhook] Failed to create grant for content ${pc.content_id}:`, await grantRes.text());
-                                    } else {
-                                        console.log(`[Webhook] Access granted for content ${pc.content_id}`);
-                                    }
-                                }
-                            }
+                if (order.items && Array.isArray(order.items)) {
+                    for (const item of order.items) {
+                        if ((item as any).product_id) {
+                            productsToGrant.push((item as any).product_id);
                         }
-
-                        await logToSupabase('webhook.access_granted', { orderId: order.id, userId: order.customer_user_id }, true, paymentRecord.gateway_id);
                     }
                 }
+
+                // Fallback: if no product_ids in items, use checkout product_id (backwards compatibility)
+                if (productsToGrant.length === 0) {
+                    console.log('[Webhook] No product_ids in order items, falling back to checkout.product_id');
+                    const checkoutRes = await fetch(`${supabaseUrl}/rest/v1/checkouts?id=eq.${order.checkout_id}&select=product_id`, {
+                        headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
+                    });
+
+                    if (checkoutRes.ok) {
+                        const checkouts = await checkoutRes.json();
+                        if (checkouts[0]?.product_id) {
+                            productsToGrant.push(checkouts[0].product_id);
+                        }
+                    }
+                }
+
+                console.log(`[Webhook] Processing ${productsToGrant.length} product(s): ${productsToGrant.join(', ')}`);
+
+                // Grant access for each product
+                for (const productId of productsToGrant) {
+                    // Get contents linked to this product
+                    const pcRes = await fetch(`${supabaseUrl}/rest/v1/product_contents?product_id=eq.${productId}&select=content_id`, {
+                        headers: { 'apikey': supabaseKey, 'Authorization': `Bearer ${supabaseKey}` }
+                    });
+
+                    if (pcRes.ok) {
+                        const productContents = await pcRes.json();
+                        console.log(`[Webhook] Product ${productId} has ${productContents.length} content(s)`);
+
+                        for (const pc of productContents) {
+                            // Create access grant
+                            const grantRes = await fetch(`${supabaseUrl}/rest/v1/access_grants`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'apikey': supabaseKey,
+                                    'Authorization': `Bearer ${supabaseKey}`,
+                                    'Prefer': 'return=minimal'
+                                },
+                                body: JSON.stringify({
+                                    user_id: order.customer_user_id,
+                                    content_id: pc.content_id,
+                                    product_id: productId,
+                                    status: 'active',
+                                    granted_at: new Date().toISOString()
+                                })
+                            });
+
+                            if (!grantRes.ok) {
+                                const errorText = await grantRes.text();
+                                console.error(`[Webhook] Failed to create grant for product ${productId}, content ${pc.content_id}:`, errorText);
+                            } else {
+                                console.log(`[Webhook] ✓ Access granted for product ${productId}, content ${pc.content_id}`);
+                            }
+                        }
+                    } else {
+                        console.warn(`[Webhook] Failed to fetch product_contents for product ${productId}`);
+                    }
+                }
+
+                await logToSupabase('webhook.access_granted', {
+                    orderId: order.id,
+                    userId: order.customer_user_id,
+                    productsCount: productsToGrant.length,
+                    productIds: productsToGrant
+                }, true, paymentRecord.gateway_id);
+
             } catch (grantError: any) {
                 console.error('[Webhook] Error granting access:', grantError);
                 await logToSupabase('webhook.error_granting_access', { error: grantError.message }, false);

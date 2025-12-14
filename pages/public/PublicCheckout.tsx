@@ -409,13 +409,25 @@ export const PublicCheckout = ({ checkoutId: propId }: { checkoutId?: string }) 
 
          // Build items array
          const items: OrderItem[] = [
-            { name: data.product.name, price: data.product.price_real || 0, quantity: 1, type: 'main' }
+            {
+               name: data.product.name,
+               price: data.product.price_real || 0,
+               quantity: 1,
+               type: 'main',
+               product_id: data.product.id
+            }
          ];
 
          selectedBumps.forEach(bumpId => {
             const bump = data.bumps.find(b => b.id === bumpId);
             if (bump) {
-               items.push({ name: bump.name, price: bump.price_real || 0, quantity: 1, type: 'bump' });
+               items.push({
+                  name: bump.name,
+                  price: bump.price_real || 0,
+                  quantity: 1,
+                  type: 'bump',
+                  product_id: bump.id
+               });
             }
          });
 
