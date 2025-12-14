@@ -139,15 +139,9 @@ export const MemberAreaLayout: React.FC<MemberAreaLayoutProps> = ({ children, me
 
     return (
         <div className="min-h-screen bg-[#0E1012] text-white font-sans selection:bg-red-600 selection:text-white">
-            {/* Icon Sidebar - Always Visible */}
-            <IconSidebar
-                onToggleMenu={() => setIsContentMenuOpen(!isContentMenuOpen)}
-                isMenuOpen={isContentMenuOpen}
-                memberAreaSlug={memberArea?.slug}
-            />
             {/* Navbar */}
             <nav
-                className={`fixed top-0 w-full z-50 px-4 md:px-8 py-4 flex items-center justify-between transition-all duration-300 ml-16 ${scrolled ? 'bg-[#0E1012]/80 backdrop-blur-md shadow-lg' : 'bg-gradient-to-b from-black/80 to-transparent'
+                className={`fixed top-0 w-full z-50 px-4 md:px-8 py-4 flex items-center justify-between transition-all duration-300 ${scrolled ? 'bg-[#0E1012]/80 backdrop-blur-md shadow-lg' : 'bg-gradient-to-b from-black/80 to-transparent'
                     }`}
             >
                 <div className="flex items-center gap-6">

@@ -16,6 +16,7 @@ interface MercadoPagoPaymentRequest {
         };
     };
     notification_url?: string;
+    external_reference?: string;
 }
 
 interface MercadoPagoCardTokenRequest {

@@ -1,7 +1,7 @@
 
 import {
   Product, Offer, Checkout, Gateway, Order, Payment, WebhookLog, Domain, WebhookConfig, Integration,
-  Content, Module, Lesson, MemberArea, LessonProgress, Track, TrackItem
+  Content, Module, Lesson, MemberArea, LessonProgress, Track, TrackItem, AccessGrant, Member
 } from '../types';
 import { supabase } from './supabase';
 export { supabase };

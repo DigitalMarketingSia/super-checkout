@@ -57,6 +57,8 @@ export interface Product {
   is_upsell?: boolean;
   checkout_slug?: string;
   checkout_url?: string;
+  visible_in_member_area?: boolean;
+  for_sale?: boolean;
 }
 
 export interface Offer {
@@ -143,6 +145,7 @@ export interface OrderItem {
   name: string;
   price: number;
   quantity: number;
+  product_id?: string;
   type: 'main' | 'bump' | 'upsell';
 }
 
