@@ -73,7 +73,7 @@ export const IconSidebar: React.FC<IconSidebarProps> = ({ onToggleMenu, isMenuOp
     };
 
     return (
-        <div className="fixed left-0 top-0 h-screen w-16 bg-[#0E1012] border-r border-white/10 flex flex-col items-center py-6 gap-3 z-50">
+        <div className="fixed left-0 top-0 h-screen w-16 bg-[#0E1012] border-r border-white/10 flex flex-col items-center py-6 gap-3 z-[100]">
             {/* Logo/Brand */}
             <div className="mb-4">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-600 to-red-700 flex items-center justify-center text-white font-bold text-lg shadow-lg">

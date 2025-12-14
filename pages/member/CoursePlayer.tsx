@@ -378,7 +378,7 @@ export const CoursePlayer = () => {
             {/* Sidebar */}
             <aside
                 className={`
-          fixed md:static inset-y-0 left-16 z-50 bg-gradient-to-b from-[#0f131a] to-[#0b0f16] border-r border-white/5 flex flex-col transition-all duration-300
+          fixed md:static inset-y-0 left-16 z-50 bg-gradient-to-b from-[#0f131a] to-[#0b0f16] border-r border-white/5 flex flex-col transition-all duration-300 md:ml-16
           ${sidebarOpen ? 'translate-x-0 w-80' : '-translate-x-full md:translate-x-0 md:w-0'}
         `}
             >
@@ -527,15 +527,7 @@ export const CoursePlayer = () => {
             {/* Main Content */}
             <main className="flex-1 flex flex-col h-full relative">
                 {/* Mobile Toggle */}
-                {!sidebarOpen && (
-                    <button
-                        onClick={() => setSidebarOpen(true)}
-                        className="absolute top-6 left-6 z-30 p-2 text-white md:hidden rounded-lg backdrop-blur-sm transition-colors"
-                        style={{ backgroundColor: primaryColor }}
-                    >
-                        <PanelLeftOpen className="w-6 h-6" />
-                    </button>
-                )}
+
 
                 <div className="LESSON-WRAP flex-1 overflow-y-auto bg-[#0D1118] p-4 md:p-8 pt-12 md:pt-16 flex justify-center">
                     {loading ? (
