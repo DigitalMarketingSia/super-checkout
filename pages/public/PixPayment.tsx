@@ -111,9 +111,13 @@ export const PixPayment = () => {
           return;
         }
 
-        // 2. Check Database
-        const orders = await storage.getOrders();
-        const order = orders.find(o => o.id === orderId);
+        // 2. Check Database (Direct Supabase Query)
+        // Note: storage.getOrders() fails for anonymous users, so we use direct query.
+        const { data: order, error } = await supabase
+          .from('orders')
+          .select('checkout_id')
+          .eq('id', orderId)
+          .single();
 
         if (order?.checkout_id) {
           const chk = await storage.getPublicCheckout(order.checkout_id);
