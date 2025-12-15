@@ -7,6 +7,8 @@ import { Order, Checkout, Product, CheckoutConfig } from '../../types';
 import { Button } from '../../components/ui/Button';
 import { CheckCircle, X, Play, Image as ImageIcon, CreditCard, Lock } from 'lucide-react';
 
+import { supabase } from '../../services/supabase';
+
 export const UpsellPage = () => {
     const { orderId } = useParams<{ orderId: string }>();
     const navigate = useNavigate();
@@ -36,16 +38,32 @@ export const UpsellPage = () => {
             try {
                 if (!orderId) return;
 
-                // 1. Fetch Original Order
-                const allOrders = await storage.getOrders();
-                const order = allOrders.find(o => o.id === orderId);
+                // 1. Fetch Original Order (Direct Supabase Query for Anon Access)
+                // storage.getOrders() fails if user is not logged in (e.g. public checkout)
+                const { data: order, error: orderError } = await supabase
+                    .from('orders')
+                    .select('*')
+                    .eq('id', orderId)
+                    .single();
 
-                if (!order) {
+                if (orderError || !order) {
+                    console.error('Order fetch error:', orderError);
                     setError('Pedido original não encontrado.');
                     setLoading(false);
                     return;
                 }
-                setOriginalOrder(order);
+
+                // Map DB snake_case to CamelCase if needed, but Order type seems to match DB mostly 
+                // except for 'amount' vs 'total'. Let's ensure compatibility.
+                // The 'Order' type has 'amount' but DB has 'total' (based on previous sql error check, wait...)
+                // In step 492, DB result had 'total': "0.01".
+                // But storageService.ts maps 'total' to 'amount'. We should do the same.
+                const mappedOrder: Order = {
+                    ...order,
+                    amount: order.total || order.amount, // handle both just in case
+                };
+
+                setOriginalOrder(mappedOrder);
 
                 // 2. Fetch Checkout Config
                 const chk = await storage.getPublicCheckout(order.checkout_id);
