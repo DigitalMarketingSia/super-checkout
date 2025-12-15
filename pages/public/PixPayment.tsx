@@ -167,7 +167,9 @@ export const PixPayment = () => {
         if (isPaid && upsellActive !== null) {
           console.log('[PixPayment] Payment confirmed. Upsell Active:', upsellActive);
           if (upsellActive) {
-            navigate(`/upsell/${orderId}`);
+            // Force a hard redirect to ensure DomainDispatcher correctly identifies the 'system' route
+            // logic for /upsell path, avoiding SPA router mismatches on custom domains.
+            window.location.href = `/upsell/${orderId}`;
           } else {
             navigate(`/thank-you/${orderId}`);
           }
