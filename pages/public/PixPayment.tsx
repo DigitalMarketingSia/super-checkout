@@ -92,29 +92,53 @@ export const PixPayment = () => {
   const [upsellActive, setUpsellActive] = useState<boolean | null>(null);
 
   useEffect(() => {
+    let attempts = 0;
+    const maxAttempts = 5;
+
     const checkUpsell = async () => {
       try {
+        // 1. Check Location State first
+        if (location.state?.checkoutId) {
+          const chk = await storage.getPublicCheckout(location.state.checkoutId);
+          if (chk?.config?.upsell?.active) {
+            setUpsellActive(true);
+            return;
+          }
+        }
+
         if (!orderId) {
           setUpsellActive(false);
           return;
         }
+
+        // 2. Check Database
         const orders = await storage.getOrders();
         const order = orders.find(o => o.id === orderId);
+
         if (order?.checkout_id) {
           const chk = await storage.getPublicCheckout(order.checkout_id);
           if (chk?.config?.upsell?.active) {
             setUpsellActive(true);
             return;
           }
+        } else {
+          // Retry if order not found yet
+          if (attempts < maxAttempts) {
+            attempts++;
+            setTimeout(checkUpsell, 1000);
+            return;
+          }
         }
         setUpsellActive(false);
       } catch (err) {
         console.error('Error checking upsell:', err);
-        setUpsellActive(false); // Fallback to safe path
+        setUpsellActive(false);
       }
     };
-    checkUpsell();
-  }, [orderId]);
+    // Initial delay for propagation
+    setTimeout(checkUpsell, 500);
+
+  }, [orderId, location.state]);
 
   // Polling para verificar status do pagamento
   useEffect(() => {
@@ -137,6 +161,7 @@ export const PixPayment = () => {
 
         // Only navigate if we know the upsell status
         if (isPaid && upsellActive !== null) {
+          console.log('[PixPayment] Payment confirmed. Upsell Active:', upsellActive);
           if (upsellActive) {
             navigate(`/upsell/${orderId}`);
           } else {
