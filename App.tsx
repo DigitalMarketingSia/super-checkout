@@ -100,7 +100,7 @@ const DomainDispatcher = () => {
           // --- CHECKOUT DOMAIN LOGIC ---
           if (domain.usage === DomainUsage.CHECKOUT) {
             // Check for reserved paths
-            if (pathname.startsWith('/thank-you') || pathname.startsWith('/pagamento')) {
+            if (pathname.startsWith('/thank-you') || pathname.startsWith('/pagamento') || pathname.startsWith('/upsell')) {
               setLoading(false);
               setCustomCheckoutId('system');
               return;
@@ -200,6 +200,7 @@ const DomainDispatcher = () => {
         <Route path="/" element={<PublicCheckout checkoutId={customCheckoutId} />} />
         <Route path="/:slug" element={<PublicCheckout checkoutId={customCheckoutId} />} />
         <Route path="/pagamento/pix/:orderId" element={<PixPayment />} />
+        <Route path="/upsell/:orderId" element={<UpsellPage />} />
         <Route path="/thank-you/:orderId" element={<ThankYou />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
