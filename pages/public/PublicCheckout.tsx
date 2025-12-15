@@ -21,12 +21,14 @@ import { TrackingProvider, useTracking } from '../../context/TrackingContext';
 
 // Tracker Component to use hook context
 const CheckoutTracker = () => {
-   const { trackPageView, trackInitiateCheckout } = useTracking();
+   const { trackPageView, trackInitiateCheckout, isInitialized } = useTracking();
    useEffect(() => {
-      // Trigger events on mount (loaded)
-      trackPageView();
-      trackInitiateCheckout();
-   }, []);
+      // Trigger events on mount (loaded) AND when initialized
+      if (isInitialized) {
+         trackPageView();
+         trackInitiateCheckout();
+      }
+   }, [isInitialized]);
    return null;
 };
 
