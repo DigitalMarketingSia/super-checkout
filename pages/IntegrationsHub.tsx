@@ -43,8 +43,8 @@ export const IntegrationsHub: React.FC = () => {
                     {/* Resend Card */}
                     <Card
                         className={`p-6 hover:border-primary/50 transition-all cursor-pointer group relative overflow-hidden ${isResendActive
-                                ? 'border-green-500 dark:border-green-400'
-                                : ''
+                            ? 'border-green-500 dark:border-green-400'
+                            : ''
                             }`}
                         onClick={() => setIsResendModalOpen(true)}
                     >
@@ -96,17 +96,20 @@ export const IntegrationsHub: React.FC = () => {
                     </Card>
 
                     {/* Analytics Card */}
-                    <Card className="p-6 hover:border-primary/50 transition-colors cursor-pointer group">
+                    <Card
+                        className="p-6 hover:border-primary/50 transition-colors cursor-pointer group"
+                        onClick={() => navigate('/admin/checkouts')}
+                    >
                         <div className="flex items-start justify-between mb-4">
                             <div className="w-12 h-12 bg-yellow-100 dark:bg-yellow-900/30 rounded-xl flex items-center justify-center">
                                 <BarChart className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
                             </div>
                             <span className="px-2 py-1 bg-gray-100 dark:bg-white/5 text-gray-500 text-xs rounded-full">Analytics</span>
                         </div>
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1 group-hover:text-primary transition-colors">Google Analytics</h3>
-                        <p className="text-gray-500 dark:text-gray-400 text-sm mb-4">Acompanhe o tráfego do seu checkout.</p>
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1 group-hover:text-primary transition-colors">Pixels e Analytics</h3>
+                        <p className="text-gray-500 dark:text-gray-400 text-sm mb-4">Gerencie pixels do Facebook, TikTok e Google por checkout.</p>
                         <button className="w-full py-2 px-4 bg-gray-100 dark:bg-white/5 text-gray-900 dark:text-white rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-white/10 transition-colors">
-                            Em breve
+                            Ir para Checkouts
                         </button>
                     </Card>
                 </div>

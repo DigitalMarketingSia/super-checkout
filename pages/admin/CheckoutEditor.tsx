@@ -18,7 +18,8 @@ import {
    AlertCircle,
    Check,
    Upload,
-   Wallet
+   Wallet,
+   BarChart
 } from 'lucide-react';
 import { AlertModal } from '../../components/ui/Modal';
 
@@ -661,10 +662,150 @@ export const CheckoutEditor = () => {
                      </Card>
                   </section>
 
-                  {/* 9. Status */}
+                  {/* 9. Rastreamento e Pixels */}
                   <section className="space-y-4">
                      <h2 className="text-lg font-bold text-white flex items-center gap-2">
                         <span className="bg-primary/20 w-6 h-6 rounded flex items-center justify-center text-xs text-primary">9</span>
+                        Rastreamento de Conversão
+                     </h2>
+                     <Card>
+                        {/* Master Toggle */}
+                        <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/5">
+                           <div>
+                              <label className="text-sm font-bold text-gray-200">Ativar Rastreamento</label>
+                              <p className="text-xs text-gray-500">Habilita a injeção de scripts (Pixels e Tags) no checkout.</p>
+                           </div>
+                           <button
+                              onClick={() => setConfig({
+                                 ...config,
+                                 pixels: { ...config.pixels, active: !config.pixels?.active }
+                              })}
+                              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${config.pixels?.active ? 'bg-green-500' : 'bg-white/10'
+                                 }`}
+                           >
+                              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${config.pixels?.active ? 'translate-x-6' : 'translate-x-1'
+                                 }`} />
+                           </button>
+                        </div>
+
+                        {config.pixels?.active && (
+                           <div className="space-y-8 animate-in fade-in duration-300">
+
+                              {/* Google Tag Manager (Advanced) */}
+                              <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl p-4">
+                                 <div className="flex items-start gap-3">
+                                    <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center flex-shrink-0">
+                                       <span className="font-bold text-blue-400 text-xs">GTM</span>
+                                    </div>
+                                    <div className="flex-1">
+                                       <h3 className="text-sm font-bold text-blue-100">Google Tag Manager (Avançado)</h3>
+                                       <p className="text-xs text-blue-300/70 mb-3">
+                                          Se você usar o GTM, nós ignoraremos os pixels individuais abaixo e carregaremos apenas o seu container.
+                                       </p>
+                                       <input
+                                          type="text"
+                                          className="w-full bg-black/20 border border-blue-500/30 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-blue-500/50 outline-none placeholder-blue-300/30"
+                                          placeholder="Ex: GTM-ABC1234"
+                                          value={config.pixels?.gtm_id || ''}
+                                          onChange={e => setConfig({
+                                             ...config,
+                                             pixels: { ...config.pixels!, gtm_id: e.target.value }
+                                          })}
+                                       />
+                                    </div>
+                                 </div>
+                              </div>
+
+                              {/* Individual Pixels (Disabled if GTM is present) */}
+                              <div className={`space-y-6 ${config.pixels?.gtm_id ? 'opacity-50 pointer-events-none grayscale' : ''}`}>
+
+                                 {/* Analytics Section */}
+                                 <div>
+                                    <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                       <BarChart className="w-3 h-3" /> Analytics
+                                    </h3>
+                                    <div className="grid grid-cols-1 gap-4">
+                                       <div>
+                                          <label className="block text-xs font-medium text-gray-300 mb-1.5">Google Analytics 4 (GA4)</label>
+                                          <div className="relative">
+                                             <input
+                                                type="text"
+                                                className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-primary/50 outline-none"
+                                                placeholder="Ex: G-XXXXXXXXXX"
+                                                value={config.pixels?.google_analytics_id || ''}
+                                                onChange={e => setConfig({
+                                                   ...config,
+                                                   pixels: { ...config.pixels!, google_analytics_id: e.target.value }
+                                                })}
+                                             />
+                                          </div>
+                                       </div>
+                                    </div>
+                                 </div>
+
+                                 {/* Ad Platforms Section */}
+                                 <div>
+                                    <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                       <CreditCard className="w-3 h-3" /> Plataformas de Anúncios
+                                    </h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                                       {/* Facebook */}
+                                       <div>
+                                          <label className="block text-xs font-medium text-gray-300 mb-1.5">Facebook Pixel ID</label>
+                                          <input
+                                             type="text"
+                                             className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-primary/50 outline-none"
+                                             placeholder="Ex: 123456789012345"
+                                             value={config.pixels?.facebook_pixel_id || ''}
+                                             onChange={e => setConfig({
+                                                ...config,
+                                                pixels: { ...config.pixels!, facebook_pixel_id: e.target.value }
+                                             })}
+                                          />
+                                       </div>
+
+                                       {/* TikTok */}
+                                       <div>
+                                          <label className="block text-xs font-medium text-gray-300 mb-1.5">TikTok Pixel ID</label>
+                                          <input
+                                             type="text"
+                                             className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-primary/50 outline-none"
+                                             placeholder="Ex: C123ABC456DEF789"
+                                             value={config.pixels?.tiktok_pixel_id || ''}
+                                             onChange={e => setConfig({
+                                                ...config,
+                                                pixels: { ...config.pixels!, tiktok_pixel_id: e.target.value }
+                                             })}
+                                          />
+                                       </div>
+
+                                       {/* Google Ads */}
+                                       <div className="md:col-span-2">
+                                          <label className="block text-xs font-medium text-gray-300 mb-1.5">Google Ads Conversion ID</label>
+                                          <input
+                                             type="text"
+                                             className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-primary/50 outline-none"
+                                             placeholder="Ex: AW-123456789"
+                                             value={config.pixels?.google_ads_id || ''}
+                                             onChange={e => setConfig({
+                                                ...config,
+                                                pixels: { ...config.pixels!, google_ads_id: e.target.value }
+                                             })}
+                                          />
+                                       </div>
+                                    </div>
+                                 </div>
+                              </div>
+                           </div>
+                        )}
+                     </Card>
+                  </section>
+
+                  {/* 10. Status */}
+                  <section className="space-y-4">
+                     <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                        <span className="bg-primary/20 w-6 h-6 rounded flex items-center justify-center text-xs text-primary">10</span>
                         Status do Checkout
                      </h2>
                      <Card className="flex items-center justify-between">

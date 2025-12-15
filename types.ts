@@ -108,6 +108,14 @@ export interface CheckoutConfig {
   };
   header_image?: string;
   primary_color?: string;
+  pixels?: {
+    active: boolean;
+    facebook_pixel_id?: string;
+    google_analytics_id?: string;
+    google_ads_id?: string;
+    tiktok_pixel_id?: string;
+    gtm_id?: string;
+  };
 }
 
 export interface Checkout {
