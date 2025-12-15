@@ -24,6 +24,7 @@ import { CoursePlayer } from './pages/member/CoursePlayer';
 import { ContentModules } from './pages/member/ContentModules';
 import { PublicCheckout } from './pages/public/PublicCheckout';
 import { PixPayment } from './pages/public/PixPayment';
+import { UpsellPage } from './pages/public/UpsellPage';
 import { ThankYou } from './pages/public/ThankYou';
 import { Login } from './pages/Login';
 import { UpdatePassword } from './pages/UpdatePassword';
@@ -240,6 +241,7 @@ const DomainDispatcher = () => {
       <Route path="/login" element={<Login />} />
       <Route path="/update-password" element={<UpdatePassword />} />
       <Route path="/pagamento/pix/:orderId" element={<PixPayment />} />
+      <Route path="/upsell/:orderId" element={<UpsellPage />} />
       <Route path="/thank-you/:orderId" element={<ThankYou />} />
       <Route path="/c/:id" element={<PublicCheckout />} />
       <Route path="/installer" element={<InstallerWizard />} />

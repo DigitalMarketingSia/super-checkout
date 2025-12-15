@@ -116,6 +116,22 @@ export interface CheckoutConfig {
     tiktok_pixel_id?: string;
     gtm_id?: string;
   };
+  upsell?: {
+    active: boolean;
+    product_id: string;
+    // Content
+    title?: string;
+    subtitle?: string;
+    description?: string;
+    media_type: 'video' | 'image';
+    media_url?: string;
+    button_text?: string;
+    // Visibility Toggles
+    show_title: boolean;
+    show_subtitle: boolean;
+    show_description: boolean;
+    show_media: boolean;
+  };
 }
 
 export interface Checkout {

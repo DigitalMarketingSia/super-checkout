@@ -28,6 +28,16 @@ const initialConfig: CheckoutConfig = {
    payment_methods: { pix: true, credit_card: true, boleto: true },
    timer: { active: false, minutes: 15, bg_color: '#EF4444', text_color: '#FFFFFF' },
    header_image: '',
+   upsell: {
+      active: false,
+      product_id: '',
+      show_title: true,
+      show_subtitle: true,
+      show_description: true,
+      show_media: true,
+      media_type: 'video',
+      button_text: 'Sim, quero adicionar ao meu pedido'
+   }
 };
 
 export const CheckoutEditor = () => {
@@ -457,33 +467,186 @@ export const CheckoutEditor = () => {
                      </Card>
                   </section>
 
-                  {/* 5. Upsell Pós-Compra */}
+                  {/* 5. Oferta de Upsell (One Click) */}
                   <section className="space-y-4">
-                     <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                        <span className="bg-primary/20 w-6 h-6 rounded flex items-center justify-center text-xs text-primary">5</span>
-                        Upsell Pós-Compra (One Click)
-                     </h2>
-                     <Card>
-                        <div className="flex items-center gap-4 mb-4">
-                           <Layers className="w-5 h-5 text-blue-500" />
-                           <p className="text-sm text-gray-300">Oferta apresentada imediatamente após o pagamento aprovado.</p>
+                     <div className="flex items-center justify-between">
+                        <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                           <span className="bg-primary/20 w-6 h-6 rounded flex items-center justify-center text-xs text-primary">5</span>
+                           Oferta de Upsell (Pós-Compra)
+                        </h2>
+                        <div className="flex items-center gap-3">
+                           <span className="text-sm text-gray-400">Ativar Oferta</span>
+                           <button
+                              onClick={() => setConfig({
+                                 ...config,
+                                 upsell: {
+                                    ...config.upsell!,
+                                    active: !config.upsell?.active
+                                 }
+                              })}
+                              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${config.upsell?.active ? 'bg-green-500' : 'bg-white/10'
+                                 }`}
+                           >
+                              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${config.upsell?.active ? 'translate-x-6' : 'translate-x-1'
+                                 }`} />
+                           </button>
                         </div>
-                        <select
-                           className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-primary/50 outline-none appearance-none"
-                           value={upsellProductId}
-                           onChange={e => setUpsellProductId(e.target.value)}
-                        >
-                           <option value="">-- Nenhum Upsell --</option>
-                           {availableUpsells.map(prod => (
-                              <option key={prod.id} value={prod.id}>{prod.name} (R$ {prod.price_real?.toFixed(2)})</option>
-                           ))}
-                        </select>
-                        {availableUpsells.length === 0 && (
-                           <p className="text-[10px] text-orange-400 mt-2">
-                              Dica: Marque produtos ativos como "Upsell" na tela de produtos para habilitar aqui.
-                           </p>
-                        )}
-                     </Card>
+                     </div>
+
+                     {config.upsell?.active && (
+                        <Card className="animate-in fade-in slide-in-from-top-4 duration-300 space-y-6">
+
+                           {/* Produto do Upsell */}
+                           <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-2">Produto da Oferta</label>
+                              <select
+                                 className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-primary/50 outline-none appearance-none"
+                                 value={config.upsell?.product_id || ''}
+                                 onChange={e => setConfig({
+                                    ...config,
+                                    upsell: { ...config.upsell!, product_id: e.target.value }
+                                 })}
+                              >
+                                 <option value="">-- Selecione o Produto --</option>
+                                 {availableUpsells.map(prod => (
+                                    <option key={prod.id} value={prod.id}>{prod.name} (R$ {prod.price_real?.toFixed(2)})</option>
+                                 ))}
+                              </select>
+                           </div>
+
+                           <div className="h-px bg-white/5"></div>
+
+                           {/* Configuração Visual */}
+                           <div className="space-y-4">
+                              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                                 <ImageIcon className="w-4 h-4 text-purple-400" />
+                                 Conteúdo da Página
+                              </h3>
+
+                              {/* Título */}
+                              <div className="flex items-start gap-3 p-3 rounded-lg bg-white/5 border border-white/5">
+                                 <div className="pt-2">
+                                    <input
+                                       type="checkbox"
+                                       checked={config.upsell?.show_title}
+                                       onChange={() => setConfig({ ...config, upsell: { ...config.upsell!, show_title: !config.upsell?.show_title } })}
+                                       className="w-4 h-4 rounded border-gray-500 bg-transparent text-primary focus:ring-primary"
+                                    />
+                                 </div>
+                                 <div className="flex-1 space-y-2">
+                                    <label className="block text-sm font-medium text-gray-300">Título (Headline)</label>
+                                    <input
+                                       type="text"
+                                       className={`w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-primary/50 outline-none ${!config.upsell?.show_title ? 'opacity-50' : ''}`}
+                                       placeholder="ESPERE! Tenho uma oferta especial para você..."
+                                       value={config.upsell?.title || ''}
+                                       disabled={!config.upsell?.show_title}
+                                       onChange={e => setConfig({ ...config, upsell: { ...config.upsell!, title: e.target.value } })}
+                                    />
+                                 </div>
+                              </div>
+
+                              {/* Subtítulo */}
+                              <div className="flex items-start gap-3 p-3 rounded-lg bg-white/5 border border-white/5">
+                                 <div className="pt-2">
+                                    <input
+                                       type="checkbox"
+                                       checked={config.upsell?.show_subtitle}
+                                       onChange={() => setConfig({ ...config, upsell: { ...config.upsell!, show_subtitle: !config.upsell?.show_subtitle } })}
+                                       className="w-4 h-4 rounded border-gray-500 bg-transparent text-primary focus:ring-primary"
+                                    />
+                                 </div>
+                                 <div className="flex-1 space-y-2">
+                                    <label className="block text-sm font-medium text-gray-300">Subtítulo</label>
+                                    <input
+                                       type="text"
+                                       className={`w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-primary/50 outline-none ${!config.upsell?.show_subtitle ? 'opacity-50' : ''}`}
+                                       placeholder="Adicione este pacote exclusivo ao seu pedido por apenas..."
+                                       value={config.upsell?.subtitle || ''}
+                                       disabled={!config.upsell?.show_subtitle}
+                                       onChange={e => setConfig({ ...config, upsell: { ...config.upsell!, subtitle: e.target.value } })}
+                                    />
+                                 </div>
+                              </div>
+
+                              {/* Mídia (Vídeo/Imagem) */}
+                              <div className="flex items-start gap-3 p-3 rounded-lg bg-white/5 border border-white/5">
+                                 <div className="pt-2">
+                                    <input
+                                       type="checkbox"
+                                       checked={config.upsell?.show_media}
+                                       onChange={() => setConfig({ ...config, upsell: { ...config.upsell!, show_media: !config.upsell?.show_media } })}
+                                       className="w-4 h-4 rounded border-gray-500 bg-transparent text-primary focus:ring-primary"
+                                    />
+                                 </div>
+                                 <div className="flex-1 space-y-3">
+                                    <div className="flex items-center justify-between">
+                                       <label className="block text-sm font-medium text-gray-300">Mídia de Vendas</label>
+                                       <div className="flex bg-black/20 rounded-lg p-1">
+                                          <button
+                                             onClick={() => setConfig({ ...config, upsell: { ...config.upsell!, media_type: 'video' } })}
+                                             className={`px-3 py-1 text-xs rounded-md transition-colors ${config.upsell?.media_type === 'video' ? 'bg-primary text-white' : 'text-gray-400 hover:text-white'}`}
+                                          >
+                                             Vídeo
+                                          </button>
+                                          <button
+                                             onClick={() => setConfig({ ...config, upsell: { ...config.upsell!, media_type: 'image' } })}
+                                             className={`px-3 py-1 text-xs rounded-md transition-colors ${config.upsell?.media_type === 'image' ? 'bg-primary text-white' : 'text-gray-400 hover:text-white'}`}
+                                          >
+                                             Imagem
+                                          </button>
+                                       </div>
+                                    </div>
+
+                                    <input
+                                       type="text"
+                                       className={`w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-primary/50 outline-none ${!config.upsell?.show_media ? 'opacity-50' : ''}`}
+                                       placeholder={config.upsell?.media_type === 'video' ? "URL do Vídeo (YouTube, Vimeo...)" : "URL da Imagem"}
+                                       value={config.upsell?.media_url || ''}
+                                       disabled={!config.upsell?.show_media}
+                                       onChange={e => setConfig({ ...config, upsell: { ...config.upsell!, media_url: e.target.value } })}
+                                    />
+                                 </div>
+                              </div>
+
+                              {/* Botão de Ação */}
+                              <div className="p-3 rounded-lg bg-white/5 border border-white/5 space-y-2">
+                                 <label className="block text-sm font-medium text-gray-300">Texto do Botão (Ação Principal)</label>
+                                 <input
+                                    type="text"
+                                    className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-primary/50 outline-none"
+                                    placeholder="Sim, quero adicionar ao meu pedido"
+                                    value={config.upsell?.button_text || ''}
+                                    onChange={e => setConfig({ ...config, upsell: { ...config.upsell!, button_text: e.target.value } })}
+                                 />
+                              </div>
+
+                              {/* Descrição */}
+                              <div className="flex items-start gap-3 p-3 rounded-lg bg-white/5 border border-white/5">
+                                 <div className="pt-2">
+                                    <input
+                                       type="checkbox"
+                                       checked={config.upsell?.show_description}
+                                       onChange={() => setConfig({ ...config, upsell: { ...config.upsell!, show_description: !config.upsell?.show_description } })}
+                                       className="w-4 h-4 rounded border-gray-500 bg-transparent text-primary focus:ring-primary"
+                                    />
+                                 </div>
+                                 <div className="flex-1 space-y-2">
+                                    <label className="block text-sm font-medium text-gray-300">Descrição Detalhada</label>
+                                    <textarea
+                                       rows={3}
+                                       className={`w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-primary/50 outline-none ${!config.upsell?.show_description ? 'opacity-50' : ''}`}
+                                       placeholder="Explique os benefícios..."
+                                       value={config.upsell?.description || ''}
+                                       disabled={!config.upsell?.show_description}
+                                       onChange={e => setConfig({ ...config, upsell: { ...config.upsell!, description: e.target.value } })}
+                                    />
+                                 </div>
+                              </div>
+
+                           </div>
+                        </Card>
+                     )}
                   </section>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">

@@ -88,47 +88,59 @@ export const PixPayment = () => {
     load();
   }, [orderId, location.state]);
 
+  // Fetch Config for Upsell Logic
+  const [upsellActive, setUpsellActive] = useState(false);
+
+  useEffect(() => {
+    const checkUpsell = async () => {
+        if (!orderId) return;
+        const orders = await storage.getOrders();
+        const order = orders.find(o => o.id === orderId);
+        if (order?.checkout_id) {
+           const chk = await storage.getPublicCheckout(order.checkout_id);
+           if (chk?.config?.upsell?.active) {
+              setUpsellActive(true);
+           }
+        }
+    };
+    checkUpsell();
+  }, [orderId]);
+
   // Polling para verificar status do pagamento
   useEffect(() => {
     if (!orderId) return;
 
     const checkStatus = async () => {
       try {
-        // Call our new API endpoint which actively checks Mercado Pago
         const response = await fetch(getApiUrl(`/api/check-status?orderId=${orderId}`));
+        let isPaid = false;
 
         const contentType = response.headers.get('content-type');
         if (response.ok && contentType && contentType.includes('application/json')) {
           const data = await response.json();
-          if (data.status === OrderStatus.PAID) {
-            navigate(`/thank-you/${orderId}`);
-          }
+          if (data.status === OrderStatus.PAID) isPaid = true;
         } else {
-          if (!response.ok || !contentType?.includes('application/json')) {
-            console.warn('[PixPayment] API Check Failed. Are you running "vercel dev"? If running "vite" only, /api endpoints are not available.');
-            console.warn('Falling back to Supabase polling...');
-          }
-
-          // Fallback: Check Supabase directly if API fails
-          const { data, error } = await supabase
-            .from('orders')
-            .select('status')
-            .eq('id', orderId)
-            .single();
-
-          if (data && data.status === OrderStatus.PAID) {
-            navigate(`/thank-you/${orderId}`);
-          }
+          // Fallback Supabase
+          const { data } = await supabase.from('orders').select('status').eq('id', orderId).single();
+          if (data && data.status === OrderStatus.PAID) isPaid = true;
         }
+
+        if (isPaid) {
+            if (upsellActive) {
+                navigate(`/upsell/${orderId}`);
+            } else {
+                navigate(`/thank-you/${orderId}`);
+            }
+        }
+
       } catch (error) {
         console.error('Erro ao verificar status:', error);
       }
     };
 
-    // Verificar a cada 3 segundos
     const interval = setInterval(checkStatus, 3000);
     return () => clearInterval(interval);
-  }, [orderId, navigate]);
+  }, [orderId, navigate, upsellActive]);
 
   // Timer de expiração
   useEffect(() => {

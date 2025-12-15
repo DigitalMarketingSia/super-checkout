@@ -501,8 +501,12 @@ export const PublicCheckout = ({ checkoutId: propId }: { checkoutId?: string }) 
                // Navigate to Boleto Page (or Thank You with link)
                window.location.href = result.boletoData.url; // Simple redirect for boleto for now
             } else {
-               // Credit Card Success -> Thank You Page
-               navigate(`/thank-you/${result.orderId}`);
+               // Credit Card Success
+               if (data.checkout.config?.upsell?.active) {
+                  navigate(`/upsell/${result.orderId}`);
+               } else {
+                  navigate(`/thank-you/${result.orderId}`);
+               }
             }
          } else {
             showAlert('Erro no pagamento', result.message || 'Transação recusada', 'error');
