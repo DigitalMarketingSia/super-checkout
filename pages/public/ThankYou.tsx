@@ -1,3 +1,9 @@
+import React, { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { CheckCircle, Package, Mail, ArrowRight, ShoppingBag } from 'lucide-react';
+import { Button } from '../../components/ui/Button';
+import { supabase } from '../../services/supabase';
+import { Order } from '../../types';
 import { TrackingProvider, useTracking } from '../../context/TrackingContext';
 
 const PurchaseTracker: React.FC<{ order: Order }> = ({ order }) => {
