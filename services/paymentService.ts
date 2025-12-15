@@ -84,7 +84,7 @@ class PaymentService {
       const newOrder: Order = {
         id: generateUUID(),
         checkout_id: request.checkoutId,
-        offer_id: request.offerId === 'direct' ? undefined : request.offerId,
+        offer_id: (request.offerId === 'direct' || request.offerId === 'upsell') ? undefined : request.offerId,
         amount: request.amount,
         customer_email: request.customerEmail,
         customer_name: request.customerName,
