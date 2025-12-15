@@ -76,51 +76,61 @@ export const IconSidebar: React.FC<IconSidebarProps> = ({ onToggleMenu, isMenuOp
     };
 
     return (
-        <div className="fixed left-0 top-0 h-screen w-16 bg-[#0E1012] border-r border-white/10 flex flex-col items-center py-6 gap-3 z-[100]">
+        <div className="fixed left-0 top-0 z-[100] bg-[#0E1012] border-white/10 
+            /* Mobile: Horizontal Top Bar */
+            w-full h-16 flex flex-row items-center justify-between px-4 border-b
+            /* Desktop: Vertical Left Sidebar */
+            md:w-16 md:h-screen md:flex-col md:justify-start md:py-6 md:gap-3 md:border-r md:border-b-0
+        ">
             {/* Menu Toggle */}
-            <IconButton
-                icon={isMenuOpen ? ChevronLeft : BookOpen}
-                label={isMenuOpen ? 'Fechar Menu' : 'Abrir Menu'}
-                onClick={onToggleMenu}
-                isActive={isMenuOpen}
-                color={primaryColor}
-            />
+            <div className="flex-shrink-0">
+                <IconButton
+                    icon={isMenuOpen ? ChevronLeft : BookOpen}
+                    label={isMenuOpen ? 'Fechar Menu' : 'Abrir Menu'}
+                    onClick={onToggleMenu}
+                    isActive={isMenuOpen}
+                    color={primaryColor}
+                />
+            </div>
 
-            <div className="w-8 h-px bg-white/10 my-2"></div>
+            <div className="hidden md:block w-8 h-px bg-white/10 my-2"></div>
 
-            {/* Home */}
-            <IconButton
-                icon={Home}
-                label="Início"
-                to={`${appLink}/`}
-                isActive={isActive('/')}
-            />
+            {/* Mobile: Scrollable icons if needed or simplified list */}
+            <div className="flex flex-row md:flex-col gap-2 md:gap-3 overflow-x-auto md:overflow-visible no-scrollbar">
+                {/* Home */}
+                <IconButton
+                    icon={Home}
+                    label="Início"
+                    to={`${appLink}/`}
+                    isActive={isActive('/')}
+                />
 
-            {/* Vitrine (Products for Sale) */}
-            <IconButton
-                icon={ShoppingBag}
-                label="Vitrine"
-                to={`${appLink}/products`}
-                isActive={isActive('/products')}
-            />
+                {/* Vitrine (Products for Sale) */}
+                <IconButton
+                    icon={ShoppingBag}
+                    label="Vitrine"
+                    to={`${appLink}/products`}
+                    isActive={isActive('/products')}
+                />
 
-            {/* My Products */}
-            <IconButton
-                icon={Package}
-                label="Meus Produtos"
-                to={`${appLink}/my-products`}
-                isActive={isActive('/my-products')}
-            />
+                {/* My Products */}
+                <IconButton
+                    icon={Package}
+                    label="Meus Produtos"
+                    to={`${appLink}/my-products`}
+                    isActive={isActive('/my-products')}
+                />
 
-            <div className="flex-1"></div>
+                <div className="hidden md:block flex-1"></div>
 
-            {/* Profile */}
-            <IconButton
-                icon={User}
-                label="Perfil"
-                to={`${appLink}/profile`}
-                isActive={isActive('/profile')}
-            />
+                {/* Profile */}
+                <IconButton
+                    icon={User}
+                    label="Perfil"
+                    to={`${appLink}/profile`}
+                    isActive={isActive('/profile')}
+                />
+            </div>
         </div>
     );
 };

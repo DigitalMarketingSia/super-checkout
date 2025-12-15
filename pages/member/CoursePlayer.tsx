@@ -456,8 +456,13 @@ export const CoursePlayer = ({ forcedSlug }: { forcedSlug?: string } = {}) => {
 
             <aside
                 className={`
-              fixed md:static inset-y-0 left-16 z-50 bg-gradient-to-b from-[#0f131a] to-[#0b0f16] border-r border-white/5 flex flex-col transition-all duration-300 md:ml-16
-              ${sidebarOpen ? 'translate-x-0 w-80' : '-translate-x-full md:translate-x-0 md:w-0'}
+              fixed md:static inset-x-0 bottom-0 z-40 md:z-50 bg-gradient-to-b from-[#0f131a] to-[#0b0f16] border-r border-white/5 flex flex-col transition-all duration-300 md:ml-16
+              /* Mobile: Top-16 (header), Bottom-0 */
+              top-16 w-full md:w-auto
+              /* Desktop: Top-0, Bottom-0 */
+              md:inset-y-0 md:top-0
+              ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+              ${sidebarOpen ? 'md:w-80' : 'md:w-0'}
             `}
             >
                 {sidebarOpen && (
@@ -639,7 +644,7 @@ export const CoursePlayer = ({ forcedSlug }: { forcedSlug?: string } = {}) => {
             </aside>
 
             <main className="flex-1 flex flex-col h-full relative">
-                <div className="LESSON-WRAP flex-1 overflow-y-auto bg-[#0D1118] p-4 md:p-8 pt-12 md:pt-16 flex justify-center">
+                <div className="LESSON-WRAP flex-1 overflow-y-auto bg-[#0D1118] p-4 md:p-8 pt-20 md:pt-16 flex justify-center">
                     {loading ? (
                         <div className="flex items-center justify-center h-64 w-full">
                             <div className="animate-spin w-8 h-8 border-2 border-t-transparent rounded-full" style={{ borderColor: `${primaryColor} transparent transparent transparent` }}></div>
