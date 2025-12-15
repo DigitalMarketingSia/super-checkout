@@ -89,19 +89,29 @@ export const PixPayment = () => {
   }, [orderId, location.state]);
 
   // Fetch Config for Upsell Logic
-  const [upsellActive, setUpsellActive] = useState(false);
+  const [upsellActive, setUpsellActive] = useState<boolean | null>(null);
 
   useEffect(() => {
     const checkUpsell = async () => {
-        if (!orderId) return;
+      try {
+        if (!orderId) {
+          setUpsellActive(false);
+          return;
+        }
         const orders = await storage.getOrders();
         const order = orders.find(o => o.id === orderId);
         if (order?.checkout_id) {
-           const chk = await storage.getPublicCheckout(order.checkout_id);
-           if (chk?.config?.upsell?.active) {
-              setUpsellActive(true);
-           }
+          const chk = await storage.getPublicCheckout(order.checkout_id);
+          if (chk?.config?.upsell?.active) {
+            setUpsellActive(true);
+            return;
+          }
         }
+        setUpsellActive(false);
+      } catch (err) {
+        console.error('Error checking upsell:', err);
+        setUpsellActive(false); // Fallback to safe path
+      }
     };
     checkUpsell();
   }, [orderId]);
@@ -125,12 +135,13 @@ export const PixPayment = () => {
           if (data && data.status === OrderStatus.PAID) isPaid = true;
         }
 
-        if (isPaid) {
-            if (upsellActive) {
-                navigate(`/upsell/${orderId}`);
-            } else {
-                navigate(`/thank-you/${orderId}`);
-            }
+        // Only navigate if we know the upsell status
+        if (isPaid && upsellActive !== null) {
+          if (upsellActive) {
+            navigate(`/upsell/${orderId}`);
+          } else {
+            navigate(`/thank-you/${orderId}`);
+          }
         }
 
       } catch (error) {
