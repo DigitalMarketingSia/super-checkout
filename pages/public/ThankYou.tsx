@@ -1,16 +1,16 @@
 import { TrackingProvider, useTracking } from '../../context/TrackingContext';
 
 const PurchaseTracker: React.FC<{ order: Order }> = ({ order }) => {
-  const { trackPurchase } = useTracking();
+  const { trackPurchase, isInitialized } = useTracking();
   useEffect(() => {
-    if (order && order.status === 'paid') {
+    if (isInitialized && order && order.status === 'paid') {
       trackPurchase({
         id: order.id,
         amount: order.total || order.amount || 0,
         currency: 'BRL'
       });
     }
-  }, [order]);
+  }, [order, isInitialized]);
   return null;
 };
 

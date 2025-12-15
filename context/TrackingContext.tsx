@@ -5,6 +5,7 @@ interface TrackingContextType {
     trackPageView: () => void;
     trackInitiateCheckout: () => void;
     trackPurchase: (order: { id: string; amount: number; currency?: string; coupon?: string }) => void;
+    isInitialized: boolean;
 }
 
 const TrackingContext = createContext<TrackingContextType | undefined>(undefined);
@@ -162,7 +163,12 @@ export const TrackingProvider: React.FC<{
     };
 
     return (
-        <TrackingContext.Provider value={{ trackPageView, trackInitiateCheckout, trackPurchase }}>
+        <TrackingContext.Provider value={{
+            trackPageView,
+            trackInitiateCheckout,
+            trackPurchase,
+            isInitialized: scriptsLoaded
+        }}>
             {children}
         </TrackingContext.Provider>
     );
