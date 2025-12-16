@@ -426,56 +426,46 @@ class PaymentService {
 
     console.log('[PaymentService] Granting access for order:', order.id);
 
-    // 1. Get all products from order items
-    // Assuming order.items contains product names or we can infer.
-    // Ideally order items should have product_id. 
-    // But OrderItem currently only has name.
-    // We need to fetch the checkout to get the main product ID.
+    const productsToGrant: string[] = [];
 
-    // Strategy:
-    // Main Product: Get from Checkout
-    // Bumps: We need to find them by name or ID. OrderItem doesn't have ID.
-    // CRITICAL FIX: We need to know which products were bought.
-    // For now, let's assume we can get the main product from the checkout.
-
-    // Fetch Checkout to get Main Product ID
-    const checkout = await storage.getPublicCheckout(order.checkout_id);
-    if (!checkout) {
-      console.error('[PaymentService] Checkout not found for access grant');
-      return;
-    }
-
-    const productsToGrant: string[] = [checkout.product_id];
-
-    // Handle Bumps
-    // We need to match order items to bump IDs.
-    // Since we don't store product_id in OrderItem, we have to rely on matching names or just assume if it's a bump type.
-    // Better approach: Update OrderItem to include product_id? Too risky for now.
-    // Let's iterate order items and if type is 'bump', try to find the product in checkout.order_bump_ids
-
+    // 1. Identify Products from Order Items (Robust Method)
     if (order.items && order.items.length > 0) {
       for (const item of order.items) {
-        if (item.type === 'bump') {
-          // We have to find which bump this is.
-          // This is a limitation of current OrderItem structure.
-          // For now, let's skip bumps or try to match by name if possible.
-          // Or fetch all bumps and match name.
-          if (checkout.order_bump_ids) {
-            for (const bumpId of checkout.order_bump_ids) {
-              const bumpProduct = await storage.getPublicProduct(bumpId);
-              if (bumpProduct && bumpProduct.name === item.name) {
-                productsToGrant.push(bumpId);
-              }
-            }
-          }
+        if (item.product_id) {
+          productsToGrant.push(item.product_id);
+        } else {
+          // Fallback: If no product_id (Legacy), try to infer from name or type?
+          // For now, we log a warning.
+          console.warn('[PaymentService] Item missing product_id:', item.name);
         }
+      }
+    } else {
+      // 2. Fallback for Legacy Orders (No items array) - Only Main Product
+      const checkout = await storage.getPublicCheckout(order.checkout_id);
+      if (checkout) {
+        productsToGrant.push(checkout.product_id);
       }
     }
 
-    // 2. Grant Access for each product
-    for (const productId of productsToGrant) {
+    // Dedup IDs
+    const uniqueProductIds = Array.from(new Set(productsToGrant));
+    console.log('[PaymentService] Products to grant:', uniqueProductIds);
+
+    // 3. Grant Access for each product
+    for (const productId of uniqueProductIds) {
       // Get contents associated with this product
+      // Note: A product might not have content linked yet, but we grant access to the PRODUCT/AREA.
+      // Current system grants access to CONTENTs.
       const contents = await storage.getContentsByProduct(productId);
+
+      if (contents.length === 0) {
+        // Warning: Product has no content. Access is granted but user might see nothing?
+        // Actually, with the new getProductsByIds, the user WILL see the product card.
+        // But if we only grant 'content' access, we might need a 'product' access table in future.
+        // For now, existing logic grants per content.
+        // If no content, we just log it.
+        console.warn(`[PaymentService] Product ${productId} has no linked contents to grant.`);
+      }
 
       for (const content of contents) {
         await storage.createAccessGrant({
