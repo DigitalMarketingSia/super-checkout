@@ -453,27 +453,40 @@ class PaymentService {
 
     // 3. Grant Access for each product
     for (const productId of uniqueProductIds) {
-      // Get contents associated with this product
-      // Note: A product might not have content linked yet, but we grant access to the PRODUCT/AREA.
-      // Current system grants access to CONTENTs.
-      const contents = await storage.getContentsByProduct(productId);
+      console.log(`[PaymentService] Processing grants for Product ID: ${productId}`);
 
-      if (contents.length === 0) {
-        // Warning: Product has no content. Access is granted but user might see nothing?
-        // Actually, with the new getProductsByIds, the user WILL see the product card.
-        // But if we only grant 'content' access, we might need a 'product' access table in future.
-        // For now, existing logic grants per content.
-        // If no content, we just log it.
-        console.warn(`[PaymentService] Product ${productId} has no linked contents to grant.`);
-      }
-
-      for (const content of contents) {
+      // A. Product-Level Grant (Always grant base access to the product)
+      // This ensures it appears in "My Products" even if no content is linked yet.
+      try {
         await storage.createAccessGrant({
           user_id: order.customer_user_id,
-          content_id: content.id,
+          content_id: null, // Null = Product Level Access
           product_id: productId,
           status: 'active'
         });
+      } catch (err) {
+        console.error(`[PaymentService] Failed to create product-level grant for ${productId}`, err);
+      }
+
+      // B. Content-Level Grants (Granular access)
+      const contents = await storage.getContentsByProduct(productId);
+
+      if (contents.length === 0) {
+        console.warn(`[PaymentService] Product ${productId} has no linked contents. Only product-level access granted.`);
+      } else {
+        console.log(`[PaymentService] Granting access to ${contents.length} contents for product ${productId}`);
+        for (const content of contents) {
+          try {
+            await storage.createAccessGrant({
+              user_id: order.customer_user_id,
+              content_id: content.id,
+              product_id: productId,
+              status: 'active'
+            });
+          } catch (err) {
+            console.error(`[PaymentService] Failed to grant content access ${content.id}`, err);
+          }
+        }
       }
     }
   }

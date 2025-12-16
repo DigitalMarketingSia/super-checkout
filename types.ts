@@ -318,7 +318,7 @@ export interface Lesson {
 export interface AccessGrant {
   id: string;
   user_id: string;
-  content_id: string;
+  content_id: string | null;
   product_id?: string;
   granted_at: string;
   status: 'active' | 'revoked' | 'expired';
