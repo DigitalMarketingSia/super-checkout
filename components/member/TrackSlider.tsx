@@ -207,7 +207,7 @@ const TrackItemCard: React.FC<TrackItemCardProps> = ({ item, onClick, accessGran
     return (
         <div
             onClick={onClick}
-            className={`flex-none ${isVertical ? 'w-64 md:w-72' : 'w-80 md:w-96'} snap-start cursor-pointer group/card relative transition-transform hover:scale-105 duration-300`}
+            className={`flex-none ${isVertical ? 'w-52 md:w-60' : 'w-72 md:w-80'} snap-start cursor-pointer group/card relative transition-transform hover:scale-105 duration-300`}
         >
             <div className={`${isVertical ? 'aspect-[2/3]' : 'aspect-video'} rounded-xl overflow-hidden bg-gray-800 relative ${isLocked ? 'grayscale' : ''} shadow-lg ring-1 ring-white/5`}>
                 {imageUrl ? (
