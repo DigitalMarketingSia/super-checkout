@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { ChevronLeft, ChevronRight, Lock, PlayCircle, Package, FileText, BookOpen, CheckCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Lock, PlayCircle, Package, FileText, BookOpen, CheckCircle, Play } from 'lucide-react';
 import { Track, TrackItem, AccessGrant } from '../../types';
 import { ProductSalesModal } from './ProductSalesModal';
 import { useAccessControl } from '../../hooks/useAccessControl';
@@ -243,11 +243,11 @@ const TrackItemCard: React.FC<TrackItemCardProps> = ({ item, onClick, accessGran
                                     <div
                                         className="absolute inset-0 z-30 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[1px]"
                                         style={{
-                                            background: `linear-gradient(to top right, ${primaryColor || '#D4143C'}E6 0%, transparent 100%)`
+                                            background: `linear-gradient(to top right, ${primaryColor || '#D4143C'}4D 0%, transparent 100%)`
                                         }}
                                     >
-                                        <div className="bg-white/20 p-4 rounded-full backdrop-blur-sm border border-white/30 transform scale-75 group-hover/card:scale-100 transition-transform duration-300 shadow-2xl">
-                                            <PlayCircle size={40} className="text-white fill-white/20" strokeWidth={1.5} />
+                                        <div className="bg-white/20 p-5 rounded-full backdrop-blur-md border border-white/30 transform scale-75 group-hover/card:scale-100 transition-transform duration-300 shadow-2xl flex items-center justify-center group/btn">
+                                            <Play size={32} className="text-white fill-white ml-1 transition-transform duration-300 group-hover/btn:scale-110" strokeWidth={0} />
                                         </div>
                                     </div>
                                 )}
