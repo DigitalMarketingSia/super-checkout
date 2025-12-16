@@ -100,7 +100,7 @@ export const TrackSlider: React.FC<TrackSliderProps> = ({ track, onItemClick, ac
                 {/* Fade-out gradient on the right when there's more content */}
                 {canScrollRight && (
                     <div
-                        className="absolute right-0 top-0 bottom-4 w-32 md:w-48 pointer-events-none z-10"
+                        className="absolute right-0 top-0 bottom-4 w-40 md:w-64 pointer-events-none z-10"
                         style={{
                             background: `linear-gradient(to right, transparent, #0E1012 100%)`
                         }}
@@ -207,9 +207,9 @@ const TrackItemCard: React.FC<TrackItemCardProps> = ({ item, onClick, accessGran
     return (
         <div
             onClick={onClick}
-            className={`flex-none ${isVertical ? 'w-48' : 'w-72'} snap-start cursor-pointer group/card relative transition-transform hover:scale-105`}
+            className={`flex-none ${isVertical ? 'w-64 md:w-72' : 'w-80 md:w-96'} snap-start cursor-pointer group/card relative transition-transform hover:scale-105 duration-300`}
         >
-            <div className={`${isVertical ? 'aspect-[3/4]' : 'aspect-video'} rounded-lg overflow-hidden bg-gray-800 relative ${isLocked ? 'grayscale' : ''}`}>
+            <div className={`${isVertical ? 'aspect-[2/3]' : 'aspect-video'} rounded-xl overflow-hidden bg-gray-800 relative ${isLocked ? 'grayscale' : ''} shadow-lg ring-1 ring-white/5`}>
                 {imageUrl ? (
                     <>
                         {item.product ? (
@@ -218,13 +218,13 @@ const TrackItemCard: React.FC<TrackItemCardProps> = ({ item, onClick, accessGran
                                 <img
                                     src={imageUrl}
                                     alt=""
-                                    className="absolute inset-0 w-full h-full object-cover opacity-50 blur-xl scale-110"
+                                    className="absolute inset-0 w-full h-full object-cover opacity-50 blur-2xl scale-125"
                                 />
                                 <div className="absolute inset-0 bg-black/20" /> {/* Dim overlay */}
                                 <img
                                     src={imageUrl}
                                     alt={title}
-                                    className="relative w-full h-full object-contain p-4 z-10"
+                                    className="relative w-full h-full object-contain p-4 z-10 drop-shadow-xl"
                                 />
                             </>
                         ) : (
@@ -232,24 +232,24 @@ const TrackItemCard: React.FC<TrackItemCardProps> = ({ item, onClick, accessGran
                             <img
                                 src={imageUrl}
                                 alt={title}
-                                className="w-full h-full object-cover"
+                                className="w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-110"
                             />
                         )}
                     </>
                 ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-500">
-                        <Icon size={48} />
+                    <div className="w-full h-full flex items-center justify-center text-gray-500 bg-gray-900">
+                        <Icon size={48} strokeWidth={1.5} />
                     </div>
                 )}
 
                 {isLocked && (
-                    <div className="absolute top-2 right-2 bg-black/60 p-1 rounded-full text-white z-20">
+                    <div className="absolute top-3 right-3 bg-black/60 p-2 rounded-full text-white z-20 backdrop-blur-md">
                         <Lock size={16} />
                     </div>
                 )}
 
                 {isFree && (
-                    <div className="absolute top-2 left-2 bg-green-500/20 text-green-500 border border-green-500/20 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wide shadow-sm flex items-center gap-1 backdrop-blur-sm z-20">
+                    <div className="absolute top-3 left-3 bg-green-500 text-black text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider shadow-lg flex items-center gap-1 z-20">
                         <CheckCircle size={10} strokeWidth={3} />
                         Gratuito
                     </div>
@@ -257,17 +257,20 @@ const TrackItemCard: React.FC<TrackItemCardProps> = ({ item, onClick, accessGran
 
                 {/* Owned Product Badge */}
                 {isOwned && (
-                    <div className="absolute top-2 left-2 bg-orange-500/20 text-orange-500 border border-orange-500/20 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wide shadow-sm flex items-center gap-1 backdrop-blur-sm z-20">
+                    <div className="absolute top-3 left-3 bg-white text-black text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider shadow-lg flex items-center gap-1 z-20">
                         <Package size={10} strokeWidth={3} />
-                        Adquirido
+                        Seu
                     </div>
                 )}
 
-                <div className="absolute inset-0 bg-black/0 group-hover/card:bg-black/20 transition-colors z-20" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60 group-hover/card:opacity-40 transition-opacity z-20" />
             </div>
 
-            <div className="mt-2">
-                <h4 className="text-sm font-medium text-gray-200 group-hover/card:text-white truncate">{title}</h4>
+            <div className="mt-4 px-1">
+                <h4 className="text-base font-semibold text-gray-100 group-hover/card:text-white truncate transition-colors">{title}</h4>
+                {item.content && (
+                    <p className="text-xs text-gray-400 mt-1">{item.content.modules_count || 0} Módulos</p>
+                )}
             </div>
         </div>
     );

@@ -213,7 +213,7 @@ export const MemberDashboard = () => {
             )}
 
             {/* Tracks Section */}
-            <div className="px-4 md:px-12 space-y-8 relative z-10 -mt-10 pb-20">
+            <div className="px-4 md:px-24 lg:px-32 space-y-12 relative z-10 -mt-10 pb-20">
                 {tracks.length === 0 ? (
                     <div className="text-gray-500 py-10 text-center border border-white/10 rounded-xl bg-white/5">
                         {memberArea ? 'Nenhuma trilha configurada.' : 'Selecione uma área de membros.'}
