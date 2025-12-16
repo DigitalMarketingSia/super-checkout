@@ -62,6 +62,44 @@ class StorageService {
     }));
   }
 
+  async getProductsByIds(ids: string[]): Promise<Product[]> {
+    if (!ids || ids.length === 0) return [];
+
+    const { data, error } = await supabase
+      .from('products')
+      .select('*, checkouts:member_area_checkout_id(id, custom_url_slug, domain_id, domains:domain_id(domain))') // Join for smart redirect if needed
+      .in('id', ids)
+      .eq('active', true);
+
+    if (error) {
+      console.error('Error fetching products by IDs:', error.message);
+      return [];
+    }
+
+    return (data || []).map((p: any) => ({
+      id: p.id,
+      name: p.name,
+      description: p.description,
+      active: p.active,
+      imageUrl: p.image_url,
+      price_real: p.price_real,
+      price_fake: p.price_fake,
+      sku: p.sku,
+      category: p.category,
+      redirect_link: p.redirect_link,
+      is_order_bump: p.is_order_bump,
+      is_upsell: p.is_upsell,
+      visible_in_member_area: p.visible_in_member_area,
+      for_sale: p.for_sale,
+      member_area_action: p.member_area_action,
+      member_area_checkout_id: p.member_area_checkout_id,
+      // Helper to resolve redirect link dynamically if checkout is selected (matching getMemberAreaProducts logic)
+      checkout_url: (p.member_area_action === 'checkout' && p.checkouts)
+        ? `https://${p.checkouts.domains?.domain || 'checkout.supercheckout.com'}/${p.checkouts.custom_url_slug}`
+        : p.redirect_link
+    }));
+  }
+
   async getMemberAreaProducts(areaId: string): Promise<Product[]> {
     // 1. Get all PRODUCT tracks for this member area
     const { data: tracks, error: tracksError } = await supabase
@@ -1790,51 +1828,7 @@ class StorageService {
     return data as MemberArea;
   }
 
-  async getMemberAreaBySlug(slug: string): Promise<MemberArea | null> {
-    const { data, error } = await supabase
-      .from('member_areas')
-      .select('*')
-      .eq('slug', slug)
-      .single();
 
-    if (error) return null;
-    return data as MemberArea;
-  }
-
-  async getMemberAreaByDomain(domainIdentifier: string): Promise<MemberArea | null> {
-    // Check if identifier is a UUID (Domain ID)
-    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(domainIdentifier);
-
-    if (isUUID) {
-      const { data, error } = await supabase
-        .from('member_areas')
-        .select('*')
-        .eq('domain_id', domainIdentifier)
-        .single();
-
-      if (error) return null;
-      return data as MemberArea;
-    } else {
-      // It's a hostname -> Resolve Domain ID first
-      const { data: domainData, error: domainError } = await supabase
-        .from('domains')
-        .select('id')
-        .eq('domain', domainIdentifier)
-        .single();
-
-      if (domainError || !domainData) return null;
-
-      // Now get Member Area
-      const { data, error } = await supabase
-        .from('member_areas')
-        .select('*')
-        .eq('domain_id', domainData.id)
-        .single();
-
-      if (error) return null;
-      return data as MemberArea;
-    }
-  }
 
 
 

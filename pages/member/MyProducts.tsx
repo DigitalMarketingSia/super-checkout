@@ -34,11 +34,8 @@ export const MyProducts: React.FC = () => {
                 return;
             }
 
-            // Get all products
-            const allProducts = await storage.getProducts();
-
-            // Filter to only owned products
-            const owned = allProducts.filter(p => productIds.includes(p.id));
+            // Get specific products details
+            const owned = await storage.getProductsByIds(productIds);
             setOwnedProducts(owned);
         } catch (error) {
             console.error('Erro ao carregar produtos:', error);
@@ -53,11 +50,11 @@ export const MyProducts: React.FC = () => {
             const productContents = await storage.getProductContents(product.id);
 
             if (productContents.length > 0) {
-                const firstContent = productContents[0];
+                const firstContentId = productContents[0];
                 // Navigate to course player
                 const path = slug
-                    ? `/app/${slug}/course/${firstContent.content_id}`
-                    : `/course/${firstContent.content_id}`;
+                    ? `/app/${slug}/course/${firstContentId}`
+                    : `/course/${firstContentId}`;
                 navigate(path);
             } else {
                 console.warn('Nenhum conteúdo encontrado para o produto:', product.name);
