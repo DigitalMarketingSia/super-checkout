@@ -132,6 +132,7 @@ export const TrackSlider: React.FC<TrackSliderProps> = ({ track, onItemClick, ac
                             }}
                             accessGrants={accessGrants}
                             cardStyle={track.card_style || 'vertical'}
+                            primaryColor={primaryColor}
                         />
                     ))}
                 </div>
@@ -151,9 +152,10 @@ interface TrackItemCardProps {
     onClick: () => void;
     accessGrants: AccessGrant[];
     cardStyle: 'vertical' | 'horizontal';
+    primaryColor?: string;
 }
 
-const TrackItemCard: React.FC<TrackItemCardProps> = ({ item, onClick, accessGrants, cardStyle }) => {
+const TrackItemCard: React.FC<TrackItemCardProps> = ({ item, onClick, accessGrants, cardStyle, primaryColor }) => {
     const { checkAccess } = useAccessControl(accessGrants);
     // Determine content based on item type (polymorphic)
     let title = '';
@@ -229,11 +231,25 @@ const TrackItemCard: React.FC<TrackItemCardProps> = ({ item, onClick, accessGran
                             </>
                         ) : (
                             // Content/Lesson Card: Standard Cover
-                            <img
-                                src={imageUrl}
-                                alt={title}
-                                className="w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-110"
-                            />
+                            <>
+                                <img
+                                    src={imageUrl}
+                                    alt={title}
+                                    className="w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-110"
+                                />
+
+                                {/* Hover Overlay with Play Button - ONLY for non-products (lessons/content) */}
+                                {!isLocked && (
+                                    <div
+                                        className="absolute inset-0 z-30 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[2px]"
+                                        style={{ backgroundColor: primaryColor ? `${primaryColor}90` : '#D4143C90' }} // 90 hex = ~56% opacity
+                                    >
+                                        <div className="bg-white/20 p-4 rounded-full backdrop-blur-sm border border-white/30 transform scale-75 group-hover/card:scale-100 transition-transform duration-300">
+                                            <PlayCircle size={40} className="text-white fill-white/20" strokeWidth={1.5} />
+                                        </div>
+                                    </div>
+                                )}
+                            </>
                         )}
                     </>
                 ) : (
