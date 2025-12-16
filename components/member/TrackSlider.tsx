@@ -241,10 +241,12 @@ const TrackItemCard: React.FC<TrackItemCardProps> = ({ item, onClick, accessGran
                                 {/* Hover Overlay with Play Button - ONLY for non-products (lessons/content) */}
                                 {!isLocked && (
                                     <div
-                                        className="absolute inset-0 z-30 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[2px]"
-                                        style={{ backgroundColor: primaryColor ? `${primaryColor}90` : '#D4143C90' }} // 90 hex = ~56% opacity
+                                        className="absolute inset-0 z-30 opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[1px]"
+                                        style={{
+                                            background: `linear-gradient(to top right, ${primaryColor || '#D4143C'}E6 0%, transparent 100%)`
+                                        }}
                                     >
-                                        <div className="bg-white/20 p-4 rounded-full backdrop-blur-sm border border-white/30 transform scale-75 group-hover/card:scale-100 transition-transform duration-300">
+                                        <div className="bg-white/20 p-4 rounded-full backdrop-blur-sm border border-white/30 transform scale-75 group-hover/card:scale-100 transition-transform duration-300 shadow-2xl">
                                             <PlayCircle size={40} className="text-white fill-white/20" strokeWidth={1.5} />
                                         </div>
                                     </div>
