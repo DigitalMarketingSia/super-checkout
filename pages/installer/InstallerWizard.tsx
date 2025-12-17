@@ -145,37 +145,13 @@ export default function InstallerWizard() {
 
             addLog(`Projeto criado: ${data.projectRef}`);
 
-            // Store URL for next steps
+            // Store URL and credentials for next steps
             localStorage.setItem('installer_supabase_url', `https://${data.projectRef}.supabase.co`);
-            // Note: Keys will be entered manually in the next step
+            localStorage.setItem('installer_supabase_ref', data.projectRef);
+            localStorage.setItem('installer_supabase_dbpass', data.dbPass);
 
-            addLog('Rodando migrações do banco de dados (isso pode levar um minuto)...');
-
-            // Run Migrations
-            const migrationRes = await fetch('/api/installer/supabase', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    action: 'run_migrations',
-                    projectRef: data.projectRef,
-                    dbPass: data.dbPass,
-                    accessToken: data.accessToken, // Pass token for Management API
-                    licenseKey: licenseKey || localStorage.getItem('installer_license_key')
-                })
-            });
-
-            // Safe JSON parsing
-            let migrationData: any;
-            const migrationContentType = migrationRes.headers.get('content-type');
-            if (migrationContentType && migrationContentType.includes('application/json')) {
-                migrationData = await migrationRes.json();
-            } else {
-                const textError = await migrationRes.text();
-                throw new Error(`Erro na migração (${migrationRes.status}): ${textError.substring(0, 200)}`);
-            }
-            if (!migrationRes.ok) throw new Error(migrationData.error || 'Falha ao rodar migrações');
-
-            addLog('Schema do banco de dados aplicado com sucesso!');
+            addLog('✅ Projeto Supabase criado com sucesso!');
+            addLog('⚠️ IMPORTANTE: Você precisará rodar as migrações manualmente após configurar as chaves.');
             setSupabaseConnected(true);
 
             // Transition to Manual Key Entry Step
@@ -646,6 +622,18 @@ export default function InstallerWizard() {
                                     <li>Entre no projeto <strong>Super Checkout</strong> (recém criado).</li>
                                     <li>Vá em <strong>Project Settings</strong> (ícone de engrenagem) &gt; <strong>API</strong>.</li>
                                     <li>Copie a <code>anon public</code> e a <code>service_role</code>.</li>
+                                </ol>
+                            </div>
+
+                            <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4 mb-6">
+                                <p className="text-sm text-yellow-200 font-bold mb-2">⚠️ Próximo Passo Importante</p>
+                                <p className="text-xs text-gray-300">
+                                    Após salvar as chaves, você precisará rodar as migrações do banco de dados manualmente:
+                                </p>
+                                <ol className="list-decimal list-inside space-y-1 ml-1 mt-2 text-xs text-gray-400">
+                                    <li>Vá em <strong>SQL Editor</strong> no painel do Supabase</li>
+                                    <li>Cole o SQL do arquivo <code>supabase_setup_member_management.sql</code></li>
+                                    <li>Execute o script</li>
                                 </ol>
                             </div>
 
