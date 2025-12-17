@@ -237,13 +237,21 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
+DECLARE
+  is_first_user BOOLEAN;
 BEGIN
+  -- Check if this is the first user registered
+  SELECT NOT EXISTS (SELECT 1 FROM public.profiles) INTO is_first_user;
+
   INSERT INTO public.profiles (id, email, full_name, role)
   VALUES (
     NEW.id,
     NEW.email,
     NEW.raw_user_meta_data->>'full_name',
-    COALESCE(NEW.raw_user_meta_data->>'role', 'member')
+    CASE 
+      WHEN is_first_user THEN 'admin' 
+      ELSE COALESCE(NEW.raw_user_meta_data->>'role', 'member') 
+    END
   );
   RETURN NEW;
 END;
@@ -994,8 +1002,8 @@ export default function InstallerWizard() {
                             <button
                                 onClick={() => copyToClipboard(SQL_SCHEMA, 'sql_modal')}
                                 className={`px-8 py-3 rounded-xl font-bold shadow-lg flex items-center gap-2 transition-all ${copiedId === 'sql_modal'
-                                        ? 'bg-green-500 text-white shadow-green-500/20 scale-105'
-                                        : 'bg-primary hover:bg-primary/90 text-white shadow-primary/20 hover:shadow-primary/40'
+                                    ? 'bg-green-500 text-white shadow-green-500/20 scale-105'
+                                    : 'bg-primary hover:bg-primary/90 text-white shadow-primary/20 hover:shadow-primary/40'
                                     }`}
                             >
                                 {copiedId === 'sql_modal' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
