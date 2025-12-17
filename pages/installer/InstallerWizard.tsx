@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Check, ChevronRight, Database, Globe, Key, Server, ShieldCheck, Terminal, AlertCircle, ExternalLink, Github } from 'lucide-react';
 import { AlertModal } from '../../components/ui/Modal';
 
-type Step = 'license' | 'supabase' | 'supabase_keys' | 'github' | 'vercel' | 'config' | 'deploy' | 'success';
+type Step = 'license' | 'supabase' | 'supabase_migrations' | 'supabase_keys' | 'github' | 'vercel' | 'config' | 'deploy' | 'success';
 
 export default function InstallerWizard() {
     const [currentStep, setCurrentStep] = useState<Step>('license');
@@ -151,12 +151,11 @@ export default function InstallerWizard() {
             localStorage.setItem('installer_supabase_dbpass', data.dbPass);
 
             addLog('✅ Projeto Supabase criado com sucesso!');
-            addLog('⚠️ IMPORTANTE: Você precisará rodar as migrações manualmente após configurar as chaves.');
             setSupabaseConnected(true);
 
-            // Transition to Manual Key Entry Step
-            setCurrentStep('supabase_keys');
-            addLog('Aguardando entrada manual das chaves de API...');
+            // Transition to Migrations Step
+            setCurrentStep('supabase_migrations');
+            addLog('Próximo: Executar migrações do banco de dados...');
         } catch (error: any) {
             console.error(error);
             addLog(`Erro: ${error.message}`);
@@ -602,7 +601,50 @@ export default function InstallerWizard() {
                         </div>
                     )}
 
-                    {/* Step 2.5: Manual Keys */}
+                    {/* Step 2.5: Migrations */}
+                    {currentStep === 'supabase_migrations' && (
+                        <div className="glass-panel border border-white/10 bg-white/5 backdrop-blur-xl rounded-2xl p-8 shadow-2xl animate-in fade-in slide-in-from-bottom-4">
+                            <div className="w-12 h-12 bg-[#3ECF8E]/20 rounded-xl flex items-center justify-center mb-6 text-[#3ECF8E] shadow-lg shadow-[#3ECF8E]/10">
+                                <Database className="w-6 h-6" />
+                            </div>
+                            <h1 className="text-2xl font-bold mb-2 text-white">Executar Migrações do Banco</h1>
+                            <p className="text-gray-400 mb-6">
+                                Antes de configurar as chaves, você precisa criar as tabelas no banco de dados.
+                            </p>
+
+                            <div className="bg-black/40 rounded-xl p-4 mb-6 border border-white/5 text-sm text-gray-300">
+                                <p className="mb-2 font-bold text-white">Como executar as migrações:</p>
+                                <ol className="list-decimal list-inside space-y-2 ml-1">
+                                    <li>Acesse seu <a href="https://supabase.com/dashboard/projects" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Dashboard do Supabase</a></li>
+                                    <li>Entre no projeto <strong>Super Checkout</strong> (recém criado)</li>
+                                    <li>No menu lateral, clique em <strong>SQL Editor</strong></li>
+                                    <li>Abra o arquivo <code className="bg-black/60 px-2 py-0.5 rounded text-xs">supabase_setup_member_management.sql</code> do seu projeto</li>
+                                    <li>Copie todo o conteúdo SQL</li>
+                                    <li>Cole no SQL Editor do Supabase</li>
+                                    <li>Clique em <strong>Run</strong> para executar</li>
+                                    <li>Aguarde a confirmação de sucesso</li>
+                                </ol>
+                            </div>
+
+                            <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4 mb-6">
+                                <p className="text-sm text-yellow-200 font-bold mb-1">⚠️ Importante</p>
+                                <p className="text-xs text-gray-300">
+                                    As migrações criam todas as tabelas necessárias (profiles, products, checkouts, orders, etc).
+                                    Sem elas, o sistema não funcionará corretamente.
+                                </p>
+                            </div>
+
+                            <button
+                                onClick={() => setCurrentStep('supabase_keys')}
+                                className="w-full bg-[#3ECF8E] hover:bg-[#3ECF8E]/90 text-black font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#3ECF8E]/20 hover:shadow-[#3ECF8E]/40 hover:-translate-y-0.5"
+                            >
+                                Migrações Executadas - Continuar
+                                <ChevronRight className="w-4 h-4" />
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Step 3: Manual Keys */}
                     {currentStep === 'supabase_keys' && (
                         <div className="glass-panel border border-white/10 bg-white/5 backdrop-blur-xl rounded-2xl p-8 shadow-2xl animate-in fade-in slide-in-from-bottom-4">
                             <div className="w-12 h-12 bg-[#3ECF8E]/20 rounded-xl flex items-center justify-center mb-6 text-[#3ECF8E] shadow-lg shadow-[#3ECF8E]/10">
@@ -618,22 +660,16 @@ export default function InstallerWizard() {
                             <div className="bg-black/40 rounded-xl p-4 mb-6 border border-white/5 text-sm text-gray-300">
                                 <p className="mb-2 font-bold text-white">Como encontrar as chaves:</p>
                                 <ol className="list-decimal list-inside space-y-1 ml-1">
-                                    <li>Acesse seu <a href="https://supabase.com/dashboard/projects" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Dashboard do Supabase</a>.</li>
-                                    <li>Entre no projeto <strong>Super Checkout</strong> (recém criado).</li>
-                                    <li>Vá em <strong>Project Settings</strong> (ícone de engrenagem) &gt; <strong>API</strong>.</li>
-                                    <li>Copie a <code>anon public</code> e a <code>service_role</code>.</li>
-                                </ol>
-                            </div>
-
-                            <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4 mb-6">
-                                <p className="text-sm text-yellow-200 font-bold mb-2">⚠️ Próximo Passo Importante</p>
-                                <p className="text-xs text-gray-300">
-                                    Após salvar as chaves, você precisará rodar as migrações do banco de dados manualmente:
-                                </p>
-                                <ol className="list-decimal list-inside space-y-1 ml-1 mt-2 text-xs text-gray-400">
-                                    <li>Vá em <strong>SQL Editor</strong> no painel do Supabase</li>
-                                    <li>Cole o SQL do arquivo <code>supabase_setup_member_management.sql</code></li>
-                                    <li>Execute o script</li>
+                                    <li>Acesse seu <a href="https://supabase.com/dashboard/projects" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Dashboard do Supabase</a></li>
+                                    <li>Entre no projeto <strong>Super Checkout</strong> (recém criado)</li>
+                                    <li>No menu lateral esquerdo, vá em <strong>Settings</strong> (ícone de engrenagem)</li>
+                                    <li>Clique em <strong>API Keys</strong> no submenu</li>
+                                    <li>Na aba <strong>Publishable and secret API keys</strong>, copie:
+                                        <ul className="list-disc list-inside ml-4 mt-1 space-y-0.5">
+                                            <li><code className="bg-black/60 px-1 py-0.5 rounded text-xs">anon public</code> - Cole no primeiro campo</li>
+                                            <li><code className="bg-black/60 px-1 py-0.5 rounded text-xs">service_role</code> (secret) - Cole no segundo campo</li>
+                                        </ul>
+                                    </li>
                                 </ol>
                             </div>
 
