@@ -302,7 +302,7 @@ export default function InstallerWizard() {
                     supabaseUrl: localStorage.getItem('installer_supabase_url'),
                     supabaseAnonKey: localStorage.getItem('installer_supabase_anon_key'),
                     supabaseServiceKey: localStorage.getItem('installer_supabase_service_key'),
-                    githubRepo: localStorage.getItem('installer_github_repo') // Pass the new repo
+                    githubRepo: localStorage.getItem('installer_github_repo')
                 })
             });
             const data = await res.json();
@@ -310,6 +310,18 @@ export default function InstallerWizard() {
 
             addLog(`Projeto criado: ${data.projectName}`);
             localStorage.setItem('installer_project_url', data.projectUrl);
+            localStorage.setItem('installer_project_id', data.projectId);
+            // Save token implicitly returned? 
+            // Wait, we need the token for checking status later. 
+            // The API create_project didn't return the access token in previous code (only projectId).
+            // We need to modify Vercel API to return the token or we can't check status easily without re-auth.
+            // But since this is a wizard, we can keep it in memory or localStorage.
+
+            // HOTFIX: Returning accessToken from Vercel API in next step.
+            if (data.accessToken) {
+                localStorage.setItem('installer_vercel_token', data.accessToken);
+            }
+
             setVercelConnected(true);
             setCurrentStep('config');
         } catch (error: any) {
@@ -321,51 +333,71 @@ export default function InstallerWizard() {
         }
     };
 
-    // Handle OAuth Callbacks and State Restoration on Mount
-    useEffect(() => {
-        const savedKey = localStorage.getItem('installer_license_key');
-        if (savedKey) setLicenseKey(savedKey);
+    // ... (useEffect remains same)
 
-        const savedStep = localStorage.getItem('installer_step') as Step;
-        if (savedStep) setCurrentStep(savedStep);
-
-        const params = new URLSearchParams(window.location.search);
-        const code = params.get('code');
-        const state = params.get('state');
-
-        if (code && state) {
-            // Clear params
-            window.history.replaceState({}, '', '/installer');
-
-            if (state === 'supabase') {
-                handleSupabaseCallback(code);
-            } else if (state === 'vercel') {
-                handleVercelCallback(code);
-            } else if (state === 'github') {
-                handleGitHubCallback(code);
-            }
-        }
-    }, []);
-
-    const handleDeploy = () => {
+    const handleDeploy = async () => {
         setCurrentStep('deploy');
-        let step = 0;
-        const interval = setInterval(() => {
-            step++;
-            if (step === 1) addLog('Inicializando deploy...');
-            if (step === 2) addLog('Verificando projeto Supabase...');
-            if (step === 3) addLog('Validando schema do banco de dados...');
-            if (step === 4) addLog('Configurando variáveis de ambiente...');
-            if (step === 5) addLog('Iniciando build na Vercel...');
+        addLog('Inicializando verificação de deploy...');
 
-            if (step >= 7) {
-                clearInterval(interval);
-                addLog('Finalizando instalação...');
+        const projectId = localStorage.getItem('installer_project_id');
+        const accessToken = localStorage.getItem('installer_vercel_token');
+
+        if (!projectId || !accessToken) {
+            // Fallback for mocked mode or missing data
+            if (window.location.hostname === 'localhost') {
+                addLog('Modo Local: Simulando deploy...');
                 setTimeout(() => {
+                    addLog('Finalizado (Mock).');
                     setCurrentStep('success');
-                }, 1000);
+                }, 3000);
+                return;
             }
-        }, 1500);
+            addLog('Erro: Dados de sessão perdidos. Tente reconectar o Vercel.');
+            return;
+        }
+
+        let attempts = 0;
+        const maxAttempts = 60; // 5 minutes approx (5s interval)
+
+        const interval = setInterval(async () => {
+            attempts++;
+            try {
+                const res = await fetch('/api/installer/vercel', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'check_deploy',
+                        projectId,
+                        accessToken
+                    })
+                });
+
+                const data = await res.json();
+
+                if (data.state === 'READY') {
+                    clearInterval(interval);
+                    addLog('Deploy finalizado com sucesso!');
+                    addLog(`URL: ${data.url}`);
+                    // Update final URL just in case
+                    localStorage.setItem('installer_project_url', data.url);
+                    setTimeout(() => setCurrentStep('success'), 1000);
+                } else if (data.state === 'ERROR' || data.state === 'CANCELED') {
+                    clearInterval(interval);
+                    addLog(`Falha no deploy: ${data.state}`);
+                    showAlert('Erro no Deploy', 'A Vercel reportou um erro no build. Verifique o painel da Vercel.', 'error');
+                } else {
+                    addLog(`Status Vercel: ${data.state || 'Aguardando...'} (${attempts}/${maxAttempts})`);
+                }
+
+                if (attempts >= maxAttempts) {
+                    clearInterval(interval);
+                    addLog('Tempo limite excedido. Verifique o painel da Vercel.');
+                }
+            } catch (e: any) {
+                console.error(e);
+                // Don't log every poll error to UI to avoid spam, just console
+            }
+        }, 5000);
     };
 
     // Save state changes

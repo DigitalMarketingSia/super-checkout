@@ -59,7 +59,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 });
             }
 
-            // 1. Create Repository
+            // 1. Create Repository (Empty)
             const createRes = await fetch('https://api.github.com/user/repos', {
                 method: 'POST',
                 headers: {
@@ -71,27 +71,86 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                     name: repoName || 'super-checkout',
                     private: true,
                     description: 'Super Checkout Self-Hosted Instance',
-                    auto_init: true // Initialize with README so we can push to it
+                    auto_init: false // Create empty to allow import
                 })
             });
 
             const repoData = await createRes.json();
             if (!createRes.ok) throw new Error(repoData.message || 'Failed to create repository');
 
-            // 2. (Optional) Invite Vercel Bot or similar if needed
-            // For now, we assume the user will connect Vercel to this repo via OAuth
-
             return res.status(200).json(repoData);
         }
 
         if (action === 'push_code') {
-            // This step would normally involve:
-            // 1. Downloading the source code ZIP from your secure storage
-            // 2. Unzipping and iterating through files
-            // 3. Using GitHub Git Database API to create blobs, trees, and commits
+            const { accessToken, repoName } = req.body;
 
-            // For this implementation, we will simulate success
-            return res.status(200).json({ success: true, message: 'Code pushed successfully' });
+            // Mock for local testing
+            if (accessToken === 'mock_github_token') {
+                return res.status(200).json({ success: true, message: 'Code pushed (mock)' });
+            }
+
+            // 2. Import Code from Source
+            // We use the GitHub Import API to copy from the source repo
+            // Source: DigitalMarketingSia/super-checkout
+
+            // NOTE: If source is private, we need a PAT with repo access. 
+            // For now assuming public or provided via env.
+            const sourceUrl = 'https://github.com/DigitalMarketingSia/super-checkout.git';
+
+            // Get user (owner) name
+            const userRes = await fetch('https://api.github.com/user', {
+                headers: { 'Authorization': `Bearer ${accessToken}` }
+            });
+            const userData = await userRes.json();
+            const owner = userData.login;
+
+            const importRes = await fetch(`https://api.github.com/repos/${owner}/${repoName}/import`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/vnd.github.v3+json'
+                },
+                body: JSON.stringify({
+                    vcs: 'git',
+                    vcs_url: sourceUrl
+                })
+            });
+
+            const importData = await importRes.json();
+
+            // 201 = Started, 200 = Restarted or Already in progress
+            if (!importRes.ok) {
+                // Check if it's already done (sometimes happens on retries)
+                if (importRes.status === 422 && importData.message?.includes('already')) {
+                    return res.status(200).json({ success: true, message: 'Import already in progress' });
+                }
+                throw new Error(importData.message || 'Failed to start import');
+            }
+
+            return res.status(200).json({ success: true, message: 'Import started', importUrl: importData.url });
+        }
+
+        if (action === 'check_import') {
+            const { accessToken, repoName } = req.body;
+            // Helper to check if import is done (optional, but good for UI)
+
+            const userRes = await fetch('https://api.github.com/user', {
+                headers: { 'Authorization': `Bearer ${accessToken}` }
+            });
+            const userData = await userRes.json();
+            const owner = userData.login;
+
+            const checkRes = await fetch(`https://api.github.com/repos/${owner}/${repoName}/import`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            });
+
+            const checkData = await checkRes.json();
+            return res.status(checkRes.status).json(checkData);
         }
 
         return res.status(400).json({ error: 'Invalid action' });

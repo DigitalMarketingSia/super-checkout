@@ -131,12 +131,54 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 success: true,
                 projectName: projectData.name,
                 projectId: projectData.id,
-                projectUrl: `https://${projectData.name}.vercel.app`
+                projectUrl: `https://${projectData.name}.vercel.app`,
+                accessToken // Return token so frontend can use it for status checks
             });
         }
 
         return res.status(400).json({ error: 'Invalid action' });
 
+        if (action === 'check_deploy') {
+            const { projectId } = req.body;
+            if (!projectId) return res.status(400).json({ error: 'Missing projectId' });
+
+            const clientId = process.env.VERCEL_CLIENT_ID;
+            const clientSecret = process.env.VERCEL_CLIENT_SECRET;
+
+            // We need a team token or similar? 
+            // Actually, we probably need the ACCESS_TOKEN from the user's OAuth flow if we are checking THEIR project.
+            // But we didn't save the user's access token in the frontend state for long term...
+            // Wait, in handleVercelCallback we used the token to create the project. 
+            // We should have returned the token to the frontend or stored it temporarily.
+            // The frontend doesn't seem to have `vercelToken` in state. 
+            // Let's assume we can't check without the token.
+
+            // CORRECTION: Use the token passed in the body.
+            const { accessToken } = req.body;
+            if (!accessToken) return res.status(400).json({ error: 'Missing Vercel Access Token' });
+
+            const deployRes = await fetch(`https://api.vercel.com/v6/deployments?projectId=${projectId}&limit=1`, {
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const deployData = await deployRes.json();
+            if (!deployRes.ok) throw new Error(deployData.error?.message || 'Failed to check deployment');
+
+            const deployment = deployData.deployments?.[0];
+
+            if (!deployment) {
+                return res.status(200).json({ state: 'PENDING', message: 'No deployment found yet' });
+            }
+
+            return res.status(200).json({
+                state: deployment.state,
+                url: `https://${deployment.url}`,
+                readyState: deployment.readyState
+            });
+        }
     } catch (error: any) {
         console.error('Vercel API Error:', error);
         return res.status(500).json({ error: error.message });
