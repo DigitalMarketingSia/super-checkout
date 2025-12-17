@@ -3,7 +3,7 @@ import { Check, ChevronRight, Database, Key, Server, AlertCircle, ExternalLink, 
 import { AlertModal } from '../../components/ui/Modal';
 
 // Define the steps for the guided flow
-type Step = 'license' | 'supabase' | 'supabase_migrations' | 'supabase_keys' | 'github_guide' | 'vercel_guide' | 'success';
+type Step = 'license' | 'supabase' | 'supabase_migrations' | 'supabase_keys' | 'deploy' | 'success';
 
 export default function InstallerWizard() {
     const [currentStep, setCurrentStep] = useState<Step>('license');
@@ -173,7 +173,7 @@ export default function InstallerWizard() {
         localStorage.setItem('installer_supabase_service_key', serviceKey);
 
         addLog('Chaves de API salvas com sucesso!');
-        setCurrentStep('github_guide'); // Go to GitHub Guide
+        setCurrentStep('deploy'); // Go to Deploy Step
     };
 
     // --- LOGIC: GitHub Guide ---
@@ -187,8 +187,8 @@ export default function InstallerWizard() {
         setCurrentStep('vercel_guide');
     }
 
-    // --- LOGIC: Vercel Guide ---
-    const handleVercelSubmit = (e: React.FormEvent) => {
+    // --- LOGIC: Deploy (New Unified Step) ---
+    const handleDeploySubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!vercelDomain) {
             showAlert('Campo Obrigatório', 'Por favor, cole o domínio (URL) do seu projeto na Vercel.', 'error');
@@ -198,7 +198,6 @@ export default function InstallerWizard() {
         localStorage.setItem('installer_vercel_domain', cleanDomain);
         setCurrentStep('success');
     }
-
 
     // --- EFFECTS ---
     useEffect(() => {
@@ -237,12 +236,15 @@ export default function InstallerWizard() {
 
     // Helper to get step number
     const getStepStatus = (step: Step, position: number) => {
-        const stepsOrder = ['license', 'supabase', 'github_guide', 'vercel_guide', 'success'];
+        // Updated flow: license -> supabase -> deploy -> success
+        const stepsOrder = ['license', 'supabase', 'deploy', 'success'];
         const currentIndex = stepsOrder.indexOf(currentStep === 'supabase_migrations' || currentStep === 'supabase_keys' ? 'supabase' : currentStep);
         if (currentIndex > position) return 'completed';
         if (currentIndex === position) return 'active';
         return 'pending';
     };
+
+    const deployUrl = `https://vercel.com/new/clone?repository-url=https://github.com/DigitalMarketingSia/super-checkout&env=NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_ANON_KEY,SUPABASE_SERVICE_ROLE_KEY&envDescription=Configuracao%20Super%20Checkout&project-name=super-checkout&repository-name=super-checkout`;
 
     return (
         <div className="min-h-screen bg-[#0F0F13] text-white font-sans flex flex-col relative overflow-hidden">
@@ -267,9 +269,8 @@ export default function InstallerWizard() {
                         {[
                             { label: 'Licença', step: 0 },
                             { label: 'Banco de Dados', step: 1 },
-                            { label: 'Repositório', step: 2 },
-                            { label: 'Deploy', step: 3 },
-                            { label: 'Conclusão', step: 4 }
+                            { label: 'Deploy', step: 2 },
+                            { label: 'Conclusão', step: 3 }
                         ].map((s, idx) => {
                             const status = getStepStatus(currentStep, idx);
                             const isActive = status === 'active';
@@ -282,7 +283,7 @@ export default function InstallerWizard() {
                                         {isCompleted ? <Check className="w-3 h-3" /> : idx + 1}
                                     </div>
                                     <span className={!isActive && !isCompleted ? 'hidden' : ''}>{s.label}</span>
-                                    {idx < 4 && <ChevronRight className="w-3 h-3 text-gray-700 ml-2" />}
+                                    {idx < 3 && <ChevronRight className="w-3 h-3 text-gray-700 ml-2" />}
                                 </div>
                             );
                         })}
@@ -399,111 +400,48 @@ export default function InstallerWizard() {
                                         className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-xs font-mono" />
                                 </div>
                                 <button type="submit" className="w-full bg-[#3ECF8E] text-black font-bold py-3 rounded-xl mt-2 hover:bg-[#3ECF8E]/90 flex justify-center items-center gap-2">
-                                    Salvar Chaves <ChevronRight className="w-4 h-4" />
+                                    Salvar Chaves  (Ir para Deploy) <ChevronRight className="w-4 h-4" />
                                 </button>
                             </form>
                         </div>
                     )}
 
 
-                    {/* --- STEP 3: GITHUB GUIDE --- */}
-                    {currentStep === 'github_guide' && (
-                        <div className="glass-panel border border-white/10 bg-white/5 backdrop-blur-xl rounded-2xl p-8 shadow-2xl animate-in fade-in slide-in-from-bottom-4">
-                            <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center mb-6 text-white shadow-lg">
-                                <Github className="w-6 h-6" />
-                            </div>
-                            <h1 className="text-2xl font-bold mb-2 text-white">Criar Repositório</h1>
-                            <p className="text-gray-400 mb-6">
-                                Agora vamos criar o seu repositório onde ficará o código da sua loja.
-                            </p>
-
-                            <div className="space-y-6">
-                                <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4">
-                                    <h3 className="font-bold text-blue-400 mb-2 flex items-center gap-2">
-                                        <Info className="w-4 h-4" /> Passo a Passo
-                                    </h3>
-                                    <ol className="list-decimal list-inside text-sm text-gray-300 space-y-2">
-                                        <li>Clique no botão abaixo para abrir o Template.</li>
-                                        <li>No GitHub, clique no botão verde <strong>"Use this template"</strong>.</li>
-                                        <li>Escolha <strong>"Create a new repository"</strong>.</li>
-                                        <li>Dê um nome (ex: <code className="text-white">minha-loja</code>) e crie como <strong>Private</strong>.</li>
-                                        <li>Copie a URL do repositório criado.</li>
-                                    </ol>
-                                </div>
-
-                                <a
-                                    href="https://github.com/new?template_owner=DigitalMarketingSia&template_name=super-checkout"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="w-full bg-[#24292F] hover:bg-[#24292F]/80 text-white font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2"
-                                >
-                                    Ir para o GitHub Template <ExternalLink className="w-4 h-4" />
-                                </a>
-
-                                <form onSubmit={handleRepoSubmit} className="pt-4 border-t border-white/10">
-                                    <label className="block text-sm font-medium text-gray-300 mb-1.5">Cole a URL do seu Repositório aqui:</label>
-                                    <div className="flex gap-2">
-                                        <input
-                                            type="url"
-                                            value={repoUrl}
-                                            onChange={e => setRepoUrl(e.target.value)}
-                                            placeholder="https://github.com/seu-usuario/minha-loja"
-                                            className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-white/30 outline-none"
-                                            required
-                                        />
-                                        <button type="submit" className="bg-primary hover:bg-primary/90 text-white px-6 rounded-xl font-bold">
-                                            <ChevronRight className="w-5 h-5" />
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    )}
-
-
-                    {/* --- STEP 4: VERCEL GUIDE --- */}
-                    {currentStep === 'vercel_guide' && (
+                    {/* --- STEP 3: DEPLOY (REPLACES GITHUB/VERCEL GUIDES) --- */}
+                    {currentStep === 'deploy' && (
                         <div className="glass-panel border border-white/10 bg-white/5 backdrop-blur-xl rounded-2xl p-8 shadow-2xl animate-in fade-in slide-in-from-bottom-4">
                             <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center mb-6 text-white shadow-lg">
                                 <Globe className="w-6 h-6" />
                             </div>
                             <h1 className="text-2xl font-bold mb-2 text-white">Publicar na Vercel</h1>
                             <p className="text-gray-400 mb-6">
-                                Último passo! Vamos colocar seu site no ar.
+                                Clique no botão abaixo para criar seu site automaticamente.
                             </p>
 
-                            <div className="space-y-6">
-                                <div className="bg-purple-500/10 border border-purple-500/20 rounded-xl p-4">
-                                    <h3 className="font-bold text-purple-400 mb-2 flex items-center gap-2">
-                                        <Info className="w-4 h-4" /> Instruções
-                                    </h3>
-                                    <ol className="list-decimal list-inside text-sm text-gray-300 space-y-2">
-                                        <li>Acesse o <a href="https://vercel.com/new" target="_blank" className="text-white underline">Vercel New Project</a>.</li>
-                                        <li>Importe o repositório que você acabou de criar.</li>
-                                        <li>Na aba <strong>Environment Variables</strong>, adicione as chaves abaixo.</li>
-                                        <li>Clique em <strong>Deploy</strong>.</li>
-                                    </ol>
+                            <div className="space-y-8">
+                                <div className="bg-black/40 rounded-xl p-6 border border-white/10 text-center">
+                                    <p className="text-sm text-gray-300 mb-4">
+                                        Isso vai clonar o repositório e configurar as variáveis automaticamente.
+                                    </p>
+
+                                    <a
+                                        href={deployUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="w-full bg-white text-black font-bold py-4 rounded-xl flex items-center justify-center gap-3 hover:bg-gray-100 transition-all shadow-xl shadow-white/10 group"
+                                    >
+                                        <svg className="w-5 h-5" viewBox="0 0 1155 1000" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M577.344 0L1154.69 1000H0L577.344 0Z" fill="black" />
+                                        </svg>
+                                        Deploy to Vercel
+                                        <ExternalLink className="w-4 h-4 opacity-50 group-hover:opacity-100" />
+                                    </a>
                                 </div>
 
-                                <div className="bg-black/50 rounded-xl p-4 border border-white/10 space-y-3">
-                                    <p className="text-xs text-gray-400 uppercase font-bold tracking-wider">Variáveis de Ambiente</p>
-                                    {[
-                                        { k: 'NEXT_PUBLIC_SUPABASE_URL', v: supabaseUrl },
-                                        { k: 'NEXT_PUBLIC_SUPABASE_ANON_KEY', v: anonKey },
-                                        { k: 'SUPABASE_SERVICE_ROLE_KEY', v: serviceKey }
-                                    ].map((env, i) => (
-                                        <div key={i} className="flex items-center justify-between gap-2 bg-white/5 p-2 rounded-lg group hover:bg-white/10 transition-colors cursor-pointer" onClick={() => copyToClipboard(env.v)}>
-                                            <div className="overflow-hidden">
-                                                <div className="text-xs text-gray-400 font-mono">{env.k}</div>
-                                                <div className="text-xs text-green-400 font-mono truncate">{env.v}</div>
-                                            </div>
-                                            <Copy className="w-4 h-4 text-gray-500 group-hover:text-white" />
-                                        </div>
-                                    ))}
-                                </div>
-
-                                <form onSubmit={handleVercelSubmit} className="pt-4 border-t border-white/10">
-                                    <label className="block text-sm font-medium text-gray-300 mb-1.5">Cole a URL final do seu site (Vercel):</label>
+                                <form onSubmit={handleDeploySubmit} className="pt-6 border-t border-white/10">
+                                    <label className="block text-sm font-medium text-gray-300 mb-1.5">
+                                        Após o deploy, cole a URL do seu site aqui:
+                                    </label>
                                     <div className="flex gap-2">
                                         <input
                                             type="text"
