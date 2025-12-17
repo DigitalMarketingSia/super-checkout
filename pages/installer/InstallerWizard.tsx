@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from 'react';
 import { Check, ChevronRight, Database, Key, Server, AlertCircle, ExternalLink, Github, Globe, Copy, Info, X } from 'lucide-react';
 import { AlertModal } from '../../components/ui/Modal';
 
