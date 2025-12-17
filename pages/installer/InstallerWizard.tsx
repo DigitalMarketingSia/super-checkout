@@ -432,9 +432,15 @@ export default function InstallerWizard() {
         setAlertModal({ isOpen: true, title, message, variant });
     };
 
-    const copyToClipboard = (text: string) => {
+    const [copiedId, setCopiedId] = useState<string | null>(null);
+
+    const copyToClipboard = (text: string, id?: string) => {
         navigator.clipboard.writeText(text);
         addLog('Copiado para a área de transferência!');
+        if (id) {
+            setCopiedId(id);
+            setTimeout(() => setCopiedId(null), 2000);
+        }
     };
 
     // --- LOGIC: License ---
@@ -859,12 +865,14 @@ export default function InstallerWizard() {
                                             { k: 'NEXT_PUBLIC_SUPABASE_ANON_KEY', v: anonKey },
                                             { k: 'SUPABASE_SERVICE_ROLE_KEY', v: serviceKey }
                                         ].map((env, i) => (
-                                            <div key={i} className="flex items-center justify-between gap-2 bg-white/5 p-2 rounded-lg group hover:bg-white/10 transition-colors cursor-pointer" onClick={() => copyToClipboard(env.v)}>
-                                                <div className="overflow-hidden">
-                                                    <div className="text-xs text-gray-400 font-mono">{env.k}</div>
+                                            <div key={i} className="flex items-center justify-between gap-3 bg-white/5 p-3 rounded-xl group hover:bg-white/10 transition-colors cursor-pointer" onClick={() => copyToClipboard(env.v, env.k)}>
+                                                <div className="overflow-hidden flex-1">
+                                                    <div className="text-xs text-gray-400 font-mono mb-1">{env.k}</div>
                                                     <div className="text-xs text-green-400 font-mono truncate">{env.v || '...'}</div>
                                                 </div>
-                                                <Copy className="w-4 h-4 text-gray-500 group-hover:text-white" />
+                                                <div className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center transition-all ${copiedId === env.k ? 'bg-green-500/20 text-green-500' : 'bg-white/5 text-gray-400 group-hover:bg-white/10 group-hover:text-white'}`}>
+                                                    {copiedId === env.k ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+                                                </div>
                                             </div>
                                         ))}
                                     </div>
@@ -984,11 +992,14 @@ export default function InstallerWizard() {
                                 Fechar
                             </button>
                             <button
-                                onClick={() => copyToClipboard(SQL_SCHEMA)}
-                                className="bg-primary hover:bg-primary/90 text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-primary/20 flex items-center gap-2"
+                                onClick={() => copyToClipboard(SQL_SCHEMA, 'sql_modal')}
+                                className={`px-8 py-3 rounded-xl font-bold shadow-lg flex items-center gap-2 transition-all ${copiedId === 'sql_modal'
+                                        ? 'bg-green-500 text-white shadow-green-500/20 scale-105'
+                                        : 'bg-primary hover:bg-primary/90 text-white shadow-primary/20 hover:shadow-primary/40'
+                                    }`}
                             >
-                                <Copy className="w-4 h-4" />
-                                Copiar SQL Completo
+                                {copiedId === 'sql_modal' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                                {copiedId === 'sql_modal' ? 'Copiado!' : 'Copiar SQL Completo'}
                             </button>
                         </div>
                     </div>
