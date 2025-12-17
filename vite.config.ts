@@ -5,6 +5,7 @@ import react from '@vitejs/plugin-react';
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
   return {
+    envPrefix: ['VITE_', 'NEXT_PUBLIC_'],
     base: '/', // Use absolute paths for all assets to work correctly on nested routes
     server: {
       port: 3000,
