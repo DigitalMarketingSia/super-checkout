@@ -420,8 +420,28 @@ export default function InstallerWizard() {
 
                             <div className="space-y-8">
                                 <div className="bg-black/40 rounded-xl p-6 border border-white/10 text-center">
-                                    <p className="text-sm text-gray-300 mb-4">
-                                        Isso vai clonar o repositório e configurar as variáveis automaticamente.
+                                    <p className="text-sm text-gray-300 mb-4 text-left font-bold">
+                                        1. Copie e cole estas chaves na Vercel se solicitado:
+                                    </p>
+
+                                    <div className="bg-black/50 rounded-xl p-4 border border-white/10 space-y-3 mb-6 text-left">
+                                        {[
+                                            { k: 'NEXT_PUBLIC_SUPABASE_URL', v: supabaseUrl },
+                                            { k: 'NEXT_PUBLIC_SUPABASE_ANON_KEY', v: anonKey },
+                                            { k: 'SUPABASE_SERVICE_ROLE_KEY', v: serviceKey }
+                                        ].map((env, i) => (
+                                            <div key={i} className="flex items-center justify-between gap-2 bg-white/5 p-2 rounded-lg group hover:bg-white/10 transition-colors cursor-pointer" onClick={() => copyToClipboard(env.v)}>
+                                                <div className="overflow-hidden">
+                                                    <div className="text-xs text-gray-400 font-mono">{env.k}</div>
+                                                    <div className="text-xs text-green-400 font-mono truncate">{env.v || '...'}</div>
+                                                </div>
+                                                <Copy className="w-4 h-4 text-gray-500 group-hover:text-white" />
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    <p className="text-sm text-gray-300 mb-4 text-left font-bold">
+                                        2. Iniciar Deploy Automático:
                                     </p>
 
                                     <a
