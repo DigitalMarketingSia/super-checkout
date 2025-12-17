@@ -262,7 +262,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           console.error('[ERROR] Non-JSON token response:', textError);
           throw new Error(`OAuth token exchange failed (${tokenRes.status}): ${textError.substring(0, 200)}`);
         }
-        
+
         if (!tokenRes.ok) {
           console.error('[ERROR] Token exchange failed:', tokenData);
           throw new Error(tokenData.error_description || tokenData.error || 'Failed to exchange token');
@@ -316,36 +316,75 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           console.log('[DEBUG] Using organization:', organizationId);
         }
 
+        // 3.5. If we have a slug, we need to get the actual organization ID
+        // The Supabase API requires the numeric ID, not the slug
+        if (organizationId && !organizationId.match(/^\d+$/)) {
+          console.log('[DEBUG] Organization appears to be a slug, fetching actual ID...');
+          const orgsRes = await fetch('https://api.supabase.com/v1/organizations', {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+          });
+
+          if (orgsRes.ok) {
+            const orgs = await orgsRes.json();
+            console.log('[DEBUG] Organizations list:', JSON.stringify(orgs, null, 2));
+
+            // Find the organization by slug
+            const org = orgs.find((o: any) => o.slug === organizationId);
+            if (org && org.id) {
+              console.log('[DEBUG] Found organization ID:', org.id, 'for slug:', organizationId);
+              organizationId = org.id;
+            } else {
+              console.warn('[WARN] Could not find organization ID for slug:', organizationId);
+              console.warn('[WARN] Available organizations:', orgs.map((o: any) => ({ id: o.id, slug: o.slug, name: o.name })));
+            }
+          } else {
+            console.warn('[WARN] Failed to fetch organizations to convert slug to ID');
+          }
+        }
+
+        console.log('[DEBUG] Final organization ID for project creation:', organizationId);
+
 
         // 4. Create Project
         const dbPass = generateStrongPassword();
+
+        const projectPayload = {
+          name: `Super Checkout ${Math.floor(Math.random() * 10000)}`,
+          organization_id: organizationId,
+          db_pass: dbPass,
+          region: 'us-east-1',
+          plan: 'free'
+        };
+
+        console.log('[DEBUG] Creating project with payload:', JSON.stringify(projectPayload, null, 2));
+
         const createRes = await fetch('https://api.supabase.com/v1/projects', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${accessToken}`,
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({
-            name: `Super Checkout ${Math.floor(Math.random() * 10000)}`,
-            organization_id: organizationId,
-            db_pass: dbPass,
-            region: 'us-east-1',
-            plan: 'free'
-          })
+          body: JSON.stringify(projectPayload)
         });
+
+        console.log('[DEBUG] Project creation response status:', createRes.status);
+        console.log('[DEBUG] Project creation response headers:', Object.fromEntries(createRes.headers.entries()));
 
         // Safe JSON parsing
         const createContentType = createRes.headers.get('content-type');
         let projectData: any;
         if (createContentType && createContentType.includes('application/json')) {
           projectData = await createRes.json();
+          console.log('[DEBUG] Project creation response:', JSON.stringify(projectData, null, 2));
         } else {
           const textError = await createRes.text();
+          console.error('[ERROR] Non-JSON project creation response:', textError);
           throw new Error(`Project creation failed (${createRes.status}): ${textError.substring(0, 200)}`);
         }
 
         if (!createRes.ok) {
-          throw new Error(projectData.message || 'Failed to create project');
+          console.error('[ERROR] Project creation failed:', projectData);
+          throw new Error(projectData.message || projectData.error || 'Failed to create project');
         }
 
         // SUCCESS - Return without fetching keys
