@@ -397,7 +397,7 @@ CREATE POLICY "Authenticated Update Member Areas" ON storage.objects FOR UPDATE 
 INSERT INTO storage.buckets (id, name, public) VALUES ('contents', 'contents', true) ON CONFLICT (id) DO NOTHING;
 CREATE POLICY "Public Access Contents" ON storage.objects FOR SELECT USING (bucket_id = 'contents');
 CREATE POLICY "Authenticated Upload Contents" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'contents' AND auth.role() = 'authenticated');
-CREATE POLICY "Authenticated Update Contents" ON storage.objects FOR UPDATE USING (bucket_id = 'contents' AND auth.role() = 'authenticated');\`;
+CREATE POLICY "Authenticated Update Contents" ON storage.objects FOR UPDATE USING (bucket_id = 'contents' AND auth.role() = 'authenticated');`;
 
 // Define the steps for the guided flow
 type Step = 'license' | 'supabase' | 'supabase_migrations' | 'supabase_keys' | 'deploy' | 'success';
@@ -425,7 +425,7 @@ export default function InstallerWizard() {
         variant: 'info' as 'info' | 'success' | 'error'
     });
 
-    const addLog = (msg: string) => setLogs(prev => [...prev, `> ${ msg } `]);
+    const addLog = (msg: string) => setLogs(prev => [...prev, `> ${msg} `]);
 
     const showAlert = (title: string, message: string, variant: 'info' | 'success' | 'error' = 'info') => {
         setAlertModal({ isOpen: true, title, message, variant });
@@ -463,7 +463,7 @@ export default function InstallerWizard() {
 
             if (!response.ok) {
                 const status = response.status;
-                let errorMsg = `Erro no Servidor(${ status })`;
+                let errorMsg = `Erro no Servidor(${status})`;
                 try {
                     const errorData = await response.json();
                     errorMsg = errorData.message || errorMsg;
@@ -482,14 +482,14 @@ export default function InstallerWizard() {
                     setCurrentStep('supabase');
                 }, 1000);
             } else {
-                addLog(`Falha na validação: ${ data.message } `);
+                addLog(`Falha na validação: ${data.message} `);
                 showAlert('Erro de Licença', data.message, 'error');
                 setIsLoading(false);
             }
         } catch (error: any) {
             console.error('Validation error:', error);
             const msg = error.message || 'Erro ao conectar com servidor de validação.';
-            addLog(`Erro: ${ msg } `);
+            addLog(`Erro: ${msg} `);
             showAlert('Erro de Conexão', msg, 'error');
             setIsLoading(false);
         }
@@ -499,509 +499,509 @@ export default function InstallerWizard() {
     const handleSupabaseConnect = () => {
         setIsLoading(true);
         const clientId = import.meta.env.VITE_SUPABASE_CLIENT_ID || process.env.NEXT_PUBLIC_SUPABASE_CLIENT_ID || 'mock_client_id';
-        const redirectUri = `${ window.location.origin }/installer`;
+        const redirectUri = `${window.location.origin}/installer`;
 
-const stateObj = {
-    step: 'supabase',
-    key: licenseKey
-};
-const state = btoa(JSON.stringify(stateObj));
+        const stateObj = {
+            step: 'supabase',
+            key: licenseKey
+        };
+        const state = btoa(JSON.stringify(stateObj));
 
-const params = new URLSearchParams({
-    client_id: clientId,
-    redirect_uri: redirectUri,
-    response_type: 'code',
-    scope: 'projects:read projects:write secrets:read secrets:write organizations:read',
-    state: state
-});
-window.location.href = `https://api.supabase.com/v1/oauth/authorize?${params.toString()}`;
+        const params = new URLSearchParams({
+            client_id: clientId,
+            redirect_uri: redirectUri,
+            response_type: 'code',
+            scope: 'projects:read projects:write secrets:read secrets:write organizations:read',
+            state: state
+        });
+        window.location.href = `https://api.supabase.com/v1/oauth/authorize?${params.toString()}`;
     };
 
-const handleSupabaseCallback = async (code: string) => {
-    setIsLoading(true);
-    setCurrentStep('supabase');
-    addLog('Supabase conectado! Criando projeto...');
+    const handleSupabaseCallback = async (code: string) => {
+        setIsLoading(true);
+        setCurrentStep('supabase');
+        addLog('Supabase conectado! Criando projeto...');
 
-    try {
-        const res = await fetch('/api/installer/supabase', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                action: 'create_project',
-                code,
-                licenseKey: licenseKey || localStorage.getItem('installer_license_key'),
-                organizationSlug: organizationSlug || localStorage.getItem('installer_org_slug')
-            })
-        });
-
-        let data: any;
-        const contentType = res.headers.get('content-type');
-        if (contentType && contentType.includes('application/json')) {
-            data = await res.json();
-        } else {
-            const textError = await res.text();
-            throw new Error(`Erro na API (${res.status}): ${textError.substring(0, 200)}`);
-        }
-        if (!res.ok) throw new Error(data.error || 'Falha ao criar projeto Supabase');
-
-        const url = `https://${data.projectRef}.supabase.co`;
-        setSupabaseUrl(url);
-        localStorage.setItem('installer_supabase_url', url);
-        localStorage.setItem('installer_supabase_ref', data.projectRef);
-        localStorage.setItem('installer_supabase_dbpass', data.dbPass);
-
-        addLog('✅ Projeto Supabase criado com sucesso!');
-        setCurrentStep('supabase_migrations'); // Go to migrations
-    } catch (error: any) {
-        console.error(error);
-        addLog(`Erro: ${error.message}`);
-        showAlert('Erro Supabase', error.message, 'error');
-    } finally {
-        setIsLoading(false);
-    }
-};
-
-const handleKeysSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!anonKey || !serviceKey) {
-        showAlert('Campos Obrigatórios', 'Por favor, preencha ambas as chaves.', 'error');
-        return;
-    }
-    localStorage.setItem('installer_supabase_anon_key', anonKey);
-    localStorage.setItem('installer_supabase_service_key', serviceKey);
-
-    addLog('Chaves de API salvas com sucesso!');
-    setCurrentStep('deploy'); // Go to Deploy Step
-};
-
-// --- LOGIC: GitHub Guide ---
-const handleRepoSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!repoUrl) {
-        showAlert('Campo Obrigatório', 'Por favor, cole a URL do seu repositório.', 'error');
-        return;
-    }
-    localStorage.setItem('installer_repo_url', repoUrl);
-    setCurrentStep('vercel_guide');
-}
-
-// --- LOGIC: Deploy (New Unified Step) ---
-const handleDeploySubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!vercelDomain) {
-        showAlert('Campo Obrigatório', 'Por favor, cole o domínio (URL) do seu projeto na Vercel.', 'error');
-        return;
-    }
-    let cleanDomain = vercelDomain.replace('https://', '').replace('http://', '').split('/')[0];
-    localStorage.setItem('installer_vercel_domain', cleanDomain);
-    setCurrentStep('success');
-}
-
-// --- EFFECTS ---
-useEffect(() => {
-    if (licenseKey) localStorage.setItem('installer_license_key', licenseKey);
-    if (organizationSlug) localStorage.setItem('installer_org_slug', organizationSlug);
-    if (currentStep) localStorage.setItem('installer_step', currentStep);
-}, [licenseKey, organizationSlug, currentStep]);
-
-useEffect(() => {
-    const savedKey = localStorage.getItem('installer_license_key');
-    if (savedKey) setLicenseKey(savedKey);
-
-    // Restore keys if available
-    setAnonKey(localStorage.getItem('installer_supabase_anon_key') || '');
-    setServiceKey(localStorage.getItem('installer_supabase_service_key') || '');
-    setSupabaseUrl(localStorage.getItem('installer_supabase_url') || '');
-
-    const savedStep = localStorage.getItem('installer_step') as Step;
-    if (savedStep && savedStep !== 'success') setCurrentStep(savedStep);
-
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get('code');
-    const stateRaw = params.get('state');
-
-    if (code && stateRaw) {
         try {
-            const stateObj = JSON.parse(atob(stateRaw));
-            if (stateObj.key) setLicenseKey(stateObj.key);
-            window.history.replaceState({}, '', '/installer');
-            if (stateObj.step === 'supabase') handleSupabaseCallback(code);
-        } catch (e) {
-            // Ignore errors
+            const res = await fetch('/api/installer/supabase', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'create_project',
+                    code,
+                    licenseKey: licenseKey || localStorage.getItem('installer_license_key'),
+                    organizationSlug: organizationSlug || localStorage.getItem('installer_org_slug')
+                })
+            });
+
+            let data: any;
+            const contentType = res.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+                data = await res.json();
+            } else {
+                const textError = await res.text();
+                throw new Error(`Erro na API (${res.status}): ${textError.substring(0, 200)}`);
+            }
+            if (!res.ok) throw new Error(data.error || 'Falha ao criar projeto Supabase');
+
+            const url = `https://${data.projectRef}.supabase.co`;
+            setSupabaseUrl(url);
+            localStorage.setItem('installer_supabase_url', url);
+            localStorage.setItem('installer_supabase_ref', data.projectRef);
+            localStorage.setItem('installer_supabase_dbpass', data.dbPass);
+
+            addLog('✅ Projeto Supabase criado com sucesso!');
+            setCurrentStep('supabase_migrations'); // Go to migrations
+        } catch (error: any) {
+            console.error(error);
+            addLog(`Erro: ${error.message}`);
+            showAlert('Erro Supabase', error.message, 'error');
+        } finally {
+            setIsLoading(false);
         }
+    };
+
+    const handleKeysSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!anonKey || !serviceKey) {
+            showAlert('Campos Obrigatórios', 'Por favor, preencha ambas as chaves.', 'error');
+            return;
+        }
+        localStorage.setItem('installer_supabase_anon_key', anonKey);
+        localStorage.setItem('installer_supabase_service_key', serviceKey);
+
+        addLog('Chaves de API salvas com sucesso!');
+        setCurrentStep('deploy'); // Go to Deploy Step
+    };
+
+    // --- LOGIC: GitHub Guide ---
+    const handleRepoSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!repoUrl) {
+            showAlert('Campo Obrigatório', 'Por favor, cole a URL do seu repositório.', 'error');
+            return;
+        }
+        localStorage.setItem('installer_repo_url', repoUrl);
+        setCurrentStep('vercel_guide');
     }
-}, []);
 
-// Helper to get step number
-const getStepStatus = (step: Step, position: number) => {
-    // Updated flow: license -> supabase -> deploy -> success
-    const stepsOrder = ['license', 'supabase', 'deploy', 'success'];
-    const currentIndex = stepsOrder.indexOf(currentStep === 'supabase_migrations' || currentStep === 'supabase_keys' ? 'supabase' : currentStep);
-    if (currentIndex > position) return 'completed';
-    if (currentIndex === position) return 'active';
-    return 'pending';
-};
+    // --- LOGIC: Deploy (New Unified Step) ---
+    const handleDeploySubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!vercelDomain) {
+            showAlert('Campo Obrigatório', 'Por favor, cole o domínio (URL) do seu projeto na Vercel.', 'error');
+            return;
+        }
+        let cleanDomain = vercelDomain.replace('https://', '').replace('http://', '').split('/')[0];
+        localStorage.setItem('installer_vercel_domain', cleanDomain);
+        setCurrentStep('success');
+    }
 
-const deployUrl = `https://vercel.com/new/clone?repository-url=https://github.com/DigitalMarketingSia/super-checkout&env=NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_ANON_KEY,SUPABASE_SERVICE_ROLE_KEY&envDescription=Configuracao%20Super%20Checkout&project-name=super-checkout&repository-name=super-checkout`;
+    // --- EFFECTS ---
+    useEffect(() => {
+        if (licenseKey) localStorage.setItem('installer_license_key', licenseKey);
+        if (organizationSlug) localStorage.setItem('installer_org_slug', organizationSlug);
+        if (currentStep) localStorage.setItem('installer_step', currentStep);
+    }, [licenseKey, organizationSlug, currentStep]);
 
-return (
-    <div className="min-h-screen bg-[#0F0F13] text-white font-sans flex flex-col relative overflow-hidden">
-        {/* Background Effects */}
-        <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-            <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/20 rounded-full blur-[120px] opacity-30"></div>
-            <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-600/20 rounded-full blur-[120px] opacity-30"></div>
-        </div>
+    useEffect(() => {
+        const savedKey = localStorage.getItem('installer_license_key');
+        if (savedKey) setLicenseKey(savedKey);
 
-        {/* Header */}
-        <header className="border-b border-white/10 bg-black/20 backdrop-blur-xl sticky top-0 z-50">
-            <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-gradient-to-br from-primary to-purple-600 rounded-lg flex items-center justify-center shadow-lg shadow-primary/20">
-                        <Server className="w-4 h-4 text-white" />
-                    </div>
-                    <span className="font-bold text-lg tracking-tight">Super Checkout <span className="text-white/40 font-normal">Installer</span></span>
-                </div>
+        // Restore keys if available
+        setAnonKey(localStorage.getItem('installer_supabase_anon_key') || '');
+        setServiceKey(localStorage.getItem('installer_supabase_service_key') || '');
+        setSupabaseUrl(localStorage.getItem('installer_supabase_url') || '');
 
-                {/* Progress Steps */}
-                <div className="flex items-center gap-4 text-sm font-medium">
-                    {[
-                        { label: 'Licença', step: 0 },
-                        { label: 'Banco de Dados', step: 1 },
-                        { label: 'Deploy', step: 2 },
-                        { label: 'Conclusão', step: 3 }
-                    ].map((s, idx) => {
-                        const status = getStepStatus(currentStep, idx);
-                        const isActive = status === 'active';
-                        const isCompleted = status === 'completed';
+        const savedStep = localStorage.getItem('installer_step') as Step;
+        if (savedStep && savedStep !== 'success') setCurrentStep(savedStep);
 
-                        return (
-                            <div key={idx} className={`flex items-center gap-2 ${isActive ? 'text-primary' : isCompleted ? 'text-green-400' : 'text-gray-600'} hidden sm:flex`}>
-                                <div className={`w-6 h-6 rounded-full border flex items-center justify-center text-xs transition-colors
-                                        ${isActive ? 'border-primary bg-primary/10' : isCompleted ? 'border-green-400 bg-green-400/10' : 'border-gray-600'}`}>
-                                    {isCompleted ? <Check className="w-3 h-3" /> : idx + 1}
-                                </div>
-                                <span className={!isActive && !isCompleted ? 'hidden' : ''}>{s.label}</span>
-                                {idx < 3 && <ChevronRight className="w-3 h-3 text-gray-700 ml-2" />}
-                            </div>
-                        );
-                    })}
-                </div>
+        const params = new URLSearchParams(window.location.search);
+        const code = params.get('code');
+        const stateRaw = params.get('state');
+
+        if (code && stateRaw) {
+            try {
+                const stateObj = JSON.parse(atob(stateRaw));
+                if (stateObj.key) setLicenseKey(stateObj.key);
+                window.history.replaceState({}, '', '/installer');
+                if (stateObj.step === 'supabase') handleSupabaseCallback(code);
+            } catch (e) {
+                // Ignore errors
+            }
+        }
+    }, []);
+
+    // Helper to get step number
+    const getStepStatus = (step: Step, position: number) => {
+        // Updated flow: license -> supabase -> deploy -> success
+        const stepsOrder = ['license', 'supabase', 'deploy', 'success'];
+        const currentIndex = stepsOrder.indexOf(currentStep === 'supabase_migrations' || currentStep === 'supabase_keys' ? 'supabase' : currentStep);
+        if (currentIndex > position) return 'completed';
+        if (currentIndex === position) return 'active';
+        return 'pending';
+    };
+
+    const deployUrl = `https://vercel.com/new/clone?repository-url=https://github.com/DigitalMarketingSia/super-checkout&env=NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_ANON_KEY,SUPABASE_SERVICE_ROLE_KEY&envDescription=Configuracao%20Super%20Checkout&project-name=super-checkout&repository-name=super-checkout`;
+
+    return (
+        <div className="min-h-screen bg-[#0F0F13] text-white font-sans flex flex-col relative overflow-hidden">
+            {/* Background Effects */}
+            <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+                <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/20 rounded-full blur-[120px] opacity-30"></div>
+                <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-600/20 rounded-full blur-[120px] opacity-30"></div>
             </div>
-        </header>
 
-        {/* Main Content */}
-        <main className="flex-1 flex items-center justify-center p-6 relative z-10">
-            <div className="max-w-xl w-full space-y-6">
-
-                {/* --- STEP 1: LICENSE --- */}
-                {currentStep === 'license' && (
-                    <div className="glass-panel border border-white/10 bg-white/5 backdrop-blur-xl rounded-2xl p-8 shadow-2xl animate-in fade-in slide-in-from-bottom-4">
-                        <div className="w-12 h-12 bg-primary/20 rounded-xl flex items-center justify-center mb-6 text-primary shadow-lg shadow-primary/10">
-                            <Key className="w-6 h-6" />
+            {/* Header */}
+            <header className="border-b border-white/10 bg-black/20 backdrop-blur-xl sticky top-0 z-50">
+                <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-gradient-to-br from-primary to-purple-600 rounded-lg flex items-center justify-center shadow-lg shadow-primary/20">
+                            <Server className="w-4 h-4 text-white" />
                         </div>
-                        <h1 className="text-2xl font-bold mb-2 text-white">Bem-vindo</h1>
-                        <p className="text-gray-400 mb-8">Insira sua chave de licença para iniciar a configuração.</p>
-
-                        <form onSubmit={handleLicenseSubmit} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-1.5">Chave de Licença</label>
-                                <input
-                                    type="text"
-                                    value={licenseKey}
-                                    onChange={e => setLicenseKey(e.target.value)}
-                                    placeholder="XXXX-XXXX-XXXX-XXXX"
-                                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-gray-600 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all font-mono"
-                                    required
-                                />
-                            </div>
-                            <button
-                                type="submit"
-                                disabled={isLoading}
-                                className="w-full bg-primary hover:bg-primary/90 text-white font-medium py-3 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:shadow-primary/40"
-                            >
-                                {isLoading ? 'Validando...' : 'Iniciar Configuração'}
-                                {!isLoading && <ChevronRight className="w-4 h-4" />}
-                            </button>
-                        </form>
+                        <span className="font-bold text-lg tracking-tight">Super Checkout <span className="text-white/40 font-normal">Installer</span></span>
                     </div>
-                )}
 
-                {/* --- STEP 2: SUPABASE CONNECT --- */}
-                {currentStep === 'supabase' && (
-                    <div className="glass-panel border border-white/10 bg-white/5 backdrop-blur-xl rounded-2xl p-8 shadow-2xl animate-in fade-in slide-in-from-bottom-4">
-                        <div className="w-12 h-12 bg-[#3ECF8E]/20 rounded-xl flex items-center justify-center mb-6 text-[#3ECF8E] shadow-lg shadow-[#3ECF8E]/10">
-                            <Database className="w-6 h-6" />
-                        </div>
-                        <h1 className="text-2xl font-bold mb-2 text-white">Configurar Banco de Dados</h1>
-                        <p className="text-gray-400 mb-8">Vamos criar seu projeto no Supabase onde seus dados serão armazenados.</p>
+                    {/* Progress Steps */}
+                    <div className="flex items-center gap-4 text-sm font-medium">
+                        {[
+                            { label: 'Licença', step: 0 },
+                            { label: 'Banco de Dados', step: 1 },
+                            { label: 'Deploy', step: 2 },
+                            { label: 'Conclusão', step: 3 }
+                        ].map((s, idx) => {
+                            const status = getStepStatus(currentStep, idx);
+                            const isActive = status === 'active';
+                            const isCompleted = status === 'completed';
 
-                        <div className="space-y-4">
-                            <button
-                                onClick={handleSupabaseConnect}
-                                disabled={isLoading}
-                                className={`w-full font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-3 shadow-lg 
-                                        ${isLoading
-                                        ? 'bg-gray-800 text-gray-400 cursor-not-allowed'
-                                        : 'bg-[#3ECF8E] hover:bg-[#3ECF8E]/90 text-black shadow-[#3ECF8E]/20 hover:shadow-[#3ECF8E]/40'
-                                    }`}
-                            >
-                                {isLoading ? (
-                                    <>
-                                        <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                                        <span>Criando projeto... (Isso pode demorar)</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <Database className="w-5 h-5" />
-                                        Conectar com Supabase
-                                    </>
-                                )}
-                            </button>
-                            {isLoading && (
-                                <div className="w-full bg-black/40 h-2 rounded-full overflow-hidden">
-                                    <div className="h-full bg-[#3ECF8E] animate-progress-indeterminate origin-left" />
+                            return (
+                                <div key={idx} className={`flex items-center gap-2 ${isActive ? 'text-primary' : isCompleted ? 'text-green-400' : 'text-gray-600'} hidden sm:flex`}>
+                                    <div className={`w-6 h-6 rounded-full border flex items-center justify-center text-xs transition-colors
+                                        ${isActive ? 'border-primary bg-primary/10' : isCompleted ? 'border-green-400 bg-green-400/10' : 'border-gray-600'}`}>
+                                        {isCompleted ? <Check className="w-3 h-3" /> : idx + 1}
+                                    </div>
+                                    <span className={!isActive && !isCompleted ? 'hidden' : ''}>{s.label}</span>
+                                    {idx < 3 && <ChevronRight className="w-3 h-3 text-gray-700 ml-2" />}
                                 </div>
-                            )}
-                            <p className="text-xs text-center text-gray-500">
-                                Será criado um projeto "Super Checkout" na sua conta.
-                            </p>
-                        </div>
+                            );
+                        })}
                     </div>
-                )}
+                </div>
+            </header>
 
-                {/* --- STEP 2.5: MIGRATIONS --- */}
-                {currentStep === 'supabase_migrations' && (
-                    <div className="glass-panel border border-white/10 bg-white/5 backdrop-blur-xl rounded-2xl p-8 shadow-2xl animate-in fade-in slide-in-from-bottom-4">
-                        <div className="w-12 h-12 bg-[#3ECF8E]/20 rounded-xl flex items-center justify-center mb-6 text-[#3ECF8E] shadow-lg shadow-[#3ECF8E]/10">
-                            <Database className="w-6 h-6" />
-                        </div>
-                        <h1 className="text-2xl font-bold mb-2 text-white">Criar Tabelas (Migração)</h1>
-                        <p className="text-gray-400 mb-6">Precisamos criar as tabelas no seu banco de dados.</p>
+            {/* Main Content */}
+            <main className="flex-1 flex items-center justify-center p-6 relative z-10">
+                <div className="max-w-xl w-full space-y-6">
 
-                        <div className="space-y-4">
-                            <div className="bg-black/40 rounded-xl p-6 border border-white/10 text-center">
-                                <p className="text-sm text-gray-300 mb-4">
-                                    1. Clique para copiar o código SQL completo.
-                                </p>
+                    {/* --- STEP 1: LICENSE --- */}
+                    {currentStep === 'license' && (
+                        <div className="glass-panel border border-white/10 bg-white/5 backdrop-blur-xl rounded-2xl p-8 shadow-2xl animate-in fade-in slide-in-from-bottom-4">
+                            <div className="w-12 h-12 bg-primary/20 rounded-xl flex items-center justify-center mb-6 text-primary shadow-lg shadow-primary/10">
+                                <Key className="w-6 h-6" />
+                            </div>
+                            <h1 className="text-2xl font-bold mb-2 text-white">Bem-vindo</h1>
+                            <p className="text-gray-400 mb-8">Insira sua chave de licença para iniciar a configuração.</p>
+
+                            <form onSubmit={handleLicenseSubmit} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-300 mb-1.5">Chave de Licença</label>
+                                    <input
+                                        type="text"
+                                        value={licenseKey}
+                                        onChange={e => setLicenseKey(e.target.value)}
+                                        placeholder="XXXX-XXXX-XXXX-XXXX"
+                                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-gray-600 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all font-mono"
+                                        required
+                                    />
+                                </div>
                                 <button
-                                    onClick={() => setShowSqlModal(true)}
-                                    className="w-full bg-white/10 hover:bg-white/20 text-white font-medium py-3 rounded-xl transition-all flex items-center justify-center gap-2 border border-white/10"
+                                    type="submit"
+                                    disabled={isLoading}
+                                    className="w-full bg-primary hover:bg-primary/90 text-white font-medium py-3 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:shadow-primary/40"
                                 >
-                                    <Copy className="w-4 h-4" />
-                                    Ver e Copiar SQL
+                                    {isLoading ? 'Validando...' : 'Iniciar Configuração'}
+                                    {!isLoading && <ChevronRight className="w-4 h-4" />}
+                                </button>
+                            </form>
+                        </div>
+                    )}
+
+                    {/* --- STEP 2: SUPABASE CONNECT --- */}
+                    {currentStep === 'supabase' && (
+                        <div className="glass-panel border border-white/10 bg-white/5 backdrop-blur-xl rounded-2xl p-8 shadow-2xl animate-in fade-in slide-in-from-bottom-4">
+                            <div className="w-12 h-12 bg-[#3ECF8E]/20 rounded-xl flex items-center justify-center mb-6 text-[#3ECF8E] shadow-lg shadow-[#3ECF8E]/10">
+                                <Database className="w-6 h-6" />
+                            </div>
+                            <h1 className="text-2xl font-bold mb-2 text-white">Configurar Banco de Dados</h1>
+                            <p className="text-gray-400 mb-8">Vamos criar seu projeto no Supabase onde seus dados serão armazenados.</p>
+
+                            <div className="space-y-4">
+                                <button
+                                    onClick={handleSupabaseConnect}
+                                    disabled={isLoading}
+                                    className={`w-full font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-3 shadow-lg 
+                                        ${isLoading
+                                            ? 'bg-gray-800 text-gray-400 cursor-not-allowed'
+                                            : 'bg-[#3ECF8E] hover:bg-[#3ECF8E]/90 text-black shadow-[#3ECF8E]/20 hover:shadow-[#3ECF8E]/40'
+                                        }`}
+                                >
+                                    {isLoading ? (
+                                        <>
+                                            <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                                            <span>Criando projeto... (Isso pode demorar)</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Database className="w-5 h-5" />
+                                            Conectar com Supabase
+                                        </>
+                                    )}
+                                </button>
+                                {isLoading && (
+                                    <div className="w-full bg-black/40 h-2 rounded-full overflow-hidden">
+                                        <div className="h-full bg-[#3ECF8E] animate-progress-indeterminate origin-left" />
+                                    </div>
+                                )}
+                                <p className="text-xs text-center text-gray-500">
+                                    Será criado um projeto "Super Checkout" na sua conta.
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* --- STEP 2.5: MIGRATIONS --- */}
+                    {currentStep === 'supabase_migrations' && (
+                        <div className="glass-panel border border-white/10 bg-white/5 backdrop-blur-xl rounded-2xl p-8 shadow-2xl animate-in fade-in slide-in-from-bottom-4">
+                            <div className="w-12 h-12 bg-[#3ECF8E]/20 rounded-xl flex items-center justify-center mb-6 text-[#3ECF8E] shadow-lg shadow-[#3ECF8E]/10">
+                                <Database className="w-6 h-6" />
+                            </div>
+                            <h1 className="text-2xl font-bold mb-2 text-white">Criar Tabelas (Migração)</h1>
+                            <p className="text-gray-400 mb-6">Precisamos criar as tabelas no seu banco de dados.</p>
+
+                            <div className="space-y-4">
+                                <div className="bg-black/40 rounded-xl p-6 border border-white/10 text-center">
+                                    <p className="text-sm text-gray-300 mb-4">
+                                        1. Clique para copiar o código SQL completo.
+                                    </p>
+                                    <button
+                                        onClick={() => setShowSqlModal(true)}
+                                        className="w-full bg-white/10 hover:bg-white/20 text-white font-medium py-3 rounded-xl transition-all flex items-center justify-center gap-2 border border-white/10"
+                                    >
+                                        <Copy className="w-4 h-4" />
+                                        Ver e Copiar SQL
+                                    </button>
+                                </div>
+
+                                <div className="text-center text-sm text-gray-500 py-2">
+                                    <p>2. Cole no "SQL Editor" do Supabase e execute.</p>
+                                </div>
+
+                                <button
+                                    onClick={() => setCurrentStep('supabase_keys')}
+                                    className="w-full bg-[#3ECF8E] hover:bg-[#3ECF8E]/90 text-black font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#3ECF8E]/20 hover:shadow-[#3ECF8E]/40"
+                                >
+                                    Já executei o SQL
+                                    <ChevronRight className="w-4 h-4" />
                                 </button>
                             </div>
-
-                            <div className="text-center text-sm text-gray-500 py-2">
-                                <p>2. Cole no "SQL Editor" do Supabase e execute.</p>
-                            </div>
-
-                            <button
-                                onClick={() => setCurrentStep('supabase_keys')}
-                                className="w-full bg-[#3ECF8E] hover:bg-[#3ECF8E]/90 text-black font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#3ECF8E]/20 hover:shadow-[#3ECF8E]/40"
-                            >
-                                Já executei o SQL
-                                <ChevronRight className="w-4 h-4" />
-                            </button>
                         </div>
-                    </div>
-                )}
+                    )}
 
-                {/* --- STEP 2.75: KEYS --- */}
-                {currentStep === 'supabase_keys' && (
-                    <div className="glass-panel border border-white/10 bg-white/5 backdrop-blur-xl rounded-2xl p-8 shadow-2xl animate-in fade-in slide-in-from-bottom-4">
-                        <div className="w-12 h-12 bg-[#3ECF8E]/20 rounded-xl flex items-center justify-center mb-6 text-[#3ECF8E] shadow-lg shadow-[#3ECF8E]/10">
-                            <Key className="w-6 h-6" />
-                        </div>
-                        <h1 className="text-2xl font-bold mb-2 text-white">Salvar Chaves de Acesso</h1>
-                        <p className="text-gray-400 mb-6">Copie as chaves do Supabase em Project Settings {'>'} API.</p>
-
-                        <form onSubmit={handleKeysSubmit} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-1.5">Anon Public Key</label>
-                                <input type="text" value={anonKey} onChange={e => setAnonKey(e.target.value)} required
-                                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-xs font-mono" />
+                    {/* --- STEP 2.75: KEYS --- */}
+                    {currentStep === 'supabase_keys' && (
+                        <div className="glass-panel border border-white/10 bg-white/5 backdrop-blur-xl rounded-2xl p-8 shadow-2xl animate-in fade-in slide-in-from-bottom-4">
+                            <div className="w-12 h-12 bg-[#3ECF8E]/20 rounded-xl flex items-center justify-center mb-6 text-[#3ECF8E] shadow-lg shadow-[#3ECF8E]/10">
+                                <Key className="w-6 h-6" />
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-1.5">Service Role Key (Secret)</label>
-                                <input type="text" value={serviceKey} onChange={e => setServiceKey(e.target.value)} required
-                                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-xs font-mono" />
-                            </div>
-                            <button type="submit" className="w-full bg-[#3ECF8E] text-black font-bold py-3 rounded-xl mt-2 hover:bg-[#3ECF8E]/90 flex justify-center items-center gap-2">
-                                Salvar Chaves  (Ir para Deploy) <ChevronRight className="w-4 h-4" />
-                            </button>
-                        </form>
-                    </div>
-                )}
+                            <h1 className="text-2xl font-bold mb-2 text-white">Salvar Chaves de Acesso</h1>
+                            <p className="text-gray-400 mb-6">Copie as chaves do Supabase em Project Settings {'>'} API.</p>
 
-
-                {/* --- STEP 3: DEPLOY (REPLACES GITHUB/VERCEL GUIDES) --- */}
-                {currentStep === 'deploy' && (
-                    <div className="glass-panel border border-white/10 bg-white/5 backdrop-blur-xl rounded-2xl p-8 shadow-2xl animate-in fade-in slide-in-from-bottom-4">
-                        <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center mb-6 text-white shadow-lg">
-                            <Globe className="w-6 h-6" />
+                            <form onSubmit={handleKeysSubmit} className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-300 mb-1.5">Anon Public Key</label>
+                                    <input type="text" value={anonKey} onChange={e => setAnonKey(e.target.value)} required
+                                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-xs font-mono" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-300 mb-1.5">Service Role Key (Secret)</label>
+                                    <input type="text" value={serviceKey} onChange={e => setServiceKey(e.target.value)} required
+                                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-xs font-mono" />
+                                </div>
+                                <button type="submit" className="w-full bg-[#3ECF8E] text-black font-bold py-3 rounded-xl mt-2 hover:bg-[#3ECF8E]/90 flex justify-center items-center gap-2">
+                                    Salvar Chaves  (Ir para Deploy) <ChevronRight className="w-4 h-4" />
+                                </button>
+                            </form>
                         </div>
-                        <h1 className="text-2xl font-bold mb-2 text-white">Publicar na Vercel</h1>
-                        <p className="text-gray-400 mb-6">
-                            Clique no botão abaixo para criar seu site automaticamente.
-                        </p>
+                    )}
 
-                        <div className="space-y-8">
-                            <div className="bg-black/40 rounded-xl p-6 border border-white/10 text-center">
-                                <p className="text-sm text-gray-300 mb-4 text-left font-bold">
-                                    1. Copie e cole estas chaves na Vercel se solicitado:
-                                </p>
 
-                                <div className="bg-black/50 rounded-xl p-4 border border-white/10 space-y-3 mb-6 text-left">
-                                    {[
-                                        { k: 'NEXT_PUBLIC_SUPABASE_URL', v: supabaseUrl },
-                                        { k: 'NEXT_PUBLIC_SUPABASE_ANON_KEY', v: anonKey },
-                                        { k: 'SUPABASE_SERVICE_ROLE_KEY', v: serviceKey }
-                                    ].map((env, i) => (
-                                        <div key={i} className="flex items-center justify-between gap-2 bg-white/5 p-2 rounded-lg group hover:bg-white/10 transition-colors cursor-pointer" onClick={() => copyToClipboard(env.v)}>
-                                            <div className="overflow-hidden">
-                                                <div className="text-xs text-gray-400 font-mono">{env.k}</div>
-                                                <div className="text-xs text-green-400 font-mono truncate">{env.v || '...'}</div>
+                    {/* --- STEP 3: DEPLOY (REPLACES GITHUB/VERCEL GUIDES) --- */}
+                    {currentStep === 'deploy' && (
+                        <div className="glass-panel border border-white/10 bg-white/5 backdrop-blur-xl rounded-2xl p-8 shadow-2xl animate-in fade-in slide-in-from-bottom-4">
+                            <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center mb-6 text-white shadow-lg">
+                                <Globe className="w-6 h-6" />
+                            </div>
+                            <h1 className="text-2xl font-bold mb-2 text-white">Publicar na Vercel</h1>
+                            <p className="text-gray-400 mb-6">
+                                Clique no botão abaixo para criar seu site automaticamente.
+                            </p>
+
+                            <div className="space-y-8">
+                                <div className="bg-black/40 rounded-xl p-6 border border-white/10 text-center">
+                                    <p className="text-sm text-gray-300 mb-4 text-left font-bold">
+                                        1. Copie e cole estas chaves na Vercel se solicitado:
+                                    </p>
+
+                                    <div className="bg-black/50 rounded-xl p-4 border border-white/10 space-y-3 mb-6 text-left">
+                                        {[
+                                            { k: 'NEXT_PUBLIC_SUPABASE_URL', v: supabaseUrl },
+                                            { k: 'NEXT_PUBLIC_SUPABASE_ANON_KEY', v: anonKey },
+                                            { k: 'SUPABASE_SERVICE_ROLE_KEY', v: serviceKey }
+                                        ].map((env, i) => (
+                                            <div key={i} className="flex items-center justify-between gap-2 bg-white/5 p-2 rounded-lg group hover:bg-white/10 transition-colors cursor-pointer" onClick={() => copyToClipboard(env.v)}>
+                                                <div className="overflow-hidden">
+                                                    <div className="text-xs text-gray-400 font-mono">{env.k}</div>
+                                                    <div className="text-xs text-green-400 font-mono truncate">{env.v || '...'}</div>
+                                                </div>
+                                                <Copy className="w-4 h-4 text-gray-500 group-hover:text-white" />
                                             </div>
-                                            <Copy className="w-4 h-4 text-gray-500 group-hover:text-white" />
-                                        </div>
-                                    ))}
+                                        ))}
+                                    </div>
+
+                                    <p className="text-sm text-gray-300 mb-4 text-left font-bold">
+                                        2. Iniciar Deploy Automático:
+                                    </p>
+
+                                    <a
+                                        href={deployUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="w-full bg-white text-black font-bold py-4 rounded-xl flex items-center justify-center gap-3 hover:bg-gray-100 transition-all shadow-xl shadow-white/10 group"
+                                    >
+                                        <svg className="w-5 h-5" viewBox="0 0 1155 1000" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M577.344 0L1154.69 1000H0L577.344 0Z" fill="black" />
+                                        </svg>
+                                        Deploy to Vercel
+                                        <ExternalLink className="w-4 h-4 opacity-50 group-hover:opacity-100" />
+                                    </a>
                                 </div>
 
-                                <p className="text-sm text-gray-300 mb-4 text-left font-bold">
-                                    2. Iniciar Deploy Automático:
-                                </p>
+                                <form onSubmit={handleDeploySubmit} className="pt-6 border-t border-white/10">
+                                    <label className="block text-sm font-medium text-gray-300 mb-1.5">
+                                        Após o deploy, cole a URL do seu site aqui:
+                                    </label>
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={vercelDomain}
+                                            onChange={e => setVercelDomain(e.target.value)}
+                                            placeholder="minha-loja.vercel.app"
+                                            className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-white/30 outline-none"
+                                            required
+                                        />
+                                        <button type="submit" className="bg-primary hover:bg-primary/90 text-white px-6 rounded-xl font-bold">
+                                            <ChevronRight className="w-5 h-5" />
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    )}
 
+
+                    {/* --- STEP 5: SUCCESS --- */}
+                    {currentStep === 'success' && (
+                        <div className="glass-panel border border-green-500/20 bg-green-500/5 backdrop-blur-xl rounded-2xl p-8 shadow-2xl animate-in fade-in slide-in-from-bottom-4 text-center">
+                            <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mb-6 text-green-500 shadow-lg shadow-green-500/20 mx-auto animate-in zoom-in duration-300">
+                                <Check className="w-10 h-10" />
+                            </div>
+                            <h1 className="text-3xl font-bold mb-4 text-white">Instalação Concluída!</h1>
+                            <p className="text-gray-400 mb-8 max-w-md mx-auto">
+                                Parabéns! Seu Super Checkout está configurado e pronto para usar.
+                            </p>
+
+                            <div className="bg-black/40 rounded-xl p-6 mb-6 border border-white/5 text-center">
+                                <p className="text-sm text-gray-400 mb-2">Acesse seu painel administrativo em:</p>
                                 <a
-                                    href={deployUrl}
+                                    href={`https://${localStorage.getItem('installer_vercel_domain') || vercelDomain}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="w-full bg-white text-black font-bold py-4 rounded-xl flex items-center justify-center gap-3 hover:bg-gray-100 transition-all shadow-xl shadow-white/10 group"
+                                    className="text-xl font-bold text-primary hover:underline font-mono"
                                 >
-                                    <svg className="w-5 h-5" viewBox="0 0 1155 1000" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M577.344 0L1154.69 1000H0L577.344 0Z" fill="black" />
-                                    </svg>
-                                    Deploy to Vercel
-                                    <ExternalLink className="w-4 h-4 opacity-50 group-hover:opacity-100" />
+                                    https://{localStorage.getItem('installer_vercel_domain') || vercelDomain}
                                 </a>
                             </div>
 
-                            <form onSubmit={handleDeploySubmit} className="pt-6 border-t border-white/10">
-                                <label className="block text-sm font-medium text-gray-300 mb-1.5">
-                                    Após o deploy, cole a URL do seu site aqui:
-                                </label>
-                                <div className="flex gap-2">
-                                    <input
-                                        type="text"
-                                        value={vercelDomain}
-                                        onChange={e => setVercelDomain(e.target.value)}
-                                        placeholder="minha-loja.vercel.app"
-                                        className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-white/30 outline-none"
-                                        required
-                                    />
-                                    <button type="submit" className="bg-primary hover:bg-primary/90 text-white px-6 rounded-xl font-bold">
-                                        <ChevronRight className="w-5 h-5" />
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                )}
-
-
-                {/* --- STEP 5: SUCCESS --- */}
-                {currentStep === 'success' && (
-                    <div className="glass-panel border border-green-500/20 bg-green-500/5 backdrop-blur-xl rounded-2xl p-8 shadow-2xl animate-in fade-in slide-in-from-bottom-4 text-center">
-                        <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mb-6 text-green-500 shadow-lg shadow-green-500/20 mx-auto animate-in zoom-in duration-300">
-                            <Check className="w-10 h-10" />
-                        </div>
-                        <h1 className="text-3xl font-bold mb-4 text-white">Instalação Concluída!</h1>
-                        <p className="text-gray-400 mb-8 max-w-md mx-auto">
-                            Parabéns! Seu Super Checkout está configurado e pronto para usar.
-                        </p>
-
-                        <div className="bg-black/40 rounded-xl p-6 mb-6 border border-white/5 text-center">
-                            <p className="text-sm text-gray-400 mb-2">Acesse seu painel administrativo em:</p>
                             <a
                                 href={`https://${localStorage.getItem('installer_vercel_domain') || vercelDomain}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-xl font-bold text-primary hover:underline font-mono"
+                                className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-1"
                             >
-                                https://{localStorage.getItem('installer_vercel_domain') || vercelDomain}
+                                Acessar Minha Loja
+                                <ChevronRight className="w-5 h-5" />
                             </a>
                         </div>
+                    )}
 
-                        <a
-                            href={`https://${localStorage.getItem('installer_vercel_domain') || vercelDomain}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-1"
-                        >
-                            Acessar Minha Loja
-                            <ChevronRight className="w-5 h-5" />
-                        </a>
-                    </div>
-                )}
+                </div>
+            </main>
 
-            </div>
-        </main>
+            {/* --- SQL MODAL --- */}
+            {showSqlModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
+                    <div className="w-full max-w-4xl bg-[#0F0F13] border border-white/10 rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
+                        {/* Header */}
+                        <div className="flex items-center justify-between p-6 border-b border-white/10">
+                            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                                <Database className="w-5 h-5 text-primary" />
+                                SQL de Migração (Supabase)
+                            </h2>
+                            <button
+                                onClick={() => setShowSqlModal(false)}
+                                className="text-gray-400 hover:text-white transition-colors"
+                            >
+                                <X className="w-6 h-6" />
+                            </button>
+                        </div>
 
-        {/* --- SQL MODAL --- */}
-        {showSqlModal && (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
-                <div className="w-full max-w-4xl bg-[#0F0F13] border border-white/10 rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
-                    {/* Header */}
-                    <div className="flex items-center justify-between p-6 border-b border-white/10">
-                        <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                            <Database className="w-5 h-5 text-primary" />
-                            SQL de Migração (Supabase)
-                        </h2>
-                        <button
-                            onClick={() => setShowSqlModal(false)}
-                            className="text-gray-400 hover:text-white transition-colors"
-                        >
-                            <X className="w-6 h-6" />
-                        </button>
-                    </div>
+                        {/* Content */}
+                        <div className="flex-1 overflow-auto p-6 bg-black/40">
+                            <div className="relative">
+                                <pre className="text-xs font-mono text-gray-300 whitespace-pre-wrap break-all">
+                                    {SQL_SCHEMA}
+                                </pre>
+                            </div>
+                        </div>
 
-                    {/* Content */}
-                    <div className="flex-1 overflow-auto p-6 bg-black/40">
-                        <div className="relative">
-                            <pre className="text-xs font-mono text-gray-300 whitespace-pre-wrap break-all">
-                                {SQL_SCHEMA}
-                            </pre>
+                        {/* Footer */}
+                        <div className="p-6 border-t border-white/10 flex justify-end gap-3 bg-[#0F0F13] rounded-b-2xl">
+                            <button
+                                onClick={() => setShowSqlModal(false)}
+                                className="px-6 py-3 rounded-xl font-medium text-gray-400 hover:text-white hover:bg-white/5 transition-all"
+                            >
+                                Fechar
+                            </button>
+                            <button
+                                onClick={() => copyToClipboard(SQL_SCHEMA)}
+                                className="bg-primary hover:bg-primary/90 text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-primary/20 flex items-center gap-2"
+                            >
+                                <Copy className="w-4 h-4" />
+                                Copiar SQL Completo
+                            </button>
                         </div>
                     </div>
-
-                    {/* Footer */}
-                    <div className="p-6 border-t border-white/10 flex justify-end gap-3 bg-[#0F0F13] rounded-b-2xl">
-                        <button
-                            onClick={() => setShowSqlModal(false)}
-                            className="px-6 py-3 rounded-xl font-medium text-gray-400 hover:text-white hover:bg-white/5 transition-all"
-                        >
-                            Fechar
-                        </button>
-                        <button
-                            onClick={() => copyToClipboard(SQL_SCHEMA)}
-                            className="bg-primary hover:bg-primary/90 text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-primary/20 flex items-center gap-2"
-                        >
-                            <Copy className="w-4 h-4" />
-                            Copiar SQL Completo
-                        </button>
-                    </div>
                 </div>
-            </div>
-        )}
+            )}
 
-        <AlertModal
-            isOpen={alertModal.isOpen}
-            onClose={() => setAlertModal(prev => ({ ...prev, isOpen: false }))}
-            title={alertModal.title}
-            message={alertModal.message}
-            variant={alertModal.variant}
-            buttonText="Entendi"
-        />
-    </div>
-);
+            <AlertModal
+                isOpen={alertModal.isOpen}
+                onClose={() => setAlertModal(prev => ({ ...prev, isOpen: false }))}
+                title={alertModal.title}
+                message={alertModal.message}
+                variant={alertModal.variant}
+                buttonText="Entendi"
+            />
+        </div>
+    );
 }
