@@ -254,7 +254,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         const accessToken = tokenData.access_token;
 
-        // 3. Create Project
+        // 3. Determine Organization ID (Reliable Method)
+        let organizationId = tokenData.organization_id;
+
+        if (!organizationId) {
+          const orgsRes = await fetch('https://api.supabase.com/v1/organizations', {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+          });
+
+          // Safe JSON parsing for orgs
+          const orgsContentType = orgsRes.headers.get('content-type');
+          let orgs: any;
+          if (orgsContentType && orgsContentType.includes('application/json')) {
+            orgs = await orgsRes.json();
+          } else {
+            console.warn('Failed to parse organizations JSON', await orgsRes.text());
+          }
+
+          if (orgs && orgs.length > 0) {
+            organizationId = orgs[0].id;
+          } else {
+            throw new Error('Nenhuma organização encontrada. Crie uma organização no painel do Supabase.');
+          }
+        }
+
+        // 4. Create Project
         const dbPass = generateStrongPassword();
         const createRes = await fetch('https://api.supabase.com/v1/projects', {
           method: 'POST',
@@ -264,7 +288,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           },
           body: JSON.stringify({
             name: `Super Checkout ${Math.floor(Math.random() * 10000)}`,
-            organization_id: tokenData.organization_id,
+            organization_id: organizationId,
             db_pass: dbPass,
             region: 'us-east-1',
             plan: 'free'
@@ -282,63 +306,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
         if (!createRes.ok) {
-          // If org_id missing, try to fetch it
-          if (projectData.message?.includes('organization_id') || projectData.message?.includes('Organization not found')) {
-            // Fetch orgs
-            const orgsRes = await fetch('https://api.supabase.com/v1/organizations', {
-              headers: { 'Authorization': `Bearer ${accessToken}` }
-            });
-
-            // Safe JSON parsing for orgs
-            const orgsContentType = orgsRes.headers.get('content-type');
-            let orgs: any;
-            if (orgsContentType && orgsContentType.includes('application/json')) {
-              orgs = await orgsRes.json();
-            } else {
-              throw new Error('Failed to fetch organizations');
-            }
-
-            if (orgs.length > 0) {
-              // Retry with first org
-              const dbPassRetry = generateStrongPassword();
-              const retryRes = await fetch('https://api.supabase.com/v1/projects', {
-                method: 'POST',
-                headers: {
-                  'Authorization': `Bearer ${accessToken}`,
-                  'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                  name: `Super Checkout ${Math.floor(Math.random() * 10000)}`,
-                  organization_id: orgs[0].id,
-                  db_pass: dbPassRetry,
-                  region: 'us-east-1',
-                  plan: 'free'
-                })
-              });
-
-              // Safe JSON parsing for retry
-              const retryContentType = retryRes.headers.get('content-type');
-              let retryData: any;
-              if (retryContentType && retryContentType.includes('application/json')) {
-                retryData = await retryRes.json();
-              } else {
-                const textError = await retryRes.text();
-                throw new Error(`Project creation retry failed (${retryRes.status}): ${textError.substring(0, 200)}`);
-              }
-
-              if (!retryRes.ok) throw new Error(retryData.message || 'Failed to create project');
-
-              // SUCCESS - Return without fetching keys
-              return res.status(200).json({
-                success: true,
-                projectRef: retryData.id,
-                dbPass: dbPassRetry,
-                accessToken // Return token for migrations (not used for keys anymore)
-              });
-            } else {
-              throw new Error('Nenhuma organização encontrada. Crie uma organização no painel do Supabase.');
-            }
-          }
           throw new Error(projectData.message || 'Failed to create project');
         }
 
@@ -347,7 +314,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           success: true,
           projectRef: projectData.id,
           dbPass: dbPass,
-          accessToken // Return token for migrations (not used for keys anymore)
+          accessToken // Return token for migrations
         });
       }
 
