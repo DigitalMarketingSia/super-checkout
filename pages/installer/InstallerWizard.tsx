@@ -239,8 +239,8 @@ export default function InstallerWizard() {
 
             addLog(`Repositório criado: ${repoData.full_name}`);
 
-            // 3. Push Code (Simulated for now)
-            addLog('Enviando código fonte para o repositório...');
+            // 3. Get push instructions (GitHub deprecated import API)
+            addLog('Preparando instruções para envio de código...');
             const pushRes = await fetch('/api/installer/github', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -252,13 +252,16 @@ export default function InstallerWizard() {
                 })
             });
 
-            if (!pushRes.ok) throw new Error('Falha ao enviar código');
+            const pushData = await pushRes.json();
+            if (!pushRes.ok) throw new Error(pushData.error || 'Falha ao preparar instruções');
 
-            addLog('Código enviado com sucesso!');
+            addLog('✅ Repositório pronto!');
+            addLog('⚠️ Você precisará fazer push do código manualmente.');
 
-            // Store repo details for Vercel
+            // Store repo details and push instructions
             localStorage.setItem('installer_github_repo', repoData.full_name);
             localStorage.setItem('installer_github_repo_id', repoData.id);
+            localStorage.setItem('installer_github_push_url', pushData.pushInstructions?.gitUrl || '');
 
             setGithubConnected(true);
             setCurrentStep('vercel');

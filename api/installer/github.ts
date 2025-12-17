@@ -89,14 +89,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 return res.status(200).json({ success: true, message: 'Code pushed (mock)' });
             }
 
-            // 2. Import Code from Source
-            // We use the GitHub Import API to copy from the source repo
-            // Source: DigitalMarketingSia/super-checkout
-
-            // NOTE: If source is private, we need a PAT with repo access. 
-            // For now assuming public or provided via env.
-            const sourceUrl = 'https://github.com/DigitalMarketingSia/super-checkout.git';
-
+            // GitHub deprecated the import API, so we return instructions for manual push
             // Get user (owner) name
             const userRes = await fetch('https://api.github.com/user', {
                 headers: { 'Authorization': `Bearer ${accessToken}` }
@@ -104,31 +97,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             const userData = await userRes.json();
             const owner = userData.login;
 
-            const importRes = await fetch(`https://api.github.com/repos/${owner}/${repoName}/import`, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`,
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/vnd.github.v3+json'
-                },
-                body: JSON.stringify({
-                    vcs: 'git',
-                    vcs_url: sourceUrl
-                })
-            });
-
-            const importData = await importRes.json();
-
-            // 201 = Started, 200 = Restarted or Already in progress
-            if (!importRes.ok) {
-                // Check if it's already done (sometimes happens on retries)
-                if (importRes.status === 422 && importData.message?.includes('already')) {
-                    return res.status(200).json({ success: true, message: 'Import already in progress' });
+            // Return success with instructions for manual push
+            return res.status(200).json({
+                success: true,
+                message: 'Repository created. Manual push required.',
+                repoUrl: `https://github.com/${owner}/${repoName}`,
+                pushInstructions: {
+                    owner,
+                    repoName,
+                    gitUrl: `https://github.com/${owner}/${repoName}.git`
                 }
-                throw new Error(importData.message || 'Failed to start import');
-            }
-
-            return res.status(200).json({ success: true, message: 'Import started', importUrl: importData.url });
+            });
         }
 
         if (action === 'check_import') {
