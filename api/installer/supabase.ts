@@ -307,7 +307,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           // Try to get ID or slug from first organization
           if (orgs && orgs.length > 0) {
             organizationId = orgs[0].id || orgs[0].slug;
-            console.log('[DEBUG] Selected organization:', organizationId, 'Name:', orgs[0].name);
+            console.log('[DEBUG] Auto-selected first organization:', organizationId, 'Name:', orgs[0].name);
           } else {
             console.error('[ERROR] No organizations found. Response was:', orgs);
             throw new Error('Nenhuma organização encontrada. Por favor, forneça o Organization Slug manualmente. Você pode encontrá-lo em: https://supabase.com/dashboard/org/_/general');
