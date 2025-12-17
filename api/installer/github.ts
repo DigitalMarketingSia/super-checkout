@@ -59,35 +59,38 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 });
             }
 
-            // Fork the main repository
+            // Use GitHub template generation API (works with private templates)
             const sourceOwner = 'DigitalMarketingSia';
             const sourceRepo = 'super-checkout';
 
-            console.log(`[DEBUG] Creating fork of ${sourceOwner}/${sourceRepo}`);
+            console.log(`[DEBUG] Generating repository from template ${sourceOwner}/${sourceRepo}`);
 
-            const forkRes = await fetch(`https://api.github.com/repos/${sourceOwner}/${sourceRepo}/forks`, {
+            // Generate repository from template
+            const templateRes = await fetch(`https://api.github.com/repos/${sourceOwner}/${sourceRepo}/generate`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${accessToken}`,
                     'Content-Type': 'application/json',
-                    'Accept': 'application/vnd.github.v3+json'
+                    'Accept': 'application/vnd.github+json'
                 },
                 body: JSON.stringify({
                     name: repoName || 'super-checkout',
-                    default_branch_only: true
+                    description: 'Super Checkout Self-Hosted Instance',
+                    private: true,
+                    include_all_branches: false
                 })
             });
 
-            const forkData = await forkRes.json();
+            const templateData = await templateRes.json();
 
-            if (!forkRes.ok) {
-                console.error('[ERROR] Fork creation failed:', forkData);
-                throw new Error(forkData.message || 'Failed to fork repository');
+            if (!templateRes.ok) {
+                console.error('[ERROR] Template generation failed:', templateData);
+                throw new Error(templateData.message || 'Failed to generate repository from template');
             }
 
-            console.log('[DEBUG] Fork created successfully:', forkData.full_name);
+            console.log('[DEBUG] Repository generated successfully:', templateData.full_name);
 
-            return res.status(200).json(forkData);
+            return res.status(200).json(templateData);
         }
 
         return res.status(400).json({ error: 'Invalid action' });
