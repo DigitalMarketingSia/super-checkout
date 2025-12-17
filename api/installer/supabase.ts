@@ -283,7 +283,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         if (!createRes.ok) {
           // If org_id missing, try to fetch it
-          if (projectData.message?.includes('organization_id')) {
+          if (projectData.message?.includes('organization_id') || projectData.message?.includes('Organization not found')) {
             // Fetch orgs
             const orgsRes = await fetch('https://api.supabase.com/v1/organizations', {
               headers: { 'Authorization': `Bearer ${accessToken}` }
