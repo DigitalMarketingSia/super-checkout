@@ -7,6 +7,7 @@ type Step = 'license' | 'supabase' | 'supabase_keys' | 'github' | 'vercel' | 'co
 export default function InstallerWizard() {
     const [currentStep, setCurrentStep] = useState<Step>('license');
     const [licenseKey, setLicenseKey] = useState('');
+    const [organizationSlug, setOrganizationSlug] = useState('');
     const [anonKey, setAnonKey] = useState('');
     const [serviceKey, setServiceKey] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -126,7 +127,8 @@ export default function InstallerWizard() {
                     action: 'create_project',
                     code,
                     // Use state key if available, fallback to local storage
-                    licenseKey: licenseKey || localStorage.getItem('installer_license_key')
+                    licenseKey: licenseKey || localStorage.getItem('installer_license_key'),
+                    organizationSlug: organizationSlug || localStorage.getItem('installer_org_slug')
                 })
             });
 
@@ -357,8 +359,9 @@ export default function InstallerWizard() {
     // Save state changes
     useEffect(() => {
         if (licenseKey) localStorage.setItem('installer_license_key', licenseKey);
+        if (organizationSlug) localStorage.setItem('installer_org_slug', organizationSlug);
         if (currentStep) localStorage.setItem('installer_step', currentStep);
-    }, [licenseKey, currentStep]);
+    }, [licenseKey, organizationSlug, currentStep]);
 
     // Handle OAuth Callbacks and State Restoration on Mount
     useEffect(() => {
@@ -584,6 +587,24 @@ export default function InstallerWizard() {
                             <p className="text-gray-400 mb-8">Precisamos de acesso à sua conta Supabase para criar o banco de dados e aplicar as migrações.</p>
 
                             <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-300 mb-1.5">
+                                        Organization Slug (Opcional)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={organizationSlug}
+                                        onChange={e => setOrganizationSlug(e.target.value)}
+                                        placeholder="bdhstwjkaxkwwwcsajg"
+                                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-gray-600 focus:outline-none focus:border-[#3ECF8E] focus:ring-1 focus:ring-[#3ECF8E]/50 transition-all font-mono text-sm"
+                                    />
+                                    <p className="text-xs text-gray-500 mt-1.5">
+                                        Preencha apenas se a detecção automática falhar.
+                                        <a href="https://supabase.com/dashboard/org/_/general" target="_blank" rel="noopener noreferrer" className="text-[#3ECF8E] hover:underline ml-1">
+                                            Encontre aqui
+                                        </a>
+                                    </p>
+                                </div>
                                 <button
                                     onClick={handleSupabaseConnect}
                                     disabled={isLoading}

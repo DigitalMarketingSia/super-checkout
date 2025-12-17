@@ -189,7 +189,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method === 'OPTIONS') return res.status(200).end();
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-    const { action, code, licenseKey, projectRef, dbPass } = req.body;
+    const { action, code, licenseKey, projectRef, dbPass, organizationSlug } = req.body;
 
     // 0. Initialize Supabase (Admin Context)
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.VITE_SUPABASE_URL;
@@ -256,13 +256,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
 
         // 3. Determine Organization ID (Reliable Method)
-        let organizationId = tokenData.organization_id;
+        let organizationId = organizationSlug || tokenData.organization_id;
 
-        console.log('[DEBUG] Token data organization_id:', organizationId);
+        console.log('[DEBUG] Manual organization slug:', organizationSlug);
+        console.log('[DEBUG] Token data organization_id:', tokenData.organization_id);
         console.log('[DEBUG] Full token data keys:', Object.keys(tokenData));
 
         if (!organizationId) {
-          console.log('[DEBUG] No organization_id in token, fetching organizations list...');
+          console.log('[DEBUG] No organization_id in token or manual input, fetching organizations list...');
           const orgsRes = await fetch('https://api.supabase.com/v1/organizations', {
             headers: { 'Authorization': `Bearer ${accessToken}` }
           });
@@ -279,20 +280,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           } else {
             const textResponse = await orgsRes.text();
             console.warn('[ERROR] Failed to parse organizations JSON. Response:', textResponse);
-            throw new Error(`API do Supabase retornou resposta inválida: ${textResponse.substring(0, 100)}`);
+            throw new Error(`API do Supabase retornou resposta inválida. Por favor, forneça o Organization Slug manualmente.`);
           }
 
           if (!orgsRes.ok) {
-            throw new Error(`Falha ao buscar organizações: ${orgs.message || orgsRes.statusText}`);
+            throw new Error(`Falha ao buscar organizações: ${orgs.message || orgsRes.statusText}. Por favor, forneça o Organization Slug manualmente.`);
           }
 
+          // Try to get ID or slug from first organization
           if (orgs && orgs.length > 0) {
-            organizationId = orgs[0].id;
+            organizationId = orgs[0].id || orgs[0].slug;
             console.log('[DEBUG] Selected organization:', organizationId, 'Name:', orgs[0].name);
           } else {
             console.error('[ERROR] No organizations found. Response was:', orgs);
-            throw new Error('Nenhuma organização encontrada. Crie uma organização no painel do Supabase: https://supabase.com/dashboard/org/_/general');
+            throw new Error('Nenhuma organização encontrada. Por favor, forneça o Organization Slug manualmente. Você pode encontrá-lo em: https://supabase.com/dashboard/org/_/general');
           }
+        } else {
+          console.log('[DEBUG] Using organization:', organizationId);
         }
 
 
