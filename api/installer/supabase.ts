@@ -335,6 +335,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 dbPass: dbPassRetry,
                 accessToken // Return token for migrations (not used for keys anymore)
               });
+            } else {
+              throw new Error('Nenhuma organização encontrada. Crie uma organização no painel do Supabase.');
             }
           }
           throw new Error(projectData.message || 'Failed to create project');

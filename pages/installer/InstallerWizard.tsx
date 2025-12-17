@@ -105,7 +105,7 @@ export default function InstallerWizard() {
             client_id: clientId,
             redirect_uri: redirectUri,
             response_type: 'code',
-            scope: 'projects:read projects:write secrets:read secrets:write',
+            scope: 'projects:read projects:write secrets:read secrets:write organizations:read',
             state: state
         });
         window.location.href = `https://api.supabase.com/v1/oauth/authorize?${params.toString()}`;
