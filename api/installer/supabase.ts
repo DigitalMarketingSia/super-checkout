@@ -254,29 +254,47 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         const accessToken = tokenData.access_token;
 
+
         // 3. Determine Organization ID (Reliable Method)
         let organizationId = tokenData.organization_id;
 
+        console.log('[DEBUG] Token data organization_id:', organizationId);
+        console.log('[DEBUG] Full token data keys:', Object.keys(tokenData));
+
         if (!organizationId) {
+          console.log('[DEBUG] No organization_id in token, fetching organizations list...');
           const orgsRes = await fetch('https://api.supabase.com/v1/organizations', {
             headers: { 'Authorization': `Bearer ${accessToken}` }
           });
+
+          console.log('[DEBUG] Organizations API status:', orgsRes.status);
+          console.log('[DEBUG] Organizations API headers:', Object.fromEntries(orgsRes.headers.entries()));
 
           // Safe JSON parsing for orgs
           const orgsContentType = orgsRes.headers.get('content-type');
           let orgs: any;
           if (orgsContentType && orgsContentType.includes('application/json')) {
             orgs = await orgsRes.json();
+            console.log('[DEBUG] Organizations response:', JSON.stringify(orgs, null, 2));
           } else {
-            console.warn('Failed to parse organizations JSON', await orgsRes.text());
+            const textResponse = await orgsRes.text();
+            console.warn('[ERROR] Failed to parse organizations JSON. Response:', textResponse);
+            throw new Error(`API do Supabase retornou resposta inválida: ${textResponse.substring(0, 100)}`);
+          }
+
+          if (!orgsRes.ok) {
+            throw new Error(`Falha ao buscar organizações: ${orgs.message || orgsRes.statusText}`);
           }
 
           if (orgs && orgs.length > 0) {
             organizationId = orgs[0].id;
+            console.log('[DEBUG] Selected organization:', organizationId, 'Name:', orgs[0].name);
           } else {
-            throw new Error('Nenhuma organização encontrada. Crie uma organização no painel do Supabase.');
+            console.error('[ERROR] No organizations found. Response was:', orgs);
+            throw new Error('Nenhuma organização encontrada. Crie uma organização no painel do Supabase: https://supabase.com/dashboard/org/_/general');
           }
         }
+
 
         // 4. Create Project
         const dbPass = generateStrongPassword();
