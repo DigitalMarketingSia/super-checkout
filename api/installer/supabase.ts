@@ -223,11 +223,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const clientSecret = process.env.SUPABASE_CLIENT_SECRET;
         const redirectUri = `${req.headers.origin}/installer`;
 
+        console.log('[DEBUG] OAuth Flow Started');
+        console.log('[DEBUG] Client ID exists:', !!clientId);
+        console.log('[DEBUG] Client Secret exists:', !!clientSecret);
+        console.log('[DEBUG] Redirect URI:', redirectUri);
+        console.log('[DEBUG] OAuth code length:', code?.length);
+
         if (!clientId || !clientSecret) {
           throw new Error('Missing Supabase OAuth credentials on server');
         }
 
         // 2. Exchange Code for Access Token
+        console.log('[DEBUG] Attempting token exchange...');
         const tokenRes = await fetch('https://api.supabase.com/v1/oauth/token', {
           method: 'POST',
           headers: {
@@ -241,18 +248,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           })
         });
 
+        console.log('[DEBUG] Token exchange response status:', tokenRes.status);
+        console.log('[DEBUG] Token exchange response headers:', Object.fromEntries(tokenRes.headers.entries()));
+
         // Safe JSON parsing
         const contentType = tokenRes.headers.get('content-type');
         let tokenData: any;
         if (contentType && contentType.includes('application/json')) {
           tokenData = await tokenRes.json();
+          console.log('[DEBUG] Token data received:', JSON.stringify(tokenData, null, 2));
         } else {
           const textError = await tokenRes.text();
+          console.error('[ERROR] Non-JSON token response:', textError);
           throw new Error(`OAuth token exchange failed (${tokenRes.status}): ${textError.substring(0, 200)}`);
         }
-        if (!tokenRes.ok) throw new Error(tokenData.error_description || 'Failed to exchange token');
+        
+        if (!tokenRes.ok) {
+          console.error('[ERROR] Token exchange failed:', tokenData);
+          throw new Error(tokenData.error_description || tokenData.error || 'Failed to exchange token');
+        }
 
         const accessToken = tokenData.access_token;
+        console.log('[DEBUG] Access token received:', !!accessToken);
 
 
         // 3. Determine Organization ID (Reliable Method)
