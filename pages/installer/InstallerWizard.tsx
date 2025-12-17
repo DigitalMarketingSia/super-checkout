@@ -1,7 +1,7 @@
 import { Check, ChevronRight, Database, Key, Server, AlertCircle, ExternalLink, Github, Globe, Copy, Info, X } from 'lucide-react';
 import { AlertModal } from '../../components/ui/Modal';
 
-const SQL_SCHEMA = \`-- Super Checkout - Complete Database Schema
+const SQL_SCHEMA = `-- Super Checkout - Complete Database Schema
 -- Run this ONCE in a fresh Supabase project
 
 -- ==========================================
