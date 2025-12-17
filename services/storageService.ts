@@ -977,6 +977,7 @@ class StorageService {
     const record = {
       user_id: user.id,
       name: gateway.name,
+      provider: gateway.name,
       public_key: gateway.public_key,
       private_key: gateway.private_key,
       webhook_secret: gateway.webhook_secret,
@@ -1002,6 +1003,7 @@ class StorageService {
 
     const record = {
       name: gateway.name,
+      provider: gateway.name,
       public_key: gateway.public_key,
       private_key: gateway.private_key,
       webhook_secret: gateway.webhook_secret,

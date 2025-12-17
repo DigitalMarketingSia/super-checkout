@@ -44,6 +44,17 @@ CREATE TABLE IF NOT EXISTS products (
   name TEXT NOT NULL,
   description TEXT,
   price DECIMAL(10,2) NOT NULL,
+  price_real DECIMAL(10,2),
+  price_fake DECIMAL(10,2),
+  sku TEXT,
+  category TEXT DEFAULT 'general',
+  redirect_link TEXT,
+  is_order_bump BOOLEAN DEFAULT false,
+  is_upsell BOOLEAN DEFAULT false,
+  visible_in_member_area BOOLEAN DEFAULT true,
+  for_sale BOOLEAN DEFAULT true,
+  member_area_action TEXT DEFAULT 'none',
+  member_area_checkout_id UUID,
   currency TEXT DEFAULT 'BRL',
   image_url TEXT,
   active BOOLEAN DEFAULT true,
@@ -120,7 +131,7 @@ CREATE TABLE IF NOT EXISTS orders (
   payment_method TEXT,
   payment_id TEXT,
   metadata JSONB,
-  customer_user_id UUID REFERENCES auth.users(id),
+  user_id UUID REFERENCES auth.users(id),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
