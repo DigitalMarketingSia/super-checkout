@@ -93,7 +93,13 @@ export default function InstallerWizard() {
         setIsLoading(true);
         const clientId = import.meta.env.VITE_SUPABASE_CLIENT_ID || process.env.NEXT_PUBLIC_SUPABASE_CLIENT_ID || 'mock_client_id';
         const redirectUri = `${window.location.origin}/installer`;
-        const state = 'supabase';
+
+        // Encode state with license key to survive redirects/domain switches
+        const stateObj = {
+            step: 'supabase',
+            key: licenseKey
+        };
+        const state = btoa(JSON.stringify(stateObj));
 
         const params = new URLSearchParams({
             client_id: clientId,
@@ -107,6 +113,9 @@ export default function InstallerWizard() {
 
     const handleSupabaseCallback = async (code: string) => {
         setIsLoading(true);
+        // Force step to update UI immediately
+        setCurrentStep('supabase');
+
         addLog('Supabase conectado! Criando projeto...');
 
         try {
@@ -116,7 +125,8 @@ export default function InstallerWizard() {
                 body: JSON.stringify({
                     action: 'create_project',
                     code,
-                    licenseKey: localStorage.getItem('installer_license_key')
+                    // Use state key if available, fallback to local storage
+                    licenseKey: licenseKey || localStorage.getItem('installer_license_key')
                 })
             });
 
@@ -148,7 +158,7 @@ export default function InstallerWizard() {
                     projectRef: data.projectRef,
                     dbPass: data.dbPass,
                     accessToken: data.accessToken, // Pass token for Management API
-                    licenseKey: localStorage.getItem('installer_license_key')
+                    licenseKey: licenseKey || localStorage.getItem('installer_license_key')
                 })
             });
 
@@ -202,7 +212,12 @@ export default function InstallerWizard() {
         setIsLoading(true);
         const clientId = import.meta.env.VITE_GITHUB_CLIENT_ID || process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID || 'mock_client_id';
         const redirectUri = `${window.location.origin}/installer`;
-        const state = 'github';
+
+        const stateObj = {
+            step: 'github',
+            key: licenseKey
+        };
+        const state = btoa(JSON.stringify(stateObj));
 
         // GitHub OAuth URL
         window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=repo&state=${state}`;
@@ -284,7 +299,13 @@ export default function InstallerWizard() {
         setIsLoading(true);
         const clientId = import.meta.env.VITE_VERCEL_CLIENT_ID || process.env.NEXT_PUBLIC_VERCEL_CLIENT_ID || 'mock_client_id';
         const redirectUri = `${window.location.origin}/installer`;
-        const state = 'vercel';
+
+        const stateObj = {
+            step: 'vercel',
+            key: licenseKey
+        };
+        const state = btoa(JSON.stringify(stateObj));
+
         window.location.href = `https://vercel.com/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&state=${state}`;
     };
 
@@ -333,7 +354,56 @@ export default function InstallerWizard() {
         }
     };
 
-    // ... (useEffect remains same)
+    // Save state changes
+    useEffect(() => {
+        if (licenseKey) localStorage.setItem('installer_license_key', licenseKey);
+        if (currentStep) localStorage.setItem('installer_step', currentStep);
+    }, [licenseKey, currentStep]);
+
+    // Handle OAuth Callbacks and State Restoration on Mount
+    useEffect(() => {
+        const savedKey = localStorage.getItem('installer_license_key');
+        if (savedKey) setLicenseKey(savedKey);
+
+        const savedStep = localStorage.getItem('installer_step') as Step;
+        if (savedStep) setCurrentStep(savedStep);
+
+        const params = new URLSearchParams(window.location.search);
+        const code = params.get('code');
+        const stateRaw = params.get('state');
+
+        if (code && stateRaw) {
+            // Restore context from state param
+            let step = '';
+            try {
+                // Try decoding JSON state
+                const stateObj = JSON.parse(atob(stateRaw));
+                if (stateObj.key) {
+                    setLicenseKey(stateObj.key);
+                    localStorage.setItem('installer_license_key', stateObj.key);
+                }
+                if (stateObj.step) {
+                    step = stateObj.step;
+                }
+            } catch (e) {
+                // Fallback for plain string state (backward compatibility)
+                if (stateRaw === 'supabase' || stateRaw === 'github' || stateRaw === 'vercel') {
+                    step = stateRaw;
+                }
+            }
+
+            // Clear params
+            window.history.replaceState({}, '', '/installer');
+
+            if (step === 'supabase') {
+                handleSupabaseCallback(code);
+            } else if (step === 'vercel') {
+                handleVercelCallback(code);
+            } else if (step === 'github') {
+                handleGitHubCallback(code);
+            }
+        }
+    }, []);
 
     const handleDeploy = async () => {
         setCurrentStep('deploy');
