@@ -2,22 +2,26 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Keys provided by user
-const DEFAULT_URL = 'https://vixlzrmhqsbzjhpgfwdn.supabase.co';
-const DEFAULT_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZpeGx6cm1ocXNiempocGdmd2RuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM2NzQ5MDMsImV4cCI6MjA3OTI1MDkwM30.RBczB_Ji82DUWCVblvXEGb8U9wHQ5fxIcdkLDIaRr7k';
-
-// Helper to get env vars safely in Vite/React AND Node.js (Vercel Functions)
 const getEnv = (key: string) => {
-  // In Vite, we defined process.env[key] in vite.config.ts
-  // In Node.js/Vercel, process.env is native
+  // In Vite (client), use import.meta.env
+  if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env[key]) {
+    return import.meta.env[key];
+  }
+  // In Node.js / Vercel Functions / Legacy, use process.env
   if (typeof process !== 'undefined' && process.env && process.env[key]) {
     return process.env[key];
   }
   return undefined;
 };
 
-const SUPABASE_URL = getEnv('VITE_SUPABASE_URL') || DEFAULT_URL;
-const SUPABASE_ANON_KEY = getEnv('VITE_SUPABASE_ANON_KEY') || DEFAULT_KEY;
+// Check for both VITE_ (local/standard Vite) and NEXT_PUBLIC_ (Vercel default) prefixes
+const SUPABASE_URL = getEnv('VITE_SUPABASE_URL') || getEnv('NEXT_PUBLIC_SUPABASE_URL');
+const SUPABASE_ANON_KEY = getEnv('VITE_SUPABASE_ANON_KEY') || getEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY');
 const SUPABASE_SERVICE_KEY = getEnv('SUPABASE_SERVICE_ROLE_KEY');
+
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  console.warn('Supabase URL or Anon Key missing! Check your environment variables.');
+}
 
 // Use Service Key on server if available to bypass RLS, otherwise Anon Key
 const SUPABASE_KEY = (typeof window === 'undefined' && SUPABASE_SERVICE_KEY)
