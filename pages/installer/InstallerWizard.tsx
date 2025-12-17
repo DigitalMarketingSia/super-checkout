@@ -12,7 +12,25 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- ==========================================
--- 2. CORE TABLES
+-- 2. DOMAINS & CORE
+-- ==========================================
+
+CREATE TABLE IF NOT EXISTS domains (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) NOT NULL,
+  domain TEXT NOT NULL UNIQUE,
+  status TEXT DEFAULT 'pending_verification',
+  usage TEXT DEFAULT 'checkout',
+  verified_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+ALTER TABLE domains ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users can manage their own domains" ON domains;
+CREATE POLICY "Users can manage their own domains" ON domains FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Public can view active domains" ON domains FOR SELECT USING (true);
+
+-- ==========================================
+-- CORE TABLES
 -- ==========================================
 
 CREATE TABLE IF NOT EXISTS domains (
@@ -107,10 +125,28 @@ CREATE TABLE IF NOT EXISTS product_contents (
   PRIMARY KEY (product_id, content_id)
 );
 
+CREATE TABLE IF NOT EXISTS gateways (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) NOT NULL,
+  name TEXT, 
+  provider TEXT NOT NULL, 
+  credentials JSONB DEFAULT '{}'::jsonb,
+  active BOOLEAN DEFAULT true,
+  is_active BOOLEAN DEFAULT true, 
+  public_key TEXT,
+  private_key TEXT,
+  webhook_secret TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+ALTER TABLE gateways ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can manage their own gateways" ON gateways FOR ALL USING (auth.uid() = user_id);
+
 CREATE TABLE IF NOT EXISTS checkouts (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id) NOT NULL,
   product_id UUID REFERENCES products(id) NOT NULL,
+  domain_id UUID REFERENCES domains(id),
+  gateway_id UUID REFERENCES gateways(id),
   name TEXT NOT NULL,
   slug TEXT UNIQUE,
   theme JSONB DEFAULT '{}'::jsonb,
@@ -370,6 +406,18 @@ ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.member_notes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.member_tags ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.activity_logs ENABLE ROW LEVEL SECURITY;
+
+INSERT INTO storage.buckets (id, name, public) VALUES ('checkouts', 'checkouts', true) ON CONFLICT (id) DO NOTHING;
+CREATE POLICY "Public Access Checkouts" ON storage.objects FOR SELECT USING (bucket_id = 'checkouts');
+CREATE POLICY "Authenticated Upload Checkouts" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'checkouts' AND auth.role() = 'authenticated');
+CREATE POLICY "Authenticated Update Checkouts" ON storage.objects FOR UPDATE USING (bucket_id = 'checkouts' AND auth.role() = 'authenticated');
+CREATE POLICY "Authenticated Delete Checkouts" ON storage.objects FOR DELETE USING (bucket_id = 'checkouts' AND auth.role() = 'authenticated');
+
+INSERT INTO storage.buckets (id, name, public) VALUES ('products', 'products', true) ON CONFLICT (id) DO NOTHING;
+CREATE POLICY "Public Access Products" ON storage.objects FOR SELECT USING (bucket_id = 'products');
+CREATE POLICY "Authenticated Upload Products" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'products' AND auth.role() = 'authenticated');
+CREATE POLICY "Authenticated Update Products" ON storage.objects FOR UPDATE USING (bucket_id = 'products' AND auth.role() = 'authenticated');
+CREATE POLICY "Authenticated Delete Products" ON storage.objects FOR DELETE USING (bucket_id = 'products' AND auth.role() = 'authenticated');
 
 CREATE POLICY "Users can view their own profile" ON public.profiles FOR SELECT USING (auth.uid() = id);
 CREATE POLICY "Users can update their own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
