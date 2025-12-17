@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Check, ChevronRight, Database, Globe, Key, Server, ShieldCheck, Terminal, AlertCircle, ExternalLink, Github } from 'lucide-react';
 import { AlertModal } from '../../components/ui/Modal';
 
-type Step = 'license' | 'supabase' | 'supabase_migrations' | 'supabase_keys' | 'github' | 'github_push' | 'vercel' | 'config' | 'deploy' | 'success';
+type Step = 'license' | 'supabase' | 'supabase_migrations' | 'supabase_keys' | 'github' | 'vercel' | 'config' | 'deploy' | 'success';
 
 export default function InstallerWizard() {
     const [currentStep, setCurrentStep] = useState<Step>('license');
@@ -220,51 +220,33 @@ export default function InstallerWizard() {
             if (!tokenRes.ok) throw new Error(tokenData.error || 'Falha na autenticação GitHub');
 
             const accessToken = tokenData.access_token;
-            addLog('Token recebido. Criando repositório privado...');
+            addLog('Token recebido. Copiando código para sua conta...');
 
-            // 2. Create Repo
-            const repoRes = await fetch('/api/installer/github', {
+            // Fork the repository (automatically copies all code)
+            const forkRes = await fetch('/api/installer/github', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    action: 'create_repo',
+                    action: 'fork_repo',
                     accessToken,
                     licenseKey: localStorage.getItem('installer_license_key'),
-                    repoName: `super-checkout-${Math.floor(Math.random() * 10000)}` // Unique name
+                    repoName: `super-checkout-${Math.floor(Math.random() * 10000)}`
                 })
             });
 
-            const repoData = await repoRes.json();
-            if (!repoRes.ok) throw new Error(repoData.error || 'Falha ao criar repositório');
+            const repoData = await forkRes.json();
+            if (!forkRes.ok) throw new Error(repoData.error || 'Falha ao copiar repositório');
 
-            addLog(`Repositório criado: ${repoData.full_name}`);
+            addLog(`✅ Repositório criado: ${repoData.full_name}`);
+            addLog('Código copiado automaticamente!');
 
-            // 3. Get push instructions (GitHub deprecated import API)
-            addLog('Preparando instruções para envio de código...');
-            const pushRes = await fetch('/api/installer/github', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    action: 'push_code',
-                    accessToken,
-                    licenseKey: localStorage.getItem('installer_license_key'),
-                    repoName: repoData.name
-                })
-            });
-
-            const pushData = await pushRes.json();
-            if (!pushRes.ok) throw new Error(pushData.error || 'Falha ao preparar instruções');
-
-            addLog('✅ Repositório pronto!');
-            addLog('⚠️ Você precisará fazer push do código manualmente.');
-
-            // Store repo details and push instructions
+            // Store repo details
             localStorage.setItem('installer_github_repo', repoData.full_name);
             localStorage.setItem('installer_github_repo_id', repoData.id);
-            localStorage.setItem('installer_github_push_url', pushData.pushInstructions?.gitUrl || '');
+            localStorage.setItem('installer_github_clone_url', repoData.clone_url || '');
 
             setGithubConnected(true);
-            setCurrentStep('github_push'); // Show push instructions first
+            setCurrentStep('vercel'); // Go directly to Vercel
 
 
         } catch (error: any) {

@@ -22,7 +22,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             const clientSecret = process.env.GITHUB_CLIENT_SECRET;
 
             if (!clientId || !clientSecret) {
-                // Fallback for local testing or if env vars are missing
                 console.warn('Missing GitHub OAuth credentials. Using mock token.');
                 return res.status(200).json({ access_token: 'mock_github_token' });
             }
@@ -46,7 +45,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             return res.status(200).json(tokenData);
         }
 
-        if (action === 'create_repo') {
+        if (action === 'fork_repo') {
             const { accessToken } = req.body;
             if (!accessToken) return res.status(400).json({ error: 'Missing access token' });
 
@@ -55,12 +54,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 return res.status(200).json({
                     full_name: `customer/${repoName || 'super-checkout'}`,
                     html_url: `https://github.com/customer/${repoName || 'super-checkout'}`,
+                    clone_url: `https://github.com/customer/${repoName || 'super-checkout'}.git`,
                     id: 123456789
                 });
             }
 
-            // 1. Create Repository (Empty)
-            const createRes = await fetch('https://api.github.com/user/repos', {
+            // Fork the main repository
+            const sourceOwner = 'DigitalMarketingSia';
+            const sourceRepo = 'super-checkout';
+
+            console.log(`[DEBUG] Creating fork of ${sourceOwner}/${sourceRepo}`);
+
+            const forkRes = await fetch(`https://api.github.com/repos/${sourceOwner}/${sourceRepo}/forks`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${accessToken}`,
@@ -69,67 +74,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                 },
                 body: JSON.stringify({
                     name: repoName || 'super-checkout',
-                    private: true,
-                    description: 'Super Checkout Self-Hosted Instance',
-                    auto_init: false // Create empty to allow import
+                    default_branch_only: true
                 })
             });
 
-            const repoData = await createRes.json();
-            if (!createRes.ok) throw new Error(repoData.message || 'Failed to create repository');
+            const forkData = await forkRes.json();
 
-            return res.status(200).json(repoData);
-        }
-
-        if (action === 'push_code') {
-            const { accessToken, repoName } = req.body;
-
-            // Mock for local testing
-            if (accessToken === 'mock_github_token') {
-                return res.status(200).json({ success: true, message: 'Code pushed (mock)' });
+            if (!forkRes.ok) {
+                console.error('[ERROR] Fork creation failed:', forkData);
+                throw new Error(forkData.message || 'Failed to fork repository');
             }
 
-            // GitHub deprecated the import API, so we return instructions for manual push
-            // Get user (owner) name
-            const userRes = await fetch('https://api.github.com/user', {
-                headers: { 'Authorization': `Bearer ${accessToken}` }
-            });
-            const userData = await userRes.json();
-            const owner = userData.login;
+            console.log('[DEBUG] Fork created successfully:', forkData.full_name);
 
-            // Return success with instructions for manual push
-            return res.status(200).json({
-                success: true,
-                message: 'Repository created. Manual push required.',
-                repoUrl: `https://github.com/${owner}/${repoName}`,
-                pushInstructions: {
-                    owner,
-                    repoName,
-                    gitUrl: `https://github.com/${owner}/${repoName}.git`
-                }
-            });
-        }
-
-        if (action === 'check_import') {
-            const { accessToken, repoName } = req.body;
-            // Helper to check if import is done (optional, but good for UI)
-
-            const userRes = await fetch('https://api.github.com/user', {
-                headers: { 'Authorization': `Bearer ${accessToken}` }
-            });
-            const userData = await userRes.json();
-            const owner = userData.login;
-
-            const checkRes = await fetch(`https://api.github.com/repos/${owner}/${repoName}/import`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`,
-                    'Accept': 'application/vnd.github.v3+json'
-                }
-            });
-
-            const checkData = await checkRes.json();
-            return res.status(checkRes.status).json(checkData);
+            return res.status(200).json(forkData);
         }
 
         return res.status(400).json({ error: 'Invalid action' });
