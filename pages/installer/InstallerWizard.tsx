@@ -615,14 +615,15 @@ export default function InstallerWizard() {
                             <div className="bg-black/40 rounded-xl p-4 mb-6 border border-white/5 text-sm text-gray-300">
                                 <p className="mb-2 font-bold text-white">Como executar as migrações:</p>
                                 <ol className="list-decimal list-inside space-y-2 ml-1">
+                                    <li>No seu computador, abra a pasta do projeto <code className="bg-black/60 px-2 py-0.5 rounded text-xs">super-checkout</code></li>
+                                    <li>Abra o arquivo <code className="bg-black/60 px-2 py-0.5 rounded text-xs">supabase_setup_member_management.sql</code></li>
+                                    <li>Copie <strong>todo o conteúdo</strong> do arquivo SQL</li>
                                     <li>Acesse seu <a href="https://supabase.com/dashboard/projects" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Dashboard do Supabase</a></li>
                                     <li>Entre no projeto <strong>Super Checkout</strong> (recém criado)</li>
                                     <li>No menu lateral, clique em <strong>SQL Editor</strong></li>
-                                    <li>Abra o arquivo <code className="bg-black/60 px-2 py-0.5 rounded text-xs">supabase_setup_member_management.sql</code> do seu projeto</li>
-                                    <li>Copie todo o conteúdo SQL</li>
-                                    <li>Cole no SQL Editor do Supabase</li>
-                                    <li>Clique em <strong>Run</strong> para executar</li>
-                                    <li>Aguarde a confirmação de sucesso</li>
+                                    <li>Cole o conteúdo SQL copiado</li>
+                                    <li>Clique em <strong>Run</strong> (botão verde no canto superior direito)</li>
+                                    <li>Aguarde a confirmação "Success. No rows returned"</li>
                                 </ol>
                             </div>
 
