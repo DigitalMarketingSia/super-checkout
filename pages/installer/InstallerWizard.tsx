@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Check, ChevronRight, Database, Globe, Key, Server, ShieldCheck, Terminal, AlertCircle, ExternalLink, Github } from 'lucide-react';
 import { AlertModal } from '../../components/ui/Modal';
 
-type Step = 'license' | 'supabase' | 'supabase_migrations' | 'supabase_keys' | 'github' | 'vercel' | 'config' | 'deploy' | 'success';
+type Step = 'license' | 'supabase' | 'supabase_migrations' | 'supabase_keys' | 'github' | 'github_push' | 'vercel' | 'config' | 'deploy' | 'success';
 
 export default function InstallerWizard() {
     const [currentStep, setCurrentStep] = useState<Step>('license');
@@ -264,7 +264,8 @@ export default function InstallerWizard() {
             localStorage.setItem('installer_github_push_url', pushData.pushInstructions?.gitUrl || '');
 
             setGithubConnected(true);
-            setCurrentStep('vercel');
+            setCurrentStep('github_push'); // Show push instructions first
+
 
         } catch (error: any) {
             console.error(error);
@@ -732,6 +733,89 @@ export default function InstallerWizard() {
                                     Será criado um repo privado: <strong>cliente/super-checkout-xxxx</strong>
                                 </p>
                             </div>
+                        </div>
+                    )}
+
+                    {/* Step 3.5: GitHub Push Instructions */}
+                    {currentStep === 'github_push' && (
+                        <div className="glass-panel border border-white/10 bg-white/5 backdrop-blur-xl rounded-2xl p-8 shadow-2xl animate-in fade-in slide-in-from-bottom-4">
+                            <div className="w-12 h-12 bg-gray-800 rounded-xl flex items-center justify-center mb-6 text-white shadow-lg shadow-black/20 border border-white/10">
+                                <Terminal className="w-6 h-6" />
+                            </div>
+                            <h1 className="text-2xl font-bold mb-2 text-white">Enviar Código para o GitHub</h1>
+                            <p className="text-gray-400 mb-6">
+                                O repositório foi criado! Agora você precisa fazer push do código manualmente.
+                            </p>
+
+                            <div className="bg-black/40 rounded-xl p-4 mb-6 border border-white/5 text-sm text-gray-300">
+                                <p className="mb-2 font-bold text-white">Execute estes comandos no terminal:</p>
+                                <div className="space-y-3">
+                                    <div>
+                                        <p className="text-xs text-gray-500 mb-1">1. Navegue até a pasta do projeto:</p>
+                                        <code className="block bg-black/60 px-3 py-2 rounded text-xs font-mono text-green-400">
+                                            cd C:\Users\Jean\Desktop\super-checkout
+                                        </code>
+                                    </div>
+
+                                    <div>
+                                        <p className="text-xs text-gray-500 mb-1">2. Inicialize o repositório Git (se ainda não foi feito):</p>
+                                        <code className="block bg-black/60 px-3 py-2 rounded text-xs font-mono text-green-400">
+                                            git init
+                                        </code>
+                                    </div>
+
+                                    <div>
+                                        <p className="text-xs text-gray-500 mb-1">3. Adicione todos os arquivos:</p>
+                                        <code className="block bg-black/60 px-3 py-2 rounded text-xs font-mono text-green-400">
+                                            git add .
+                                        </code>
+                                    </div>
+
+                                    <div>
+                                        <p className="text-xs text-gray-500 mb-1">4. Faça o primeiro commit:</p>
+                                        <code className="block bg-black/60 px-3 py-2 rounded text-xs font-mono text-green-400">
+                                            git commit -m "Initial commit"
+                                        </code>
+                                    </div>
+
+                                    <div>
+                                        <p className="text-xs text-gray-500 mb-1">5. Adicione o repositório remoto:</p>
+                                        <code className="block bg-black/60 px-3 py-2 rounded text-xs font-mono text-green-400">
+                                            git remote add origin {localStorage.getItem('installer_github_push_url') || 'https://github.com/seu-usuario/seu-repo.git'}
+                                        </code>
+                                    </div>
+
+                                    <div>
+                                        <p className="text-xs text-gray-500 mb-1">6. Renomeie a branch para main:</p>
+                                        <code className="block bg-black/60 px-3 py-2 rounded text-xs font-mono text-green-400">
+                                            git branch -M main
+                                        </code>
+                                    </div>
+
+                                    <div>
+                                        <p className="text-xs text-gray-500 mb-1">7. Faça push do código:</p>
+                                        <code className="block bg-black/60 px-3 py-2 rounded text-xs font-mono text-green-400">
+                                            git push -u origin main
+                                        </code>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4 mb-6">
+                                <p className="text-sm text-blue-200 font-bold mb-1">💡 Dica</p>
+                                <p className="text-xs text-gray-300">
+                                    Você pode copiar e colar todos os comandos de uma vez no terminal.
+                                    Após o push, clique em "Continuar" para configurar a Vercel.
+                                </p>
+                            </div>
+
+                            <button
+                                onClick={() => setCurrentStep('vercel')}
+                                className="w-full bg-[#3ECF8E] hover:bg-[#3ECF8E]/90 text-black font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#3ECF8E]/20 hover:shadow-[#3ECF8E]/40 hover:-translate-y-0.5"
+                            >
+                                Código Enviado - Continuar
+                                <ChevronRight className="w-4 h-4" />
+                            </button>
                         </div>
                     )}
 
