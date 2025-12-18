@@ -9,12 +9,9 @@ DO $$
 BEGIN
     ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_cpf TEXT;
     RAISE NOTICE 'Coluna customer_cpf adicionada/verificada com sucesso';
+    RAISE NOTICE 'Upgrade concluído com sucesso!';
 EXCEPTION
     WHEN duplicate_column THEN 
         RAISE NOTICE 'Coluna customer_cpf já existe';
+        RAISE NOTICE 'Upgrade concluído com sucesso!';
 END $$;
-
--- Verificar se há outras colunas faltantes que podem causar problemas futuros
--- (Baseado na análise do código)
-
-RAISE NOTICE 'Upgrade concluído com sucesso!';
