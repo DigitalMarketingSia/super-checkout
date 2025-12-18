@@ -61,22 +61,29 @@ export const PixPayment = () => {
         return;
       }
 
-      // 2. Se não vier do state, tentar buscar no localStorage pelo ID
+      // 2. Se não vier do state, buscar diretamente no Supabase (funciona para anon)
       if (orderId) {
-        const orders = await storage.getOrders();
-        const foundOrder = orders.find(o => o.id === orderId);
+        try {
+          const { data: foundOrder, error } = await supabase
+            .from('orders')
+            .select('*')
+            .eq('id', orderId)
+            .single();
 
-        if (foundOrder) {
-          // Adaptar estrutura do storage para o visual da pagina
-          const adaptedOrder = {
-            items: [{ name: "Produto/Oferta Selecionada", price: foundOrder.amount, quantity: 1 }],
-            totalAmount: foundOrder.amount,
-            customer: { name: foundOrder.customer_name, email: foundOrder.customer_email }
-          };
-          setOrderData(adaptedOrder);
-          setPixCode(MOCK_PIX_DATA.qr_code_base64); // Em um app real, buscaria do PaymentService
-          setLoading(false);
-          return;
+          if (foundOrder && !error) {
+            // Adaptar estrutura do storage para o visual da pagina
+            const adaptedOrder = {
+              items: foundOrder.items || [{ name: "Produto/Oferta Selecionada", price: foundOrder.total, quantity: 1 }],
+              totalAmount: foundOrder.total,
+              customer: { name: foundOrder.customer_name, email: foundOrder.customer_email }
+            };
+            setOrderData(adaptedOrder);
+            setPixCode(MOCK_PIX_DATA.qr_code_base64);
+            setLoading(false);
+            return;
+          }
+        } catch (err) {
+          console.error('[PixPayment] Error loading order:', err);
         }
       }
 
