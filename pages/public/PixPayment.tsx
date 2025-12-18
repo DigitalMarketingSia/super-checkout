@@ -54,40 +54,69 @@ export const PixPayment = () => {
   useEffect(() => {
     const load = async () => {
       // 1. Tentar recuperar dados do State (Navegação direta)
-      if (location.state?.orderData) {
+      // Se tivermos o pixData no state (vindo do checkout), usamos ele pois é o mais fresco
+      if (location.state?.orderData && location.state?.pixData) {
         setOrderData(location.state.orderData);
-        setPixCode(location.state.pixData?.qr_code || MOCK_PIX_DATA.qr_code_base64);
+        setPixCode(location.state.pixData.qr_code_base64 || location.state.pixData.qr_code || MOCK_PIX_DATA.qr_code_base64);
         setLoading(false);
         return;
       }
 
-      // 2. Se não vier do state, buscar diretamente no Supabase (funciona para anon)
+      // 2. Se não vier do state, buscar diretamente no Supabase
       if (orderId) {
         try {
-          const { data: foundOrder, error } = await supabase
+          // Buscar pedido
+          const { data: foundOrder, error: orderError } = await supabase
             .from('orders')
             .select('*')
             .eq('id', orderId)
             .single();
 
-          if (foundOrder && !error) {
-            // Adaptar estrutura do storage para o visual da pagina
+          if (foundOrder && !orderError) {
+            // Buscar dados do pagamento para pegar o QR Code real
+            const { data: payments, error: paymentError } = await supabase
+              .from('payments')
+              .select('raw_response')
+              .eq('order_id', orderId)
+              .order('created_at', { ascending: false })
+              .limit(1);
+
+            let realPixCode = MOCK_PIX_DATA.qr_code_base64;
+
+            if (payments && payments.length > 0 && payments[0].raw_response) {
+              try {
+                // Tenta extrair o QR Code do JSON cru do Mercado Pago
+                const raw = typeof payments[0].raw_response === 'string'
+                  ? JSON.parse(payments[0].raw_response)
+                  : payments[0].raw_response;
+
+                const code = raw.point_of_interaction?.transaction_data?.qr_code_base64 ||
+                  raw.point_of_interaction?.transaction_data?.qr_code;
+
+                if (code) realPixCode = code;
+              } catch (e) {
+                console.warn('Erro ao parsear QR code do pagamento:', e);
+              }
+            }
+
+            // Adaptar estrutura
             const adaptedOrder = {
               items: foundOrder.items || [{ name: "Produto/Oferta Selecionada", price: foundOrder.total, quantity: 1 }],
               totalAmount: foundOrder.total,
               customer: { name: foundOrder.customer_name, email: foundOrder.customer_email }
             };
+
             setOrderData(adaptedOrder);
-            setPixCode(MOCK_PIX_DATA.qr_code_base64);
+            setPixCode(realPixCode);
             setLoading(false);
             return;
           }
         } catch (err) {
-          console.error('[PixPayment] Error loading order:', err);
+          console.error('[PixPayment] Error loading order/payment:', err);
         }
       }
 
-      // 3. Fallback final (Mock) para garantir visualização
+      // 3. Fallback final
       setOrderData(FALLBACK_MOCK_ORDER);
       setPixCode(MOCK_PIX_DATA.qr_code_base64);
       setLoading(false);
