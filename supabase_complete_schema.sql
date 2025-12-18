@@ -227,6 +227,7 @@ DO $$
 BEGIN
     -- CRITICAL FIX: Ensure both user_id (seller) and customer_user_id (buyer) exist
     ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_user_id UUID REFERENCES auth.users(id);
+    ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_cpf TEXT;
     ALTER TABLE orders ADD COLUMN IF NOT EXISTS offer_id UUID;
     ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_method TEXT;
     ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_id TEXT;
