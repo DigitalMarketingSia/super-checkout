@@ -336,6 +336,15 @@ export const PixPayment = () => {
                 <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
                 <span className="text-sm text-gray-500 font-medium">Aguardando confirmação do banco...</span>
               </div>
+
+              {/* DEBUG INFO - REMOVER EM PRODUÇÃO */}
+              <div className="p-4 mt-4 bg-gray-100 rounded text-xs text-gray-500 font-mono break-all">
+                <p><strong>DEBUG INFO:</strong></p>
+                <p>Order ID: {orderId}</p>
+                <p>Status: {loading ? 'Loading...' : 'Ready'}</p>
+                <p>Pix Source: {pixCode === MOCK_PIX_DATA.qr_code_base64 ? 'MOCK (Fallback)' : 'REAL (Database)'}</p>
+                <p>Last Poll: {new Date().toLocaleTimeString()}</p>
+              </div>
             </div>
 
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
