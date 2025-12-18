@@ -8,10 +8,12 @@
 DO $$
 BEGIN
     ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_cpf TEXT;
-    RAISE NOTICE 'Coluna customer_cpf adicionada/verificada com sucesso';
+    ALTER TABLE orders ADD COLUMN IF NOT EXISTS items JSONB;
+    ALTER TABLE orders ADD COLUMN IF NOT EXISTS total DECIMAL(10,2);
+    RAISE NOTICE 'Colunas (customer_cpf, items, total) adicionadas/verificadas com sucesso';
     RAISE NOTICE 'Upgrade concluído com sucesso!';
 EXCEPTION
     WHEN duplicate_column THEN 
-        RAISE NOTICE 'Coluna customer_cpf já existe';
+        RAISE NOTICE 'Colunas já existem ou erro silencioso capturado';
         RAISE NOTICE 'Upgrade concluído com sucesso!';
 END $$;

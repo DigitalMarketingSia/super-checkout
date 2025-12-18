@@ -214,7 +214,7 @@ CREATE TABLE IF NOT EXISTS orders (
   customer_name TEXT,
   customer_phone TEXT,
   customer_document TEXT,
-  amount DECIMAL(10,2) NOT NULL,
+  total DECIMAL(10,2) NOT NULL,
   status TEXT NOT NULL,
   payment_method TEXT,
   payment_id TEXT,
@@ -234,9 +234,24 @@ BEGIN
     ALTER TABLE orders ADD COLUMN IF NOT EXISTS utm_source TEXT;
     ALTER TABLE orders ADD COLUMN IF NOT EXISTS utm_medium TEXT;
     ALTER TABLE orders ADD COLUMN IF NOT EXISTS utm_campaign TEXT;
+    ALTER TABLE orders ADD COLUMN IF NOT EXISTS utm_campaign TEXT;
+    ALTER TABLE orders ADD COLUMN IF NOT EXISTS items JSONB;
+    ALTER TABLE orders ADD COLUMN IF NOT EXISTS total DECIMAL(10,2);
 END $$;
 
--- 2.11 Access Grants
+-- 2.11 Payments
+CREATE TABLE IF NOT EXISTS payments (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  order_id UUID REFERENCES orders(id) NOT NULL,
+  gateway_id UUID REFERENCES gateways(id) NOT NULL,
+  status TEXT NOT NULL,
+  transaction_id TEXT,
+  raw_response JSONB,
+  user_id UUID REFERENCES auth.users(id),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- 2.12 Access Grants
 CREATE TABLE IF NOT EXISTS access_grants (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id) NOT NULL,
@@ -515,6 +530,7 @@ CREATE POLICY "Public can view active products" ON products FOR SELECT USING (ac
 
 -- Gateways
 CREATE POLICY "Users can manage their own gateways" ON gateways FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Public can view active gateways" ON gateways FOR SELECT USING (active = true OR is_active = true);
 
 -- Checkouts
 CREATE POLICY "Users can manage their own checkouts" ON checkouts FOR ALL USING (auth.uid() = user_id);
@@ -523,6 +539,11 @@ CREATE POLICY "Public can view active checkouts" ON checkouts FOR SELECT USING (
 -- Orders
 CREATE POLICY "Users can manage their own orders" ON orders FOR ALL USING (auth.uid() = user_id);
 CREATE POLICY "Customers can view their own orders" ON orders FOR SELECT USING (auth.uid() = customer_user_id);
+CREATE POLICY "Public can create orders" ON orders FOR INSERT WITH CHECK (true);
+
+-- Payments
+CREATE POLICY "Users can manage their own payments" ON payments FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Public can create payments" ON payments FOR INSERT WITH CHECK (true);
 
 -- Contents
 CREATE POLICY "Users can manage their own contents" ON contents FOR ALL USING (
