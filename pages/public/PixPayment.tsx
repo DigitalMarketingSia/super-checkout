@@ -337,69 +337,61 @@ export const PixPayment = () => {
                 <span className="text-sm text-gray-500 font-medium">Aguardando confirmação do banco...</span>
               </div>
 
-              {/* DEBUG INFO - REMOVER EM PRODUÇÃO */}
-              <div className="p-4 mt-4 bg-gray-100 rounded text-xs text-gray-500 font-mono break-all">
-                <p><strong>DEBUG INFO:</strong></p>
-                <p>Order ID: {orderId}</p>
-                <p>Status: {loading ? 'Loading...' : 'Ready'}</p>
-                <p>Pix Source: {pixCode === MOCK_PIX_DATA.qr_code_base64 ? 'MOCK (Fallback)' : 'REAL (Database)'}</p>
-                <p>Last Poll: {new Date().toLocaleTimeString()}</p>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-              <div className="flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 text-blue-500 mt-0.5" />
-                <div>
-                  <h3 className="text-sm font-bold text-gray-900">Como pagar?</h3>
-                  <ol className="text-xs text-gray-500 list-decimal list-inside mt-2 space-y-1">
-                    <li>Abra o aplicativo do seu banco.</li>
-                    <li>Escolha a opção <strong>Pix</strong>.</li>
-                    <li>Selecione <strong>Ler QR Code</strong> ou <strong>Pix Copia e Cola</strong>.</li>
-                    <li>Confira os dados e confirme o pagamento.</li>
-                  </ol>
-                </div>
-              </div>
-            </div>
 
 
-
-          </div>
-
-          {/* Coluna Direita: Resumo do Pedido */}
-          <div className="space-y-6">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h3 className="font-bold text-gray-900 mb-4 pb-4 border-b border-gray-100">Resumo da Compra</h3>
-
-              <div className="space-y-3">
-                {orderData?.items?.map((item: any, idx: number) => (
-                  <div key={idx} className="flex justify-between text-sm">
-                    <span className="text-gray-600 w-2/3">{item.name}</span>
-                    <span className="font-medium text-gray-900">R$ {item.price.toFixed(2)}</span>
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-blue-500 mt-0.5" />
+                  <div>
+                    <h3 className="text-sm font-bold text-gray-900">Como pagar?</h3>
+                    <ol className="text-xs text-gray-500 list-decimal list-inside mt-2 space-y-1">
+                      <li>Abra o aplicativo do seu banco.</li>
+                      <li>Escolha a opção <strong>Pix</strong>.</li>
+                      <li>Selecione <strong>Ler QR Code</strong> ou <strong>Pix Copia e Cola</strong>.</li>
+                      <li>Confira os dados e confirme o pagamento.</li>
+                    </ol>
                   </div>
-                ))}
+                </div>
               </div>
 
-              <div className="mt-6 pt-4 border-t border-gray-100">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-500 text-sm">Total a pagar</span>
-                  <span className="text-2xl font-bold text-[#10B981]">R$ {orderData?.totalAmount?.toFixed(2)}</span>
+
+
+            </div>
+
+            {/* Coluna Direita: Resumo do Pedido */}
+            <div className="space-y-6">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h3 className="font-bold text-gray-900 mb-4 pb-4 border-b border-gray-100">Resumo da Compra</h3>
+
+                <div className="space-y-3">
+                  {orderData?.items?.map((item: any, idx: number) => (
+                    <div key={idx} className="flex justify-between text-sm">
+                      <span className="text-gray-600 w-2/3">{item.name}</span>
+                      <span className="font-medium text-gray-900">R$ {item.price.toFixed(2)}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-6 pt-4 border-t border-gray-100">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-500 text-sm">Total a pagar</span>
+                    <span className="text-2xl font-bold text-[#10B981]">R$ {orderData?.totalAmount?.toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="text-center space-y-2">
+                <p className="text-xs text-gray-400">Vendido e entregue por</p>
+                <div className="flex items-center justify-center gap-2 opacity-70">
+                  <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center text-[10px] font-bold text-gray-500">
+                    SC
+                  </div>
+                  <span className="text-sm font-medium text-gray-600">Super Checkout Inc.</span>
                 </div>
               </div>
             </div>
 
-            <div className="text-center space-y-2">
-              <p className="text-xs text-gray-400">Vendido e entregue por</p>
-              <div className="flex items-center justify-center gap-2 opacity-70">
-                <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center text-[10px] font-bold text-gray-500">
-                  SC
-                </div>
-                <span className="text-sm font-medium text-gray-600">Super Checkout Inc.</span>
-              </div>
-            </div>
           </div>
-
-        </div>
       </main>
       <AlertModal
         isOpen={alertState.isOpen}
