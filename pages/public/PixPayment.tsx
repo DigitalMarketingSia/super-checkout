@@ -354,50 +354,48 @@ export const PixPayment = () => {
                 </div>
               </div>
 
-            </div>
+              {/* Coluna Direita: Resumo do Pedido */}
+              <div className="space-y-6">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                  <h3 className="font-bold text-gray-900 mb-4 pb-4 border-b border-gray-100">Resumo da Compra</h3>
 
-            {/* Coluna Direita: Resumo do Pedido */}
-            <div className="space-y-6">
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <h3 className="font-bold text-gray-900 mb-4 pb-4 border-b border-gray-100">Resumo da Compra</h3>
+                  <div className="space-y-3">
+                    {orderData?.items?.map((item: any, idx: number) => (
+                      <div key={idx} className="flex justify-between text-sm">
+                        <span className="text-gray-600 w-2/3">{item.name}</span>
+                        <span className="font-medium text-gray-900">R$ {item.price.toFixed(2)}</span>
+                      </div>
+                    ))}
+                  </div>
 
-                <div className="space-y-3">
-                  {orderData?.items?.map((item: any, idx: number) => (
-                    <div key={idx} className="flex justify-between text-sm">
-                      <span className="text-gray-600 w-2/3">{item.name}</span>
-                      <span className="font-medium text-gray-900">R$ {item.price.toFixed(2)}</span>
+                  <div className="mt-6 pt-4 border-t border-gray-100">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-500 text-sm">Total a pagar</span>
+                      <span className="text-2xl font-bold text-[#10B981]">R$ {orderData?.totalAmount?.toFixed(2)}</span>
                     </div>
-                  ))}
+                  </div>
                 </div>
 
-                <div className="mt-6 pt-4 border-t border-gray-100">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-500 text-sm">Total a pagar</span>
-                    <span className="text-2xl font-bold text-[#10B981]">R$ {orderData?.totalAmount?.toFixed(2)}</span>
+                <div className="text-center space-y-2">
+                  <p className="text-xs text-gray-400">Vendido e entregue por</p>
+                  <div className="flex items-center justify-center gap-2 opacity-70">
+                    <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center text-[10px] font-bold text-gray-500">
+                      SC
+                    </div>
+                    <span className="text-sm font-medium text-gray-600">Super Checkout Inc.</span>
                   </div>
                 </div>
               </div>
 
-              <div className="text-center space-y-2">
-                <p className="text-xs text-gray-400">Vendido e entregue por</p>
-                <div className="flex items-center justify-center gap-2 opacity-70">
-                  <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center text-[10px] font-bold text-gray-500">
-                    SC
-                  </div>
-                  <span className="text-sm font-medium text-gray-600">Super Checkout Inc.</span>
-                </div>
-              </div>
             </div>
-
-          </div>
-      </main>
-      <AlertModal
-        isOpen={alertState.isOpen}
-        onClose={closeAlert}
-        title={alertState.title}
-        message={alertState.message}
-        variant={alertState.variant}
-      />
-    </div>
-  );
+          </main>
+          <AlertModal
+            isOpen={alertState.isOpen}
+            onClose={closeAlert}
+            title={alertState.title}
+            message={alertState.message}
+            variant={alertState.variant}
+          />
+        </div>
+        );
 };
