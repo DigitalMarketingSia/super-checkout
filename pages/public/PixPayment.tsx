@@ -354,8 +354,6 @@ export const PixPayment = () => {
                 </div>
               </div>
 
-
-
             </div>
 
             {/* Coluna Direita: Resumo do Pedido */}

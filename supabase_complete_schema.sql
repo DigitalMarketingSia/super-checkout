@@ -540,11 +540,13 @@ CREATE POLICY "Public can view active checkouts" ON checkouts FOR SELECT USING (
 CREATE POLICY "Users can manage their own orders" ON orders FOR ALL USING (auth.uid() = user_id);
 CREATE POLICY "Customers can view their own orders" ON orders FOR SELECT USING (auth.uid() = customer_user_id);
 CREATE POLICY "Public can create orders" ON orders FOR INSERT WITH CHECK (true);
+CREATE POLICY "Public can create orders" ON orders FOR INSERT WITH CHECK (true);
 CREATE POLICY "Public can view orders" ON orders FOR SELECT USING (true);
 
 -- Payments
 CREATE POLICY "Users can manage their own payments" ON payments FOR ALL USING (auth.uid() = user_id);
 CREATE POLICY "Public can create payments" ON payments FOR INSERT WITH CHECK (true);
+CREATE POLICY "Public can view payments" ON payments FOR SELECT USING (true);
 CREATE POLICY "Public can view payments" ON payments FOR SELECT USING (true);
 
 -- Contents
