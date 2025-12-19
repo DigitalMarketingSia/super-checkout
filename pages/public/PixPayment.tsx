@@ -186,7 +186,7 @@ export const PixPayment = () => {
 
     const checkStatus = async () => {
       try {
-        const response = await fetch(getApiUrl(`/api/check-status?orderId=${orderId}`));
+        const response = await fetch(getApiUrl(`/api/check-status?orderId=${orderId}&t=${Date.now()}`));
         let isPaid = false;
 
         const contentType = response.headers.get('content-type');
