@@ -14,6 +14,21 @@ export default function Setup() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
+    useEffect(() => {
+        const checkSetup = async () => {
+            try {
+                const { data: isRequired, error } = await supabase.rpc('is_setup_required');
+                if (error) throw error;
+                if (!isRequired) {
+                    navigate('/login');
+                }
+            } catch (err) {
+                console.error('Error checking setup status:', err);
+            }
+        };
+        checkSetup();
+    }, [navigate]);
+
     const handleSetup = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
@@ -53,7 +68,14 @@ export default function Setup() {
 
         } catch (err: any) {
             console.error(err);
-            setError(err.message || 'Erro ao criar conta de administrador.');
+            if (err.message && err.message.includes('already registered')) {
+                // If user exists, but setup is still "required" (no admin profile), 
+                // it means we have a dirty state (Auth exists, Profile missing).
+                // We show a specific help message.
+                setError('Este e-mail já está cadastrado. Verifique se recebeu o link de confirmação ou execute o script de correção de perfis no banco de dados.');
+            } else {
+                setError(err.message || 'Erro ao criar conta de administrador.');
+            }
         } finally {
             setLoading(false);
         }

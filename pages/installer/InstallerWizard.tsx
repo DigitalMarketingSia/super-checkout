@@ -620,6 +620,9 @@ CREATE POLICY "Users can manage their own payments" ON payments FOR ALL USING (a
 CREATE POLICY "Public can create payments" ON payments FOR INSERT WITH CHECK (true);
 CREATE POLICY "Public can view payments" ON payments FOR SELECT USING (true);
 
+-- Access Grants
+CREATE POLICY "Users can view their own access grants" ON access_grants FOR SELECT USING (auth.uid() = user_id);
+
 
 -- Contents
 CREATE POLICY "Users can manage their own contents" ON contents FOR ALL USING (

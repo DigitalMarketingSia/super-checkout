@@ -22,8 +22,37 @@ export const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }
     // If profile is still loading (or failed to load) but user exists, 
     // we shouldn't show "Access Denied" yet. 
     // This happens sometimes on refresh before RLS resolves.
+    // If profile is still loading (or failed to load) but user exists, 
+    // we shouldn't show "Access Denied" yet. 
+    // This happens sometimes on refresh before RLS resolves.
+    // If profile is missing after loading is done, show error instead of loading loop or crashing
     if (!profile) {
-        return <div className="h-screen w-screen flex items-center justify-center bg-[#05050A] text-white">Carregando Perfil...</div>;
+        console.error('AdminRoute: Profile is missing/null for user:', user.email);
+        return (
+            <div className="min-h-screen bg-[#05050A] flex flex-col items-center justify-center text-white p-6 text-center">
+                <h1 className="text-3xl font-bold text-red-500 mb-4">Perfil Não Encontrado</h1>
+                <p className="text-gray-400 max-w-md mb-6">
+                    Seu usuário foi autenticado, mas o perfil não foi carregado corretamente.
+                </p>
+                <p className="text-gray-500 text-sm bg-black/30 p-4 rounded-lg border border-white/10 font-mono mb-6">
+                    Erro: Profile Record Missing (AuthUID: {user.id})
+                </p>
+                <div className="flex gap-4">
+                    <button
+                        onClick={() => window.location.reload()}
+                        className="px-6 py-2 bg-white text-black hover:bg-gray-200 rounded-lg transition-colors font-bold"
+                    >
+                        Tentar Novamente
+                    </button>
+                    <button
+                        onClick={() => window.location.href = '/login'}
+                        className="px-6 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors"
+                    >
+                        Voltar para Login
+                    </button>
+                </div>
+            </div>
+        );
     }
 
     if (profile.role !== 'admin' && !isOwner) {
