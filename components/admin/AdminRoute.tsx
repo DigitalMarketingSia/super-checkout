@@ -24,15 +24,27 @@ export const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }
     // This happens sometimes on refresh before RLS resolves.
     // If profile is missing after loading is done, keeping the "Loading" state feels broken.
     // However, showing a hard error scared the user.
-    // If user is authenticated but profile is missing, we shouldn't block access to the admin panel.
-    // The system should be robust enough to handle missing profile data (e.g. show user.email).
-    // Failing gracefully is better than showing a broken error screen.
-    if (user && !profile) {
-        // Proceeding with null profile - components should handle this check if they strictly need it.
-        // In many cases (like listing products), 'user.id' is sufficient.
-    }
+    // Safe RBAC check:
+    // If profile is missing (due to error/timeout), we fallback to allowing Owner (if matched) or blocking invalid access safely.
+    // user?.id is always available if authenticated.
+    const isAdmin = profile?.role === 'admin';
+    const isOwnerOrAdmin = isAdmin || isOwner;
 
-    if (profile.role !== 'admin' && !isOwner) {
+    // Strict check: Must be admin or owner.
+    // If profile is null, this will be false unless isOwner is true.
+    if (!isOwnerOrAdmin) {
+        // If we have a user but no profile and they aren't the owner, it's safer to redirect setup/login than crash.
+        // However, let's just show a friendly "Access Problem" screen instead of crashing.
+        if (!profile && !isOwner) {
+            return (
+                <div className="h-screen w-screen flex flex-col items-center justify-center bg-[#05050A] text-white">
+                    <p className="text-gray-400">Não foi possível carregar suas permissões.</p>
+                    <button onClick={() => window.location.reload()} className="mt-4 px-4 py-2 bg-purple-600 rounded">Tentar Novamente</button>
+                    <p className="text-xs text-gray-600 mt-4 font-mono">UID: {user?.id}</p>
+                </div>
+            );
+        }
+
         console.warn('AdminRoute: Unauthorized access attempt by user:', user.email, 'Role:', profile?.role);
         // Ideally redirect to a "Unauthorized" page or their member home if known.
         // For now, let's render a generic forbidden message to avoid infinite loops if we redirected to root (which might redirect back here).

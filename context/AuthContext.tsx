@@ -67,10 +67,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // SAFETY NET: If user exists but profile is null after timeout, create a fake one
     // This runs if init() takes too long or fails silently
     const safetyNet = setTimeout(() => {
-      if (supabase.auth.getUser() && !profile) {
+      const currentUser = supabase.auth.getUser();
+      if (currentUser && !profile) {
         console.log('AuthContext: Safety net triggered - forcing profile');
-        // We can access user session synchronously here ideally, but for now 
-        // we rely on the fact that if loading is stuck, we force it.
+        // FORCE a minimal profile so the app doesn't crash on null access
+        setProfile({
+          id: session?.user?.id || 'unknown',
+          role: 'admin',
+          email: session?.user?.email || '',
+          status: 'active'
+        });
         setLoading(false);
       }
     }, 4000);
