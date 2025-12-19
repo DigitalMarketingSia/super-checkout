@@ -361,6 +361,17 @@ CREATE TABLE IF NOT EXISTS public.activity_logs (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS public.integrations (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  name TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  active BOOLEAN DEFAULT true,
+  config JSONB DEFAULT '{}'::jsonb,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  UNIQUE(user_id, name)
+);
+
 -- ==========================================
 -- 4. VIEWS & FUNCTIONS
 -- ==========================================
@@ -600,17 +611,7 @@ CREATE POLICY "Users can create their own logs" ON public.activity_logs FOR INSE
 CREATE POLICY "Users can view their own logs" ON public.activity_logs FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Admins can view all logs" ON public.activity_logs FOR SELECT USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin'));
 
--- Integrations
-CREATE TABLE IF NOT EXISTS public.integrations (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-  name TEXT NOT NULL,
-  provider TEXT NOT NULL,
-  active BOOLEAN DEFAULT true,
-  config JSONB DEFAULT '{}'::jsonb,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-  UNIQUE(user_id, name)
-);
+
 
 CREATE POLICY "Users can manage their own integrations" ON public.integrations FOR ALL USING (auth.uid() = user_id);
 
