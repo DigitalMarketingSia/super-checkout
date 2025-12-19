@@ -393,11 +393,16 @@ CREATE TABLE IF NOT EXISTS public.integrations (
 -- 4.1. Admin Helper Function
 CREATE OR REPLACE FUNCTION public.is_admin()
 RETURNS BOOLEAN AS $$
+DECLARE
+  is_admin boolean;
 BEGIN
-  RETURN EXISTS (
-    SELECT 1 FROM public.profiles
-    WHERE id = auth.uid() AND role = 'admin'
-  );
+  -- Check auth.users metadata (avoids recursion with profiles table)
+  SELECT (raw_user_meta_data->>'role') = 'admin'
+  INTO is_admin
+  FROM auth.users
+  WHERE id = auth.uid();
+  
+  RETURN COALESCE(is_admin, false);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
