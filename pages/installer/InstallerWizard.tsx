@@ -667,7 +667,7 @@ CREATE POLICY "Authenticated Delete Products" ON storage.objects FOR DELETE USIN
 type Step = 'license' | 'supabase' | 'supabase_migrations' | 'supabase_keys' | 'deploy' | 'success' | 'check_subscription' | 'supabase_setup' | 'vercel_config';
 
 export default function InstallerWizard() {
-    const [currentStep, setCurrentStep] = useState<Step>('license');
+    const [currentStep, setCurrentStep] = useState<Step>('check_subscription');
     const [logs, setLogs] = useState<string[]>([]);
     const [licenseKey, setLicenseKey] = useState('');
     const [organizationSlug, setOrganizationSlug] = useState('');
@@ -874,7 +874,13 @@ export default function InstallerWizard() {
         setSupabaseUrl(localStorage.getItem('installer_supabase_url') || '');
 
         const savedStep = localStorage.getItem('installer_step') as Step;
-        if (savedStep && savedStep !== 'success') setCurrentStep(savedStep);
+        if (savedStep && savedStep !== 'success') {
+            if (savedStep === 'license') {
+                setCurrentStep('check_subscription');
+            } else {
+                setCurrentStep(savedStep);
+            }
+        }
 
         const params = new URLSearchParams(window.location.search);
         const code = params.get('code');
