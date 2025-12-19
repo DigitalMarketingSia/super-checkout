@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../services/supabase';
 import { useNavigate } from 'react-router-dom';
 import { ShieldCheck, User, Mail, Lock, ChevronRight, AlertCircle, Check } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -7,7 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 export default function Setup() {
     const navigate = useNavigate();
     const { fetchProfile } = useAuth();
-    
+
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -23,7 +23,7 @@ export default function Setup() {
             // double check if setup is still required
             const { data: isRequired, error: rpcError } = await supabase.rpc('is_setup_required');
             if (rpcError) throw rpcError;
-            
+
             if (!isRequired) {
                 // Someone beat us to it, or it's already set up
                 alert('O sistema já possui um administrador. Redirecionando para login...');
@@ -67,7 +67,7 @@ export default function Setup() {
 
             <div className="w-full max-w-md p-8 relative z-10">
                 <div className="text-center mb-8">
-                     <div className="inline-flex items-center justify-center p-3 mb-6 rounded-2xl bg-white/5 border border-white/10 shadow-2xl backdrop-blur-sm animate-in zoom-in duration-500">
+                    <div className="inline-flex items-center justify-center p-3 mb-6 rounded-2xl bg-white/5 border border-white/10 shadow-2xl backdrop-blur-sm animate-in zoom-in duration-500">
                         <ShieldCheck className="w-8 h-8 text-[#3ECF8E]" />
                     </div>
                     <h1 className="text-3xl font-extrabold tracking-tight mb-2 bg-clip-text text-transparent bg-gradient-to-r from-white via-gray-200 to-gray-400">
@@ -80,7 +80,7 @@ export default function Setup() {
 
                 <div className="glass-panel border border-white/10 bg-white/5 backdrop-blur-xl rounded-2xl p-8 shadow-2xl animate-in fade-in slide-in-from-bottom-4">
                     <form onSubmit={handleSetup} className="space-y-4">
-                        
+
                         <div>
                             <label className="block text-xs font-medium text-gray-400 mb-1.5 uppercase tracking-wider">Nome Completo</label>
                             <div className="relative group">
@@ -152,7 +152,7 @@ export default function Setup() {
                         </button>
                     </form>
                 </div>
-                 <p className="text-center text-gray-600 text-xs mt-8">
+                <p className="text-center text-gray-600 text-xs mt-8">
                     &copy; Super Checkout System
                 </p>
             </div>
