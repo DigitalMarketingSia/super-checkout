@@ -32,7 +32,8 @@ export const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }
         return (
             <div className="h-screen w-screen flex flex-col items-center justify-center bg-[#05050A] text-white gap-4">
                 <div className="w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div>
-                <p className="text-gray-400 animate-pulse">Carregando Perfil...</p>
+                <p className="text-gray-400 animate-pulse">Carregando Perfil... (v3.1)</p>
+                <p className="text-xs text-gray-600 font-mono">UID: {user?.id}</p>
 
                 <div className="mt-8 flex flex-col items-center gap-2 opacity-0 animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-3000" style={{ animationDelay: '3s', opacity: 1 }}>
                     <p className="text-xs text-gray-500 mb-2">Demorando muito?</p>
