@@ -172,8 +172,15 @@ const DomainDispatcher = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0F0F13] flex flex-col items-center justify-center text-white">
-        <div className="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin mb-4"></div>
-        <p className="text-gray-400 animate-pulse">Carregando loja...</p>
+        <div className="relative flex items-center justify-center">
+          {/* Spinner */}
+          <div className="w-16 h-16 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+          {/* Centered Logo */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain opacity-90" />
+          </div>
+        </div>
+        <p className="mt-4 text-gray-400 animate-pulse text-sm font-medium">Carregando Sistema...</p>
       </div>
     );
   }
