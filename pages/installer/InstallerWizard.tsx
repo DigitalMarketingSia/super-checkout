@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS domains (
   domain TEXT NOT NULL UNIQUE,
   status TEXT DEFAULT 'pending_verification',
   usage TEXT DEFAULT 'checkout',
+  checkout_id UUID,
   verified_at TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
@@ -31,6 +32,7 @@ DO $$
 BEGIN
     ALTER TABLE domains ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id);
     ALTER TABLE domains ADD COLUMN IF NOT EXISTS usage TEXT DEFAULT 'checkout';
+    ALTER TABLE domains ADD COLUMN IF NOT EXISTS checkout_id UUID;
     ALTER TABLE domains ADD COLUMN IF NOT EXISTS verified_at TIMESTAMP WITH TIME ZONE;
 EXCEPTION
     WHEN duplicate_column THEN RAISE NOTICE 'Column already exists in domains.';
@@ -87,7 +89,7 @@ BEGIN
     ALTER TABLE products ADD COLUMN IF NOT EXISTS visible_in_member_area BOOLEAN DEFAULT true;
     ALTER TABLE products ADD COLUMN IF NOT EXISTS for_sale BOOLEAN DEFAULT true;
     ALTER TABLE products ADD COLUMN IF NOT EXISTS member_area_action TEXT DEFAULT 'none';
-    ALTER TABLE products ADD COLUMN IF NOT EXISTS member_area_checkout_id UUID;
+    ALTER TABLE products ADD COLUMN IF NOT EXISTS member_area_checkout_id UUID REFERENCES checkouts(id);
     ALTER TABLE products ADD COLUMN IF NOT EXISTS currency TEXT DEFAULT 'BRL';
 END $$;
 
