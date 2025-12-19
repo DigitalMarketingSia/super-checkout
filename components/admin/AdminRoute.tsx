@@ -19,7 +19,14 @@ export const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }
     const ownerEmail = 'contato.jeandamin@gmail.com';
     const isOwner = user.email === ownerEmail;
 
-    if (profile?.role !== 'admin' && !isOwner) {
+    // If profile is still loading (or failed to load) but user exists, 
+    // we shouldn't show "Access Denied" yet. 
+    // This happens sometimes on refresh before RLS resolves.
+    if (!profile) {
+        return <div className="h-screen w-screen flex items-center justify-center bg-[#05050A] text-white">Carregando Perfil...</div>;
+    }
+
+    if (profile.role !== 'admin' && !isOwner) {
         console.warn('AdminRoute: Unauthorized access attempt by user:', user.email, 'Role:', profile?.role);
         // Ideally redirect to a "Unauthorized" page or their member home if known.
         // For now, let's render a generic forbidden message to avoid infinite loops if we redirected to root (which might redirect back here).

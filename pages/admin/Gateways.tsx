@@ -88,7 +88,10 @@ export const Gateways = () => {
       }
 
       setIsModalOpen(false);
-      showAlert('Sucesso', 'Gateway salvo com sucesso!', 'success');
+      // Small delay to allow modal to close visually before showing alert
+      setTimeout(() => {
+        showAlert('Sucesso', 'Gateway salvo com sucesso!', 'success');
+      }, 100);
     } catch (error) {
       console.error('Error saving gateway:', error);
       showAlert('Erro', 'Erro ao salvar gateway. Verifique o console.', 'error');
@@ -125,8 +128,8 @@ export const Gateways = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card
           className={`relative overflow-hidden group hover:border-primary/50 transition-all cursor-pointer h-40 flex items-center justify-center ${mpConfig.active
-              ? 'border-green-500 dark:border-green-400'
-              : ''
+            ? 'border-green-500 dark:border-green-400'
+            : ''
             }`}
           onClick={() => setIsModalOpen(true)}
         >
