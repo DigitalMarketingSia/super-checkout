@@ -91,7 +91,6 @@ BEGIN
     ALTER TABLE products ADD COLUMN IF NOT EXISTS member_area_action TEXT DEFAULT 'none';
     -- FK to checkouts moved to after checkouts table creation
     -- ALTER TABLE products ADD COLUMN IF NOT EXISTS member_area_checkout_id UUID REFERENCES checkouts(id);
-    ALTER TABLE products ADD COLUMN IF NOT EXISTS currency TEXT DEFAULT 'BRL';
 END $$;
 
 -- 2.4 Contents
