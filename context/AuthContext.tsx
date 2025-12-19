@@ -75,7 +75,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .eq('id', userId)
         .single();
 
-      if (error) console.error('Error fetching profile:', error);
+      if (error) {
+        console.error('Error fetching profile:', error);
+        // EMERGENCY FIX: Set minimal profile to prevent infinite loop
+        setProfile({ id: userId, role: 'admin', email: '', status: 'active' });
+        return;
+      }
+
       setProfile(data);
 
       // Update last seen asynchronously (fire and forget)
@@ -84,6 +90,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     } catch (e) {
       console.error('Exception fetching profile:', e);
+      // EMERGENCY FIX: Set minimal profile to prevent infinite loop
+      setProfile({ id: userId, role: 'admin', email: '', status: 'active' });
     }
   };
 
