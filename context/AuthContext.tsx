@@ -29,6 +29,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.log('AuthContext: session retrieved', currentSession?.user?.id);
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
+        storage.setUser(currentSession?.user ?? null);
         if (currentSession?.user) {
           console.log('AuthContext: fetching profile...');
           await fetchProfile(currentSession.user.id);
@@ -56,6 +57,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('AuthContext: onAuthStateChange', event);
       setSession(session);
       setUser(session?.user ?? null);
+      storage.setUser(session?.user ?? null);
       if (session?.user) {
         // Await profile fetch to prevent "Access Denied" flash on admin routes
         await fetchProfile(session.user.id);
@@ -79,6 +81,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (recoveredUser) {
           console.log('AuthContext: User recovered via safety net');
           setUser(recoveredUser);
+          storage.setUser(recoveredUser);
           // If profile is still missing, set a temporary one to avoid crashes
           if (!profile) {
             setProfile({
