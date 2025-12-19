@@ -718,8 +718,8 @@ export default function InstallerWizard() {
         setLoading(true);
         setError('');
 
-        // Use email for check_subscription step, or licenseKey for legacy step
-        const checkValue = currentStep === 'check_subscription' ? email : licenseKey;
+        // Use licenseKey for validation
+        const checkValue = licenseKey;
 
 
 
