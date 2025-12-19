@@ -927,15 +927,6 @@ export default function InstallerWizard() {
             <div className="fixed top-0 left-0 w-[500px] h-[500px] bg-[#3ECF8E]/10 rounded-full blur-[128px] pointer-events-none -translate-x-1/2 -translate-y-1/2 mix-blend-screen" />
             <div className="fixed bottom-0 right-0 w-[500px] h-[500px] bg-purple-500/10 rounded-full blur-[128px] pointer-events-none translate-x-1/2 translate-y-1/2 mix-blend-screen" />
 
-            {/* Debug Navigation (User Requested) */}
-            <div className="fixed bottom-4 left-4 z-50 flex gap-2 opacity-50 hover:opacity-100 transition-opacity">
-                <button onClick={goBack} disabled={currentStepIndex === 0} className="px-3 py-1 bg-white/10 rounded text-xs hover:bg-white/20 disabled:opacity-30">
-                    ← Voltar (Debug)
-                </button>
-                <button onClick={goNext} disabled={currentStepIndex === stepsOrder.length - 1} className="px-3 py-1 bg-white/10 rounded text-xs hover:bg-white/20 disabled:opacity-30">
-                    Avançar (Debug) →
-                </button>
-            </div>
 
             <div className="container mx-auto px-4 py-12 relative z-10 max-w-4xl">
                 {/* Header */}
@@ -979,19 +970,19 @@ export default function InstallerWizard() {
                                 <ShieldCheck className="w-6 h-6" />
                             </div>
                             <h1 className="text-2xl font-bold mb-2 text-white">Validar Licença</h1>
-                            <p className="text-gray-400 mb-6">Digite seu e-mail para validar sua licença de uso.</p>
+                            <p className="text-gray-400 mb-6">Digite sua chave de licença para validar o uso.</p>
 
                             <form onSubmit={handleLicenseSubmit} className="space-y-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-1.5">E-mail da compra</label>
+                                    <label className="block text-sm font-medium text-gray-300 mb-1.5">Chave da Licença</label>
                                     <div className="relative group">
-                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within:text-white transition-colors" />
+                                        <Key className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within:text-white transition-colors" />
                                         <input
-                                            type="email"
-                                            value={email}
-                                            onChange={(e) => setEmail(e.target.value)}
-                                            className="w-full bg-black/40 border border-white/10 rounded-xl py-3.5 pl-12 pr-4 text-white placeholder-gray-600 focus:border-white/30 focus:ring-1 focus:ring-white/30 outline-none transition-all"
-                                            placeholder="seu@email.com"
+                                            type="text"
+                                            value={licenseKey}
+                                            onChange={(e) => setLicenseKey(e.target.value)}
+                                            className="w-full bg-black/40 border border-white/10 rounded-xl py-3.5 pl-12 pr-4 text-white placeholder-gray-600 focus:border-white/30 focus:ring-1 focus:ring-white/30 outline-none transition-all font-mono"
+                                            placeholder="XXXX-XXXX-XXXX-XXXX"
                                             required
                                         />
                                     </div>
