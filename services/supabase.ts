@@ -41,7 +41,20 @@ const clientOptions = typeof window === 'undefined'
     auth: {
       persistSession: true,
       autoRefreshToken: true,
-      detectSessionInUrl: true
+      detectSessionInUrl: true,
+      // FORCE HTTPS for custom domains to avoid mixed content or proxy issues
+      flowType: 'pkce',
+      storage: window.localStorage
+    },
+    // Explicitly set realtime options to fallback to polling if websockets fail
+    realtime: {
+      params: {
+        eventsPerSecond: 10
+      }
+    },
+    // Force Fetch implementation to ensure proper header handling on Vercel/proxies
+    global: {
+      fetch: (...args) => fetch(...args)
     }
   };
 

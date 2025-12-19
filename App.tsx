@@ -157,20 +157,16 @@ const DomainDispatcher = () => {
       }
     };
 
-    // Safety timeout
-    const timeoutId = setTimeout(() => {
-      setLoading((current) => {
-        if (current) {
-          console.warn('Domain check timed out, forcing load.');
-          return false;
-        }
-        return current;
-      });
-    }, 5000);
+    const domainCheckTimeout = setTimeout(() => {
+      console.warn('DomainDispatcher: Check timed out, forcing standard load.');
+      // If domain check fails, we assume it's safe to load standard routes (admin/public)
+      // rather than blocking the entire app forever.
+      setLoading(false);
+    }, 4000);
 
-    checkDomain();
+    checkDomain().finally(() => clearTimeout(domainCheckTimeout));
 
-    return () => clearTimeout(timeoutId);
+    return () => clearTimeout(domainCheckTimeout);
   }, []);
 
   if (loading) {
