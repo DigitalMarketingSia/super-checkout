@@ -774,15 +774,27 @@ export default function InstallerWizard() {
 
 
     // --- LOGIC: Supabase Setup ---
-    const handleSupabaseConnect = async () => {
+    // --- LOGIC: Supabase Automatic ---
+    const handleSupabaseAutoConnect = () => {
         setLoading(true);
-        // Simulator for creating project
-        setTimeout(() => {
-            const mockUrl = 'https://mock-project.supabase.co';
-            setSupabaseUrl(mockUrl);
-            setLoading(false);
-            setCurrentStep('supabase_migrations');
-        }, 2000);
+        const clientId = import.meta.env.VITE_SUPABASE_CLIENT_ID || process.env.NEXT_PUBLIC_SUPABASE_CLIENT_ID || 'mock_client_id';
+        const redirectUri = `${window.location.origin}/installer`;
+        const stateObj = { step: 'supabase', key: licenseKey };
+        const state = btoa(JSON.stringify(stateObj));
+        const params = new URLSearchParams({
+            client_id: clientId,
+            redirect_uri: redirectUri,
+            response_type: 'code',
+            scope: 'projects:read projects:write secrets:read secrets:write organizations:read',
+            state: state
+        });
+        window.location.href = `https://api.supabase.com/v1/oauth/authorize?${params.toString()}`;
+    };
+
+    // --- LOGIC: Supabase Manual ---
+    const handleSupabaseManualSubmit = () => {
+        if (!supabaseUrl) return setError('URL é obrigatória');
+        setCurrentStep('supabase_migrations');
     };
 
     const handleSupabaseCallback = async (code: string) => {
