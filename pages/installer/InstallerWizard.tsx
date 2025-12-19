@@ -1294,66 +1294,69 @@ export default function InstallerWizard() {
 
 
                 </div>
-            </main>
+            </div>
+        </main>
 
-            {/* --- SQL MODAL --- */}
-            {showSqlModal && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
-                    <div className="w-full max-w-4xl bg-[#0F0F13] border border-white/10 rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
-                        {/* Header */}
-                        <div className="flex items-center justify-between p-6 border-b border-white/10">
-                            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                                <Database className="w-5 h-5 text-primary" />
-                                SQL de Migração (Supabase)
-                            </h2>
-                            <button
-                                onClick={() => setShowSqlModal(false)}
-                                className="text-gray-400 hover:text-white transition-colors"
-                            >
-                                <X className="w-6 h-6" />
-                            </button>
-                        </div>
+            {/* --- SQL MODAL --- */ }
+    {
+        showSqlModal && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
+                <div className="w-full max-w-4xl bg-[#0F0F13] border border-white/10 rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
+                    {/* Header */}
+                    <div className="flex items-center justify-between p-6 border-b border-white/10">
+                        <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                            <Database className="w-5 h-5 text-primary" />
+                            SQL de Migração (Supabase)
+                        </h2>
+                        <button
+                            onClick={() => setShowSqlModal(false)}
+                            className="text-gray-400 hover:text-white transition-colors"
+                        >
+                            <X className="w-6 h-6" />
+                        </button>
+                    </div>
 
-                        {/* Content */}
-                        <div className="flex-1 overflow-auto p-6 bg-black/40">
-                            <div className="relative">
-                                <pre className="text-xs font-mono text-gray-300 whitespace-pre-wrap break-all">
-                                    {SQL_SCHEMA}
-                                </pre>
-                            </div>
-                        </div>
-
-                        {/* Footer */}
-                        <div className="p-6 border-t border-white/10 flex justify-end gap-3 bg-[#0F0F13] rounded-b-2xl">
-                            <button
-                                onClick={() => setShowSqlModal(false)}
-                                className="px-6 py-3 rounded-xl font-medium text-gray-400 hover:text-white hover:bg-white/5 transition-all"
-                            >
-                                Fechar
-                            </button>
-                            <button
-                                onClick={() => copyToClipboard(SQL_SCHEMA, 'sql_modal')}
-                                className={`px-8 py-3 rounded-xl font-bold shadow-lg flex items-center gap-2 transition-all ${copiedId === 'sql_modal'
-                                    ? 'bg-green-500 text-white shadow-green-500/20 scale-105'
-                                    : 'bg-primary hover:bg-primary/90 text-white shadow-primary/20 hover:shadow-primary/40'
-                                    }`}
-                            >
-                                {copiedId === 'sql_modal' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                                {copiedId === 'sql_modal' ? 'Copiado!' : 'Copiar SQL Completo'}
-                            </button>
+                    {/* Content */}
+                    <div className="flex-1 overflow-auto p-6 bg-black/40">
+                        <div className="relative">
+                            <pre className="text-xs font-mono text-gray-300 whitespace-pre-wrap break-all">
+                                {SQL_SCHEMA}
+                            </pre>
                         </div>
                     </div>
-                </div>
-            )}
 
-            <AlertModal
-                isOpen={alertModal.isOpen}
-                onClose={() => setAlertModal(prev => ({ ...prev, isOpen: false }))}
-                title={alertModal.title}
-                message={alertModal.message}
-                variant={alertModal.variant}
-                buttonText="Entendi"
-            />
-        </div>
+                    {/* Footer */}
+                    <div className="p-6 border-t border-white/10 flex justify-end gap-3 bg-[#0F0F13] rounded-b-2xl">
+                        <button
+                            onClick={() => setShowSqlModal(false)}
+                            className="px-6 py-3 rounded-xl font-medium text-gray-400 hover:text-white hover:bg-white/5 transition-all"
+                        >
+                            Fechar
+                        </button>
+                        <button
+                            onClick={() => copyToClipboard(SQL_SCHEMA, 'sql_modal')}
+                            className={`px-8 py-3 rounded-xl font-bold shadow-lg flex items-center gap-2 transition-all ${copiedId === 'sql_modal'
+                                ? 'bg-green-500 text-white shadow-green-500/20 scale-105'
+                                : 'bg-primary hover:bg-primary/90 text-white shadow-primary/20 hover:shadow-primary/40'
+                                }`}
+                        >
+                            {copiedId === 'sql_modal' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                            {copiedId === 'sql_modal' ? 'Copiado!' : 'Copiar SQL Completo'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
+    <AlertModal
+        isOpen={alertModal.isOpen}
+        onClose={() => setAlertModal(prev => ({ ...prev, isOpen: false }))}
+        title={alertModal.title}
+        message={alertModal.message}
+        variant={alertModal.variant}
+        buttonText="Entendi"
+    />
+        </div >
     );
 }
