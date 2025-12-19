@@ -678,6 +678,7 @@ export default function InstallerWizard() {
     const [loading, setLoading] = useState(false);
 
     // Supabase config
+    const [supabaseMode, setSupabaseMode] = useState<'auto' | 'manual'>('auto');
     const [supabaseUrl, setSupabaseUrl] = useState('');
     const [anonKey, setAnonKey] = useState('');
     const [serviceKey, setServiceKey] = useState('');
