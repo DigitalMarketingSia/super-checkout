@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Check, ChevronRight, Database, Key, Server, AlertCircle, ExternalLink, Github, Globe, Copy, Info, X } from 'lucide-react';
+import { Check, ChevronRight, Database, Key, Server, AlertCircle, ExternalLink, Github, Globe, Copy, Info, X, ShieldCheck, Mail, Settings } from 'lucide-react';
 import { AlertModal } from '../../components/ui/Modal';
 
 const SQL_SCHEMA = `-- Super Checkout - Definitive Fail-Proof Schema
