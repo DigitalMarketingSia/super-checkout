@@ -30,6 +30,7 @@ import { Login } from './pages/Login';
 import { UpdatePassword } from './pages/UpdatePassword';
 import { MemberLogin } from './pages/member/MemberLogin';
 import { MemberSignup } from './pages/member/MemberSignup';
+import Setup from './pages/public/Setup';
 import { MemberAreaWrapper } from './pages/member/MemberAreaWrapper';
 import { MemberProducts } from './pages/member/MemberProducts';
 import { MyProducts } from './pages/member/MyProducts';

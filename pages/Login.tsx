@@ -11,6 +11,17 @@ export const Login = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
+  // Check if initial setup is required
+  useEffect(() => {
+    const checkSetup = async () => {
+      const { data, error } = await supabase.rpc('is_setup_required');
+      if (data === true) {
+        navigate('/setup');
+      }
+    };
+    checkSetup();
+  }, []);
+
   // Form Fields
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');

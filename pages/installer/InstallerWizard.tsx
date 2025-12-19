@@ -391,10 +391,10 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 DECLARE
-  is_first_user BOOLEAN;
+  admin_count INTEGER;
 BEGIN
-  -- Check if this is the first user registered to make them admin
-  SELECT NOT EXISTS (SELECT 1 FROM public.profiles) INTO is_first_user;
+  -- Count existing admins to decide if this new user should be admin
+  SELECT COUNT(*) INTO admin_count FROM public.profiles WHERE role = 'admin';
 
   INSERT INTO public.profiles (id, email, full_name, role)
   VALUES (
@@ -402,12 +402,23 @@ BEGIN
     NEW.email,
     NEW.raw_user_meta_data->>'full_name',
     CASE 
-      WHEN is_first_user THEN 'admin' 
+      WHEN admin_count = 0 THEN 'admin' 
       ELSE COALESCE(NEW.raw_user_meta_data->>'role', 'member') 
     END
   )
   ON CONFLICT (id) DO NOTHING;
   RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 4.2.1 Check if Setup is Required (No Admins)
+CREATE OR REPLACE FUNCTION public.is_setup_required()
+RETURNS BOOLEAN AS $$
+DECLARE
+  admin_count INTEGER;
+BEGIN
+  SELECT COUNT(*) INTO admin_count FROM public.profiles WHERE role = 'admin';
+  RETURN admin_count = 0;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
