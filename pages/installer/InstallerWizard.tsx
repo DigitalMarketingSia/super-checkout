@@ -436,6 +436,11 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- Grant permissions to allow unauthenticated access (fixes CORS/fetch error on setup)
+GRANT EXECUTE ON FUNCTION public.is_setup_required() TO anon;
+GRANT EXECUTE ON FUNCTION public.is_setup_required() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.is_setup_required() TO service_role;
+
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
