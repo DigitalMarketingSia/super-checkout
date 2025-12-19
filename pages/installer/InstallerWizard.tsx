@@ -89,7 +89,8 @@ BEGIN
     ALTER TABLE products ADD COLUMN IF NOT EXISTS visible_in_member_area BOOLEAN DEFAULT true;
     ALTER TABLE products ADD COLUMN IF NOT EXISTS for_sale BOOLEAN DEFAULT true;
     ALTER TABLE products ADD COLUMN IF NOT EXISTS member_area_action TEXT DEFAULT 'none';
-    ALTER TABLE products ADD COLUMN IF NOT EXISTS member_area_checkout_id UUID REFERENCES checkouts(id);
+    -- FK to checkouts moved to after checkouts table creation
+    -- ALTER TABLE products ADD COLUMN IF NOT EXISTS member_area_checkout_id UUID REFERENCES checkouts(id);
     ALTER TABLE products ADD COLUMN IF NOT EXISTS currency TEXT DEFAULT 'BRL';
 END $$;
 
@@ -212,6 +213,21 @@ BEGIN
     ALTER TABLE checkouts ADD COLUMN IF NOT EXISTS config JSONB;
 END $$;
 
+-- Fix FK for products AFTER checkouts exists
+DO $$
+BEGIN
+    ALTER TABLE products ADD COLUMN IF NOT EXISTS member_area_checkout_id UUID; 
+    
+    -- Add constraint only if it doesn't exist to avoid errors
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'products_member_area_checkout_fk') THEN
+        ALTER TABLE products
+        ADD CONSTRAINT products_member_area_checkout_fk
+        FOREIGN KEY (member_area_checkout_id)
+        REFERENCES checkouts(id)
+        ON DELETE SET NULL;
+    END IF;
+END $$;
+
 -- 2.10 Orders
 CREATE TABLE IF NOT EXISTS orders (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -236,13 +252,10 @@ BEGIN
     ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_user_id UUID REFERENCES auth.users(id);
     ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_cpf TEXT;
     ALTER TABLE orders ADD COLUMN IF NOT EXISTS offer_id UUID;
-    ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_method TEXT;
-    ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_id TEXT;
     ALTER TABLE orders ADD COLUMN IF NOT EXISTS utm_source TEXT;
     ALTER TABLE orders ADD COLUMN IF NOT EXISTS utm_medium TEXT;
     ALTER TABLE orders ADD COLUMN IF NOT EXISTS utm_campaign TEXT;
-    ALTER TABLE orders ADD COLUMN IF NOT EXISTS items JSONB;
-    ALTER TABLE orders ADD COLUMN IF NOT EXISTS total DECIMAL(10,2);
+    -- Removed duplicates (total, payment_method, etc. are already in CREATE TABLE)
 END $$;
 
 -- 2.11 Payments
@@ -533,13 +546,39 @@ ALTER TABLE public.activity_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.integrations ENABLE ROW LEVEL SECURITY;
 
 -- Drop all existing policies to avoid conflicts (safest approach for installer)
+-- Drop only relevant policies to avoid dangerous global drops
 DO $$
-DECLARE
-  r RECORD;
 BEGIN
-  FOR r IN SELECT policyname, tablename FROM pg_policies WHERE schemaname = 'public' LOOP
-    EXECUTE 'DROP POLICY IF EXISTS "' || r.policyname || '" ON "' || r.tablename || '";';
-  END LOOP;
+  -- Domains
+  DROP POLICY IF EXISTS "Users can manage their own domains" ON domains;
+  DROP POLICY IF EXISTS "Public can view active domains" ON domains;
+  
+  -- Member Areas
+  DROP POLICY IF EXISTS "Users can view their own member areas" ON member_areas;
+  DROP POLICY IF EXISTS "Users can insert their own member areas" ON member_areas;
+  DROP POLICY IF EXISTS "Users can update their own member areas" ON member_areas;
+  DROP POLICY IF EXISTS "Users can delete their own member areas" ON member_areas;
+  DROP POLICY IF EXISTS "Public can view member areas by slug" ON member_areas;
+  
+  -- Products
+  DROP POLICY IF EXISTS "Users can manage their own products" ON products;
+  DROP POLICY IF EXISTS "Public can view active products" ON products;
+  
+  -- Checkouts
+  DROP POLICY IF EXISTS "Users can manage their own checkouts" ON checkouts;
+  DROP POLICY IF EXISTS "Public can view active checkouts" ON checkouts;
+  
+  -- Orders
+  DROP POLICY IF EXISTS "Users can manage their own orders" ON orders;
+  DROP POLICY IF EXISTS "Customers can view their own orders" ON orders;
+  DROP POLICY IF EXISTS "Public can create orders" ON orders;
+  DROP POLICY IF EXISTS "Public can view orders" ON orders;
+  DROP POLICY IF EXISTS "Seller can manage own orders" ON orders;
+  DROP POLICY IF EXISTS "Customer can view own orders" ON orders;
+
+  -- Licenses
+  DROP POLICY IF EXISTS "Admin can manage licenses" ON licenses;
+  DROP POLICY IF EXISTS "Admins can manage licenses" ON licenses;
 END $$;
 
 -- 5.1 Basic Owner Policies
@@ -567,10 +606,10 @@ CREATE POLICY "Users can manage their own checkouts" ON checkouts FOR ALL USING 
 CREATE POLICY "Public can view active checkouts" ON checkouts FOR SELECT USING (active = true);
 
 -- Orders
-CREATE POLICY "Users can manage their own orders" ON orders FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY "Customers can view their own orders" ON orders FOR SELECT USING (auth.uid() = customer_user_id);
+CREATE POLICY "Seller can manage own orders" ON orders FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Customer can view own orders" ON orders FOR SELECT USING (auth.uid() = customer_user_id);
 CREATE POLICY "Public can create orders" ON orders FOR INSERT WITH CHECK (true);
-CREATE POLICY "Public can view orders" ON orders FOR SELECT USING (true);
+-- REMOVED: Public can view orders (Security Risk)
 
 -- Payments
 CREATE POLICY "Users can manage their own payments" ON payments FOR ALL USING (auth.uid() = user_id);
@@ -629,8 +668,8 @@ CREATE POLICY "Admins can view all logs" ON public.activity_logs FOR SELECT USIN
 CREATE POLICY "Users can manage their own integrations" ON public.integrations FOR ALL USING (auth.uid() = user_id);
 
 -- Licenses
-CREATE POLICY "Admin can manage licenses" ON licenses USING (auth.role() = 'authenticated') WITH CHECK (auth.role() = 'authenticated');
-CREATE POLICY "Admin can view validation logs" ON validation_logs FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "Admins can manage licenses" ON licenses FOR ALL USING (public.is_admin());
+CREATE POLICY "Admins can view validation logs" ON validation_logs FOR SELECT USING (public.is_admin());
 
 -- ==========================================
 -- 6. STORAGE BUCKETS (Idempotent)
