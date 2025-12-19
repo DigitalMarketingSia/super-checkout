@@ -6,12 +6,23 @@ import {
 import { supabase } from './supabase';
 export { supabase };
 
+import { User } from '@supabase/supabase-js';
+
 /**
  * SERVICE LAYER - SUPABASE IMPLEMENTATION
  */
 class StorageService {
+  private _cachedUser: User | null = null;
+
+  setUser(user: User | null) {
+    // console.log('StorageService: setUser called', user?.id);
+    this._cachedUser = user;
+  }
 
   async getUser() {
+    // 0. Use explicit cache if available (synced from AuthContext)
+    if (this._cachedUser) return this._cachedUser;
+
     try {
       // 1. Try local session first (Fastest)
       const { data: { session }, error } = await supabase.auth.getSession();
