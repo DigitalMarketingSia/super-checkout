@@ -738,20 +738,24 @@ export default function InstallerWizard() {
             const state = btoa(JSON.stringify(stateObj));
 
             const params = new URLSearchParams({
-                client_id: clientId,
-                redirect_uri: redirectUri,
-                response_type: 'code',
-                scope: 'projects:read projects:write secrets:read secrets:write organizations:read',
-                state: state
-            });
-            window.location.href = `https://api.supabase.com/v1/oauth/authorize?${params.toString()}`;
+                setLoading(false);
+            }
+    };
+
+        // --- LOGIC: Supabase Setup ---
+        const handleSupabaseConnect = async () => {
+            setLoading(true);
+            // Simulator for creating project
+            setTimeout(() => {
+                const mockUrl = 'https://mock-project.supabase.co';
+                setSupabaseUrl(mockUrl);
+                setLoading(false);
+                setCurrentStep('supabase_migrations');
+            }, 2000);
         };
 
         const handleSupabaseCallback = async (code: string) => {
-            setIsLoading(true);
-            setCurrentStep('supabase');
-            addLog('Supabase conectado! Criando projeto...');
-
+            setLoading(true);
             try {
                 const res = await fetch('/api/installer/supabase', {
                     method: 'POST',
@@ -787,7 +791,7 @@ export default function InstallerWizard() {
                 addLog(`Erro: ${error.message}`);
                 showAlert('Erro Supabase', error.message, 'error');
             } finally {
-                setIsLoading(false);
+                setLoading(false);
             }
         };
 
@@ -803,17 +807,6 @@ export default function InstallerWizard() {
             addLog('Chaves de API salvas com sucesso!');
             setCurrentStep('deploy'); // Go to Deploy Step
         };
-
-        // --- LOGIC: GitHub Guide ---
-        const handleRepoSubmit = (e: React.FormEvent) => {
-            e.preventDefault();
-            if (!repoUrl) {
-                showAlert('Campo Obrigatório', 'Por favor, cole a URL do seu repositório.', 'error');
-                return;
-            }
-            localStorage.setItem('installer_repo_url', repoUrl);
-            setCurrentStep('vercel_guide');
-        }
 
         // --- LOGIC: Deploy (New Unified Step) ---
         const handleDeploySubmit = (e: React.FormEvent) => {
