@@ -2,14 +2,15 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../services/supabase';
 import { memberService } from '../services/memberService';
+import { storage } from '../services/storageService';
 import { Session, User } from '@supabase/supabase-js';
 
 interface AuthContextType {
   session: Session | null;
   user: User | null;
-  profile: any | null; // TODO: Type this properly with Profile interface
-  signOut: () => Promise<void>;
   loading: boolean;
+  profile: any | null; // TODO: Type this properly
+  signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
