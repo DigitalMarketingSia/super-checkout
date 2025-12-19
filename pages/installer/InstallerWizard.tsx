@@ -721,26 +721,14 @@ export default function InstallerWizard() {
             addLog('Ambiente Local detectado: Simulando validação com sucesso...');
             setTimeout(() => {
                 addLog('Licença validada com sucesso! (Mock)');
-                setIsLoading(false);
-            }
-    };
-
-        // --- LOGIC: Supabase ---
-        const handleSupabaseConnect = () => {
-            setIsLoading(true);
-            const clientId = import.meta.env.VITE_SUPABASE_CLIENT_ID || process.env.NEXT_PUBLIC_SUPABASE_CLIENT_ID || 'mock_client_id';
-            const redirectUri = `${window.location.origin}/installer`;
-
-            const stateObj = {
-                step: 'supabase',
-                key: licenseKey
-            };
-            const state = btoa(JSON.stringify(stateObj));
-
-            const params = new URLSearchParams({
                 setLoading(false);
-            }
-    };
+                setCurrentStep('supabase_setup');
+                localStorage.setItem('installer_license_key', licenseKey);
+            }, 1000);
+            return;
+        }
+
+
 
         // --- LOGIC: Supabase Setup ---
         const handleSupabaseConnect = async () => {
