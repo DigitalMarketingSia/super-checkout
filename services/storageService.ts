@@ -12,13 +12,32 @@ export { supabase };
 class StorageService {
 
   async getUser() {
-    // console.log('storageService: getUser called'); 
-    // Small optimization: check valid session first? 
-    // For now just log
     try {
+      // 1. Try local session first (Fastest)
       const { data: { session }, error } = await supabase.auth.getSession();
-      if (error) console.error('storageService: getUser error', error);
-      return session?.user;
+      if (session?.user) return session.user;
+
+      if (error) console.warn('storageService: getSession warning', error.message);
+
+      // 2. If no local session or error, force a server check (Robust)
+      // This is needed because sometimes the local session might be effectively invalid 
+      // but the refresh token is still good, or getSession() just flaked.
+      // We add a timeout specifically for this calling to avoid indefinite hanging.
+
+      const userPromise = supabase.auth.getUser().then(({ data }) => data.user);
+
+      // Create a timeout promise that rejects after 5 seconds
+      const timeoutPromise = new Promise<null>((resolve) => {
+        setTimeout(() => {
+          console.warn('storageService: getUser timed out after 5s');
+          resolve(null);
+        }, 5000);
+      });
+
+      // Race them
+      const user = await Promise.race([userPromise, timeoutPromise]);
+      return user;
+
     } catch (e) {
       console.error('storageService: getUser exception', e);
       return null;
