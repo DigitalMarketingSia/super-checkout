@@ -705,6 +705,10 @@ export default function InstallerWizard() {
         if (id) {
             setCopiedId(id);
             setTimeout(() => setCopiedId(null), 2000);
+        } else {
+            // Fallback for generic copy
+            setCopiedId('generic');
+            setTimeout(() => setCopiedId(null), 2000);
         }
     };
 
@@ -717,17 +721,7 @@ export default function InstallerWizard() {
         // Use email for check_subscription step, or licenseKey for legacy step
         const checkValue = currentStep === 'check_subscription' ? email : licenseKey;
 
-        // BYPASS: Localhost Mock
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-            addLog('Ambiente Local detectado: Simulando validação com sucesso...');
-            setTimeout(() => {
-                addLog('Licença validada com sucesso! (Mock)');
-                setLoading(false);
-                setCurrentStep('supabase_setup');
-                localStorage.setItem('installer_license_key', licenseKey);
-            }, 1000);
-            return;
-        }
+
 
         try {
             const response = await fetch('/api/licenses/validate', {
@@ -1068,8 +1062,16 @@ export default function InstallerWizard() {
                                         disabled={loading}
                                         className="w-full bg-[#3ECF8E] hover:bg-[#3ECF8E]/90 text-black font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#3ECF8E]/20"
                                     >
-                                        {loading ? 'Conectando...' : 'Conectar com Supabase'}
-                                        <ExternalLink className="w-4 h-4" />
+                                        {loading ? (
+                                            <>
+                                                <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                                                Conectando...
+                                            </>
+                                        ) : (
+                                            <>
+                                                Conectar com Supabase <ExternalLink className="w-4 h-4" />
+                                            </>
+                                        )}
                                     </button>
                                 </div>
                             ) : (
@@ -1242,8 +1244,9 @@ export default function InstallerWizard() {
                                                 <h3 className="text-white font-bold text-sm">1. Token de Acesso</h3>
                                                 <p className="text-xs text-gray-400">Settings {'>'} Tokens</p>
                                             </div>
-                                            <button onClick={() => copyToClipboard('VERCEL_TOKEN')} className="text-xs bg-white/10 hover:bg-white/20 px-2 py-1 rounded text-white flex gap-1 items-center">
-                                                <Copy className="w-3 h-3" /> Copiar Nome
+                                            <button onClick={() => copyToClipboard('VERCEL_TOKEN')} className="text-xs bg-white/10 hover:bg-white/20 px-2 py-1 rounded text-white flex gap-1 items-center transition-all">
+                                                {copiedId === 'VERCEL_TOKEN' ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
+                                                {copiedId === 'VERCEL_TOKEN' ? 'Copiado!' : 'Copiar Nome'}
                                             </button>
                                         </div>
                                         <div className="flex items-center gap-2 p-2 bg-black/60 rounded border border-white/5">
@@ -1261,28 +1264,13 @@ export default function InstallerWizard() {
                                                 <h3 className="text-white font-bold text-sm">2. ID do Projeto</h3>
                                                 <p className="text-xs text-gray-400">Project Settings {'>'} General</p>
                                             </div>
-                                            <button onClick={() => copyToClipboard('VERCEL_PROJECT_ID')} className="text-xs bg-white/10 hover:bg-white/20 px-2 py-1 rounded text-white flex gap-1 items-center">
-                                                <Copy className="w-3 h-3" /> Copiar Nome
+                                            <button onClick={() => copyToClipboard('VERCEL_PROJECT_ID')} className="text-xs bg-white/10 hover:bg-white/20 px-2 py-1 rounded text-white flex gap-1 items-center transition-all">
+                                                {copiedId === 'VERCEL_PROJECT_ID' ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
+                                                {copiedId === 'VERCEL_PROJECT_ID' ? 'Copiado!' : 'Copiar Nome'}
                                             </button>
                                         </div>
                                         <div className="flex items-center gap-2 p-2 bg-black/60 rounded border border-white/5">
                                             <code className="text-xs text-purple-400 font-mono flex-1">VERCEL_PROJECT_ID</code>
-                                        </div>
-                                    </div>
-
-                                    {/* Team ID */}
-                                    <div className="bg-black/40 p-4 rounded-xl border border-white/5 flex flex-col gap-2">
-                                        <div className="flex justify-between items-start">
-                                            <div>
-                                                <h3 className="text-white font-bold text-sm">3. ID do Time (Opcional)</h3>
-                                                <p className="text-xs text-gray-400">Team Settings {'>'} General</p>
-                                            </div>
-                                            <button onClick={() => copyToClipboard('VERCEL_TEAM_ID')} className="text-xs bg-white/10 hover:bg-white/20 px-2 py-1 rounded text-white flex gap-1 items-center">
-                                                <Copy className="w-3 h-3" /> Copiar Nome
-                                            </button>
-                                        </div>
-                                        <div className="flex items-center gap-2 p-2 bg-black/60 rounded border border-white/5">
-                                            <code className="text-xs text-purple-400 font-mono flex-1">VERCEL_TEAM_ID</code>
                                         </div>
                                     </div>
                                 </div>
