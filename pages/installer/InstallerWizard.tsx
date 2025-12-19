@@ -1024,47 +1024,79 @@ export default function InstallerWizard() {
                                 <Database className="w-6 h-6" />
                             </div>
                             <h1 className="text-2xl font-bold mb-2 text-white">Criar Banco de Dados</h1>
-                            <p className="text-gray-400 mb-6">Vamos configurar sua infraestrutura no Supabase.</p>
+                            <p className="text-gray-400 mb-6">Escolha como deseja conectar seu Supabase.</p>
 
-                            <div className="space-y-4">
-                                <a
-                                    href="https://database.new"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="block p-4 bg-black/40 border border-white/10 rounded-xl hover:border-[#3ECF8E]/50 transition-all group"
-                                >
-                                    <div className="flex items-center justify-between mb-2">
-                                        <span className="font-bold text-white group-hover:text-[#3ECF8E] transition-colors">1. Criar Projeto Supabase</span>
-                                        <ExternalLink className="w-4 h-4 text-gray-500" />
-                                    </div>
-                                    <p className="text-sm text-gray-400">Clique para abrir o Supabase e criar um novo projeto.</p>
-                                </a>
-
-                                <div className="p-4 bg-black/40 border border-white/10 rounded-xl">
-                                    <p className="text-sm font-medium text-gray-300 mb-3">2. Cole a URL do Projeto:</p>
-                                    <input
-                                        type="text"
-                                        value={supabaseUrl}
-                                        onChange={(e) => setSupabaseUrl(e.target.value)}
-                                        placeholder="https://xxx.supabase.co"
-                                        className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white mb-2"
-                                    />
-                                    <p className="text-xs text-gray-500">
-                                        Encontre em: Settings {'>'} API {'>'} Project URL
-                                    </p>
-                                </div>
-
+                            {/* Tabs */}
+                            <div className="flex p-1 bg-black/40 rounded-xl mb-6 border border-white/10">
                                 <button
-                                    onClick={() => {
-                                        if (!supabaseUrl) return setError('URL é obrigatória');
-                                        setCurrentStep('supabase_migrations');
-                                    }}
-                                    className="w-full bg-[#3ECF8E] hover:bg-[#3ECF8E]/90 text-black font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#3ECF8E]/20 hover:shadow-[#3ECF8E]/40"
+                                    onClick={() => setSupabaseMode('auto')}
+                                    className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${supabaseMode === 'auto' ? 'bg-[#3ECF8E] text-black shadow-lg' : 'text-gray-400 hover:text-white'}`}
                                 >
-                                    <Database className="w-5 h-5" />
-                                    Continuar
+                                    Automático
+                                </button>
+                                <button
+                                    onClick={() => setSupabaseMode('manual')}
+                                    className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${supabaseMode === 'manual' ? 'bg-white text-black shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                                >
+                                    Manual
                                 </button>
                             </div>
+
+                            {supabaseMode === 'auto' ? (
+                                <div className="space-y-4 animate-in fade-in">
+                                    <div className="p-4 bg-[#3ECF8E]/10 border border-[#3ECF8E]/20 rounded-xl">
+                                        <p className="text-sm text-[#3ECF8E] mb-2 font-bold">Recomendado</p>
+                                        <p className="text-sm text-gray-300">
+                                            Vamos criar o projeto e configurar tudo para você automaticamente.
+                                        </p>
+                                    </div>
+                                    <button
+                                        onClick={handleSupabaseAutoConnect}
+                                        disabled={loading}
+                                        className="w-full bg-[#3ECF8E] hover:bg-[#3ECF8E]/90 text-black font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#3ECF8E]/20"
+                                    >
+                                        {loading ? 'Conectando...' : 'Conectar com Supabase'}
+                                        <ExternalLink className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="space-y-4 animate-in fade-in">
+                                    <a
+                                        href="https://database.new"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="block p-4 bg-black/40 border border-white/10 rounded-xl hover:border-[#3ECF8E]/50 transition-all group"
+                                    >
+                                        <div className="flex items-center justify-between mb-2">
+                                            <span className="font-bold text-white group-hover:text-[#3ECF8E] transition-colors">1. Criar Projeto Supabase</span>
+                                            <ExternalLink className="w-4 h-4 text-gray-500" />
+                                        </div>
+                                        <p className="text-sm text-gray-400">Clique para abrir o Supabase e criar um novo projeto.</p>
+                                    </a>
+
+                                    <div className="p-4 bg-black/40 border border-white/10 rounded-xl">
+                                        <p className="text-sm font-medium text-gray-300 mb-3">2. Cole a URL do Projeto:</p>
+                                        <input
+                                            type="text"
+                                            value={supabaseUrl}
+                                            onChange={(e) => setSupabaseUrl(e.target.value)}
+                                            placeholder="https://xxx.supabase.co"
+                                            className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white mb-2"
+                                        />
+                                        <p className="text-xs text-gray-500">
+                                            Encontre em: Settings {'>'} API {'>'} Project URL
+                                        </p>
+                                    </div>
+
+                                    <button
+                                        onClick={handleSupabaseManualSubmit}
+                                        className="w-full bg-white hover:bg-gray-100 text-black font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2"
+                                    >
+                                        <Database className="w-5 h-5" />
+                                        Continuar
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -1182,38 +1214,69 @@ export default function InstallerWizard() {
                                 <Settings className="w-6 h-6" />
                             </div>
                             <h1 className="text-2xl font-bold mb-2 text-white">Configuração Pós-Deploy</h1>
-                            <p className="text-gray-400 mb-6">Para funcionarem os domínios customizados, adicione estas variáveis na Vercel.</p>
+                            <p className="text-gray-400 mb-6">Adicione estas variáveis na Vercel para ativar os domínios.</p>
+
+                            <div className="mb-6 rounded-xl overflow-hidden border border-white/10 shadow-lg">
+                                <img src="/vercel-env-info.png" alt="Onde encontrar as variáveis na Vercel" className="w-full h-auto object-cover" />
+                            </div>
 
                             <div className="space-y-6">
-                                <div className="space-y-4">
+                                <div className="grid grid-cols-1 gap-4">
                                     {/* Token */}
-                                    <div className="bg-black/40 p-4 rounded-xl border border-white/5">
-                                        <h3 className="text-white font-bold text-sm mb-1">1. VERCEL_TOKEN</h3>
-                                        <p className="text-xs text-gray-400 mb-2">Gere um token com acesso total.</p>
-                                        <a href="https://vercel.com/account/settings/tokens" target="_blank" className="text-xs text-primary hover:underline flex items-center gap-1 mb-2">
+                                    <div className="bg-black/40 p-4 rounded-xl border border-white/5 flex flex-col gap-2">
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <h3 className="text-white font-bold text-sm">1. Token de Acesso</h3>
+                                                <p className="text-xs text-gray-400">Settings {'>'} Tokens</p>
+                                            </div>
+                                            <button onClick={() => copyToClipboard('VERCEL_TOKEN')} className="text-xs bg-white/10 hover:bg-white/20 px-2 py-1 rounded text-white flex gap-1 items-center">
+                                                <Copy className="w-3 h-3" /> Copiar Nome
+                                            </button>
+                                        </div>
+                                        <div className="flex items-center gap-2 p-2 bg-black/60 rounded border border-white/5">
+                                            <code className="text-xs text-purple-400 font-mono flex-1">VERCEL_TOKEN</code>
+                                        </div>
+                                        <a href="https://vercel.com/account/settings/tokens" target="_blank" className="text-xs text-primary hover:underline flex items-center gap-1 mt-1">
                                             Gerar Token Aqui <ExternalLink className="w-3 h-3" />
                                         </a>
-                                        <div className="text-xs text-gray-500 italic">Adicione como: VERCEL_TOKEN</div>
                                     </div>
 
                                     {/* Project ID */}
-                                    <div className="bg-black/40 p-4 rounded-xl border border-white/5">
-                                        <h3 className="text-white font-bold text-sm mb-1">2. VERCEL_PROJECT_ID</h3>
-                                        <p className="text-xs text-gray-400 mb-2">Vá no seu projeto {'>'} Settings {'>'} General</p>
-                                        <div className="text-xs text-gray-500 italic">Copie "Project ID" e adicione como: VERCEL_PROJECT_ID</div>
+                                    <div className="bg-black/40 p-4 rounded-xl border border-white/5 flex flex-col gap-2">
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <h3 className="text-white font-bold text-sm">2. ID do Projeto</h3>
+                                                <p className="text-xs text-gray-400">Project Settings {'>'} General</p>
+                                            </div>
+                                            <button onClick={() => copyToClipboard('VERCEL_PROJECT_ID')} className="text-xs bg-white/10 hover:bg-white/20 px-2 py-1 rounded text-white flex gap-1 items-center">
+                                                <Copy className="w-3 h-3" /> Copiar Nome
+                                            </button>
+                                        </div>
+                                        <div className="flex items-center gap-2 p-2 bg-black/60 rounded border border-white/5">
+                                            <code className="text-xs text-purple-400 font-mono flex-1">VERCEL_PROJECT_ID</code>
+                                        </div>
                                     </div>
 
                                     {/* Team ID */}
-                                    <div className="bg-black/40 p-4 rounded-xl border border-white/5">
-                                        <h3 className="text-white font-bold text-sm mb-1">3. VERCEL_TEAM_ID (Opcional)</h3>
-                                        <p className="text-xs text-gray-400 mb-2">Vá em Team Settings {'>'} General</p>
-                                        <div className="text-xs text-gray-500 italic">Se usar time, adicione como: VERCEL_TEAM_ID</div>
+                                    <div className="bg-black/40 p-4 rounded-xl border border-white/5 flex flex-col gap-2">
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <h3 className="text-white font-bold text-sm">3. ID do Time (Opcional)</h3>
+                                                <p className="text-xs text-gray-400">Team Settings {'>'} General</p>
+                                            </div>
+                                            <button onClick={() => copyToClipboard('VERCEL_TEAM_ID')} className="text-xs bg-white/10 hover:bg-white/20 px-2 py-1 rounded text-white flex gap-1 items-center">
+                                                <Copy className="w-3 h-3" /> Copiar Nome
+                                            </button>
+                                        </div>
+                                        <div className="flex items-center gap-2 p-2 bg-black/60 rounded border border-white/5">
+                                            <code className="text-xs text-purple-400 font-mono flex-1">VERCEL_TEAM_ID</code>
+                                        </div>
                                     </div>
                                 </div>
 
                                 <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
                                     <p className="text-xs text-yellow-500">
-                                        <strong>⚠️ Importante:</strong> Após adicionar essas variáveis na Vercel (aba Environment Variables), você precisa fazer um <strong>Redeploy</strong> (Deployments {'>'} Redeploy) para funcionar.
+                                        <strong>⚠️ Importante:</strong> Adicione estas variáveis e faça um <strong>Redeploy</strong> na Vercel para aplicar.
                                     </p>
                                 </div>
 
@@ -1269,7 +1332,7 @@ export default function InstallerWizard() {
                                 rel="noopener noreferrer"
                                 className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-1"
                             >
-                                Acessar Minha Loja
+                                Acessar meu Sistema
                                 <ChevronRight className="w-5 h-5" />
                             </a>
                         </div>
