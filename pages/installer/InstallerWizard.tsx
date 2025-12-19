@@ -504,7 +504,9 @@ ALTER TABLE validation_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.member_notes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.member_tags ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.member_tags ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.activity_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.integrations ENABLE ROW LEVEL SECURITY;
 
 -- Drop all existing policies to avoid conflicts (safest approach for installer)
 DO $$
@@ -597,6 +599,20 @@ CREATE POLICY "Admins can manage member tags" ON public.member_tags FOR ALL USIN
 CREATE POLICY "Users can create their own logs" ON public.activity_logs FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users can view their own logs" ON public.activity_logs FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Admins can view all logs" ON public.activity_logs FOR SELECT USING (EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role = 'admin'));
+
+-- Integrations
+CREATE TABLE IF NOT EXISTS public.integrations (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  name TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  active BOOLEAN DEFAULT true,
+  config JSONB DEFAULT '{}'::jsonb,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+  UNIQUE(user_id, name)
+);
+
+CREATE POLICY "Users can manage their own integrations" ON public.integrations FOR ALL USING (auth.uid() = user_id);
 
 -- Licenses
 CREATE POLICY "Admin can manage licenses" ON licenses USING (auth.role() = 'authenticated') WITH CHECK (auth.role() = 'authenticated');
@@ -1109,7 +1125,10 @@ export default function InstallerWizard() {
                                         {[
                                             { k: 'NEXT_PUBLIC_SUPABASE_URL', v: supabaseUrl },
                                             { k: 'NEXT_PUBLIC_SUPABASE_ANON_KEY', v: anonKey },
-                                            { k: 'SUPABASE_SERVICE_ROLE_KEY', v: serviceKey }
+                                            { k: 'SUPABASE_SERVICE_ROLE_KEY', v: serviceKey },
+                                            { k: 'VERCEL_TOKEN', v: 'Create Token: https://vercel.com/account/tokens' },
+                                            { k: 'VERCEL_PROJECT_ID', v: 'Project Settings > General > Project ID' },
+                                            { k: 'VERCEL_TEAM_ID', v: 'Team Settings > General > Team ID (If using Team)' }
                                         ].map((env, i) => (
                                             <div key={i} className="flex items-center justify-between gap-3 bg-white/5 p-3 rounded-xl group hover:bg-white/10 transition-colors cursor-pointer" onClick={() => copyToClipboard(env.v, env.k)}>
                                                 <div className="overflow-hidden flex-1">
