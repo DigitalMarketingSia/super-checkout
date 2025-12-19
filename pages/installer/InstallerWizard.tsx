@@ -914,6 +914,22 @@ export default function InstallerWizard() {
 
     const deployUrl = `https://vercel.com/new/clone?repository-url=https://github.com/DigitalMarketingSia/super-checkout&env=NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_ANON_KEY,SUPABASE_SERVICE_ROLE_KEY&envDescription=Configuracao%20Super%20Checkout&project-name=super-checkout&repository-name=super-checkout`;
 
+    // Navigation Helper
+    const stepsOrder = ['check_subscription', 'supabase_setup', 'supabase_migrations', 'supabase_keys', 'deploy', 'vercel_config', 'success'];
+    const currentStepIndex = stepsOrder.indexOf(currentStep);
+
+    const goBack = () => {
+        if (currentStepIndex > 0) {
+            setCurrentStep(stepsOrder[currentStepIndex - 1] as any);
+        }
+    };
+
+    const goNext = () => {
+        if (currentStepIndex < stepsOrder.length - 1) {
+            setCurrentStep(stepsOrder[currentStepIndex + 1] as any);
+        }
+    };
+
     return (
         <div className="min-h-screen bg-[#0F0F13] text-white font-sans flex flex-col relative overflow-hidden">
             {/* Background Effects */}
