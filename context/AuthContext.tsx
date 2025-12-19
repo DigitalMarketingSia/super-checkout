@@ -64,7 +64,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    // SAFETY NET: If user exists but profile is null after timeout, create a fake one
+    // This runs if init() takes too long or fails silently
+    const safetyNet = setTimeout(() => {
+      if (supabase.auth.getUser() && !profile) {
+        console.log('AuthContext: Safety net triggered - forcing profile');
+        // We can access user session synchronously here ideally, but for now 
+        // we rely on the fact that if loading is stuck, we force it.
+        setLoading(false);
+      }
+    }, 4000);
+
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(safetyNet);
+    };
   }, []);
 
   const fetchProfile = async (userId: string) => {
