@@ -240,6 +240,7 @@ const DomainDispatcher = () => {
   return (
     <Routes>
       {/* Public Routes */}
+      <Route path="/setup" element={<Setup />} />
       <Route path="/login" element={<Login />} />
       <Route path="/update-password" element={<UpdatePassword />} />
       <Route path="/pagamento/pix/:orderId" element={<PixPayment />} />
