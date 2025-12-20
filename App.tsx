@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthDebug } from './pages/debug/AuthDebug';
 import { AuthProvider, useAuth } from './context/AuthContext';
 
 import { Dashboard } from './pages/admin/Dashboard';
@@ -244,6 +245,7 @@ const DomainDispatcher = () => {
     <Routes>
       {/* Public Routes */}
       <Route path="/setup" element={<Setup />} />
+      <Route path="/debug-auth" element={<AuthDebug />} />
       <Route path="/login" element={<Login />} />
       <Route path="/update-password" element={<UpdatePassword />} />
       <Route path="/pagamento/pix/:orderId" element={<PixPayment />} />
