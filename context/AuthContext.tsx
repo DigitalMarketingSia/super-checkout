@@ -44,7 +44,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // 1. Get local session data (fast, but might be stale)
         const sessionPromise = supabase.auth.getSession();
         const timeoutPromise = new Promise<{ data: { session: any }, error: any }>((resolve) =>
-          setTimeout(() => resolve({ data: { session: null }, error: { message: 'Timeout' } }), 2000)
+          setTimeout(() => resolve({ data: { session: null }, error: { message: 'Timeout' } }), 5000)
         );
 
         const { data: { session: localSession }, error: sessionError } = await Promise.race([sessionPromise, timeoutPromise]);

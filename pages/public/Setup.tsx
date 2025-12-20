@@ -62,7 +62,7 @@ export default function Setup() {
             if (data.user) {
                 // Wait a moment for trigger to run
                 await new Promise(resolve => setTimeout(resolve, 1000));
-                await fetchProfile(); // Refresh context
+                await fetchProfile(data.user.id); // Refresh context
                 navigate('/admin');
             }
 

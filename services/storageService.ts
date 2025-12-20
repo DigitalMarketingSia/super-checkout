@@ -30,7 +30,7 @@ class StorageService {
       // We wrap getSession in a race because in some "Split Brain" scenarios the promise hangs indefinitely due to storage locking.
       const sessionPromise = supabase.auth.getSession();
       const timeoutPromise = new Promise<{ data: { session: null }, error: any }>((resolve) =>
-        setTimeout(() => resolve({ data: { session: null }, error: { message: 'Timeout getting session' } }), 2000)
+        setTimeout(() => resolve({ data: { session: null }, error: { message: 'Timeout getting session' } }), 5000)
       );
 
       const { data: { session }, error } = await Promise.race([sessionPromise, timeoutPromise]);
