@@ -42,7 +42,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       log('AuthContext: init started', { clientInstance: CLIENT_INSTANCE_ID });
       try {
         // 1. Get local session data (fast, but might be stale)
-        const { data: { session: localSession }, error: sessionError } = await supabase.auth.getSession();
+        const sessionPromise = supabase.auth.getSession();
+        const timeoutPromise = new Promise<{ data: { session: any }, error: any }>((resolve) =>
+          setTimeout(() => resolve({ data: { session: null }, error: { message: 'Timeout' } }), 2000)
+        );
+
+        const { data: { session: localSession }, error: sessionError } = await Promise.race([sessionPromise, timeoutPromise]);
+
         log('AuthContext: getSession result', { hasSession: !!localSession, error: sessionError });
 
         // 2. If we have a local session, VERIFY it with the server (slower, but accurate)
@@ -95,7 +101,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       storage.setUser(session?.user ?? null);
       if (session?.user) {
         // Await profile fetch to prevent "Access Denied" flash on admin routes
-        await fetchProfile(session.user.id);
+        fetchProfile(session.user.id);
       } else {
         setProfile(null);
       }
@@ -110,8 +116,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (loading) {
         log('AuthContext: Safety net triggered');
 
-        // Final attempt to get a session
-        const { data: { session: finalSession } } = await supabase.auth.getSession();
+        // Final attempt to get a session (with timeout)
+        const sessionPromise = supabase.auth.getSession();
+        const timeoutPromise = new Promise<{ data: { session: any } }>((resolve) =>
+          setTimeout(() => resolve({ data: { session: null } }), 1000)
+        );
+        const { data: { session: finalSession } } = await Promise.race([sessionPromise, timeoutPromise]);
 
         if (finalSession) {
           log('AuthContext: Session recovered via safety net');

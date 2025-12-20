@@ -16,7 +16,10 @@ export const AuthDebug = () => {
         const sUser = await storage.getUser();
         setStorageUser(sUser);
 
-        const sess = await supabase.auth.getSession();
+        const sessionPromise = supabase.auth.getSession();
+        const timeoutPromise = new Promise<{ data: { session: any } }>((resolve) => setTimeout(() => resolve({ data: { session: null } }), 1000));
+        const { data: { session: sess } } = await Promise.race([sessionPromise, timeoutPromise]);
+
         setRawSession(sess);
 
         // Dump localStorage keys related to supabase

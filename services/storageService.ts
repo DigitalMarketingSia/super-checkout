@@ -26,18 +26,22 @@ class StorageService {
     // Without an Auth Token, RLS policies will block all queries, returning empty arrays.
 
     try {
-      // 1. Try local session first (Fastest & standard way)
-      const { data: { session }, error } = await supabase.auth.getSession();
+      // 1. Try local session first (Fastest & standard way) - WITH TIMEOUT FIX
+      // We wrap getSession in a race because in some "Split Brain" scenarios the promise hangs indefinitely due to storage locking.
+      const sessionPromise = supabase.auth.getSession();
+      const timeoutPromise = new Promise<{ data: { session: null }, error: any }>((resolve) =>
+        setTimeout(() => resolve({ data: { session: null }, error: { message: 'Timeout getting session' } }), 2000)
+      );
+
+      const { data: { session }, error } = await Promise.race([sessionPromise, timeoutPromise]);
 
       // If we have a valid session with a user, return it.
-      // This ensures the supabase client actually has the token needed for RLS.
       if (session?.user) {
-        // Update cache just in case, but don't rely on it as primary source of truth for auth state
         this._cachedUser = session.user;
         return session.user;
       }
 
-      if (error) console.warn('storageService: getSession warning', error.message);
+      if (error) console.warn('storageService: getSession warning/timeout', error.message || error);
 
       // 2. If locally missing, try server-side check (slower but robust for edge cases)
       // This helps if the local token is potentially stale but refreshable.
