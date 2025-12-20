@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../../services/supabase';
 import { useNavigate } from 'react-router-dom';
 import { ShieldCheck, User, Mail, Lock, ChevronRight, AlertCircle, Check } from 'lucide-react';
