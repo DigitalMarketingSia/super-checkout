@@ -42,8 +42,6 @@ const clientOptions = typeof window === 'undefined'
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,
-      // FORCE HTTPS for custom domains to avoid mixed content or proxy issues
-      flowType: 'pkce',
       storage: window.localStorage
     },
     // Explicitly set realtime options to fallback to polling if websockets fail
