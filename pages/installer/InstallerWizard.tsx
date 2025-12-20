@@ -614,7 +614,7 @@ CREATE POLICY "Public can view orders" ON orders FOR SELECT USING(true);
 CREATE POLICY "Users can manage their own payments" ON payments FOR ALL USING(auth.uid() = user_id);
 CREATE POLICY "Public can create payments" ON payments FOR INSERT WITH CHECK(true);
 CREATE POLICY "Public can view payments" ON payments FOR SELECT USING(true);
-CREATE POLICY "Public can view payments" ON payments FOR SELECT USING(true);
+
 
 --Contents
 CREATE POLICY "Users can manage their own contents" ON contents FOR ALL USING(
