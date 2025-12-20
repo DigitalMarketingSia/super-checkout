@@ -16,8 +16,8 @@ CREATE TABLE IF NOT EXISTS domains (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id) NOT NULL,
   domain TEXT NOT NULL UNIQUE,
-  status TEXT DEFAULT 'pending_verification',
-  usage TEXT DEFAULT 'checkout',
+  status TEXT DEFAULT 'pending_verification', -- pending_verification, active, invalid
+  usage TEXT DEFAULT 'checkout', -- checkout, member_area, system
   verified_at TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
@@ -480,7 +480,27 @@ SELECT
 FROM public.profiles p;
 
 -- ==========================================
--- 5. RLS POLICIES (Re-apply safely)
+-- 3. STORAGE & BUCKETS
+-- ==========================================
+INSERT INTO storage.buckets (id, name, public) VALUES ('products', 'products', true) ON CONFLICT (id) DO NOTHING;
+INSERT INTO storage.buckets (id, name, public) VALUES ('checkouts', 'checkouts', true) ON CONFLICT (id) DO NOTHING;
+INSERT INTO storage.buckets (id, name, public) VALUES ('contents', 'contents', true) ON CONFLICT (id) DO NOTHING;
+INSERT INTO storage.buckets (id, name, public) VALUES ('avatars', 'avatars', true) ON CONFLICT (id) DO NOTHING;
+
+-- Public Access Policies
+CREATE POLICY "Public Access Products" ON storage.objects FOR SELECT USING (bucket_id = 'products');
+CREATE POLICY "Public Access Checkouts" ON storage.objects FOR SELECT USING (bucket_id = 'checkouts');
+CREATE POLICY "Public Access Contents" ON storage.objects FOR SELECT USING (bucket_id = 'contents');
+CREATE POLICY "Public Access Avatars" ON storage.objects FOR SELECT USING (bucket_id = 'avatars');
+
+-- Authenticated Upload Policies
+CREATE POLICY "Authenticated Upload Products" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'products' AND auth.role() = 'authenticated');
+CREATE POLICY "Authenticated Upload Checkouts" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'checkouts' AND auth.role() = 'authenticated');
+CREATE POLICY "Authenticated Upload Contents" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'contents' AND auth.role() = 'authenticated');
+CREATE POLICY "Authenticated Upload Avatars" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'avatars' AND auth.role() = 'authenticated');
+
+-- ==========================================
+-- 4. RLS POLICIES (Security)
 -- ==========================================
 ALTER TABLE domains ENABLE ROW LEVEL SECURITY;
 ALTER TABLE member_areas ENABLE ROW LEVEL SECURITY;
@@ -501,6 +521,7 @@ ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.member_notes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.member_tags ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.activity_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE payments ENABLE ROW LEVEL SECURITY;
 
 -- Drop all existing policies to avoid conflicts (safest approach for installer)
 DO $$
@@ -514,19 +535,21 @@ END $$;
 
 -- 5.1 Basic Owner Policies
 -- Domains
+DROP POLICY IF EXISTS "Users can manage their own domains" ON domains;
 CREATE POLICY "Users can manage their own domains" ON domains FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY "Public can view active domains" ON domains FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Public can view active domains" ON domains;
+CREATE POLICY "Public can view active domains" ON domains FOR SELECT USING (true); -- Public needs to see domains to resolve them
 
 -- Member Areas
 CREATE POLICY "Users can view their own member areas" ON member_areas FOR SELECT USING (auth.uid() = owner_id);
 CREATE POLICY "Users can insert their own member areas" ON member_areas FOR INSERT WITH CHECK (auth.uid() = owner_id);
 CREATE POLICY "Users can update their own member areas" ON member_areas FOR UPDATE USING (auth.uid() = owner_id);
 CREATE POLICY "Users can delete their own member areas" ON member_areas FOR DELETE USING (auth.uid() = owner_id);
-CREATE POLICY "Public can view member areas by slug" ON member_areas FOR SELECT USING (true);
+CREATE POLICY "Public can view member areas" ON member_areas FOR SELECT USING (true);
 
 -- Products
 CREATE POLICY "Users can manage their own products" ON products FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY "Public can view active products" ON products FOR SELECT USING (active = true);
+CREATE POLICY "Public can view products" ON products FOR SELECT USING (true);
 
 -- Gateways
 CREATE POLICY "Users can manage their own gateways" ON gateways FOR ALL USING (auth.uid() = user_id);
@@ -539,7 +562,6 @@ CREATE POLICY "Public can view active checkouts" ON checkouts FOR SELECT USING (
 -- Orders
 CREATE POLICY "Users can manage their own orders" ON orders FOR ALL USING (auth.uid() = user_id);
 CREATE POLICY "Customers can view their own orders" ON orders FOR SELECT USING (auth.uid() = customer_user_id);
-CREATE POLICY "Public can create orders" ON orders FOR INSERT WITH CHECK (true);
 CREATE POLICY "Public can create orders" ON orders FOR INSERT WITH CHECK (true);
 CREATE POLICY "Public can view orders" ON orders FOR SELECT USING (true);
 
