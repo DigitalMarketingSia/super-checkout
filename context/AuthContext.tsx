@@ -4,6 +4,7 @@ import { supabase } from '../services/supabase';
 import { memberService } from '../services/memberService';
 import { storage } from '../services/storageService';
 import { Session, User } from '@supabase/supabase-js';
+import { Loader2 } from 'lucide-react';
 
 interface AuthContextType {
   session: Session | null;
@@ -138,6 +139,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await supabase.auth.signOut();
     setProfile(null);
   };
+
+  if (loading) {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center bg-[#0E1012] text-white">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-8 h-8 animate-spin text-red-600" />
+          <p className="text-sm text-gray-400 font-medium animate-pulse">Carregando sistema...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <AuthContext.Provider value={{ session, user, profile, signOut, loading }}>
