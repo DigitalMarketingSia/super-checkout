@@ -64,11 +64,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             storage.setUser(validatedUser);
             await fetchProfile(validatedUser.id);
           } else {
-            log('AuthContext: session invalid/expired on server', userError);
-            await supabase.auth.signOut(); // Force cleanup
-            setSession(null);
-            setUser(null);
-            storage.setUser(null);
+            // CRITICAL FIX: Don't logout immediately on generic errors (network, timeout).
+            // Only logout if it's explicitly an invalid session error.
+            const isAuthError = userError?.status === 401 ||
+              userError?.status === 403 ||
+              userError?.message?.includes('invalid') ||
+              userError?.message?.includes('expired');
+
+            if (isAuthError) {
+              log('AuthContext: session invalid/expired on server (Hard Fail)', userError);
+              await supabase.auth.signOut(); // Force cleanup
+              setSession(null);
+              setUser(null);
+              storage.setUser(null);
+            } else {
+              // Soft Fail: Network error or Supabase down. Trust local session tentatively.
+              log('AuthContext: session verification failed but potential network error (Soft Fail)', userError);
+              setSession(localSession);
+              setUser(localSession.user);
+              storage.setUser(localSession.user);
+              // Try fetch profile anyway, it might fail but at least we don't logout
+              await fetchProfile(localSession.user.id);
+            }
           }
         } else {
           log('AuthContext: no local session found');

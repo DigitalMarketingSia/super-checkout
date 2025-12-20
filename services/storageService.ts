@@ -20,14 +20,12 @@ class StorageService {
   }
 
   async getUser() {
-    // CRITICAL FIX: Always check the underlying Supabase session.
-    // Relying on _cachedUser (from AuthContext) is dangerous because if the Supabase client 
-    // loses its session (e.g. storage sync fail), we might have a user ID but no Auth Token.
-    // Without an Auth Token, RLS policies will block all queries, returning empty arrays.
+    // CRITICAL FIX: Robust session retrieval.
+    // We try to get the session from Supabase. If it fails or times out, we check if we have a cached user.
+    // We want to avoid returning null (which breaks the UI) if the session actually exists but just timed out.
 
     try {
       // 1. Try local session first (Fastest & standard way) - WITH TIMEOUT FIX
-      // We wrap getSession in a race because in some "Split Brain" scenarios the promise hangs indefinitely due to storage locking.
       const sessionPromise = supabase.auth.getSession();
       const timeoutPromise = new Promise<{ data: { session: null }, error: any }>((resolve) =>
         setTimeout(() => resolve({ data: { session: null }, error: { message: 'Timeout getting session' } }), 5000)
@@ -35,7 +33,6 @@ class StorageService {
 
       const { data: { session }, error } = await Promise.race([sessionPromise, timeoutPromise]);
 
-      // If we have a valid session with a user, return it.
       if (session?.user) {
         this._cachedUser = session.user;
         return session.user;
@@ -43,8 +40,7 @@ class StorageService {
 
       if (error) console.warn('storageService: getSession warning/timeout', error.message || error);
 
-      // 2. If locally missing, try server-side check (slower but robust for edge cases)
-      // This helps if the local token is potentially stale but refreshable.
+      // 2. Fallback: If local session is empty/timed out, check server side
       const { data: { user }, error: userError } = await supabase.auth.getUser();
 
       if (user) {
@@ -52,15 +48,19 @@ class StorageService {
         return user;
       }
 
-      if (userError) {
-        // console.warn('storageService: getUser server check failed', userError.message);
+      // 3. LAST RESORT: If everything failed but we have a cached user (from AuthContext), use it.
+      // This bridges the gap during "Soft Fail" states in AuthContext.
+      if (this._cachedUser) {
+        console.warn('storageService: returning cached user as fallback (Supabase session retrieval failed)');
+        return this._cachedUser;
       }
 
       return null;
 
     } catch (e) {
       console.error('storageService: getUser exception', e);
-      return null;
+      // Fallback on exception too
+      return this._cachedUser || null;
     }
   }
 

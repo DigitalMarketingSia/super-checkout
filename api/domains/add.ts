@@ -36,6 +36,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const data = await response.json();
 
         if (!response.ok) {
+            // Handle 409 (Conflict) - check if it's already ours
+            if (response.status === 409) {
+                console.log('Domain already exists, checking ownership...');
+                try {
+                    const checkResponse = await fetch(
+                        `https://api.vercel.com/v9/projects/${PROJECT_ID}/domains/${domain}${TEAM_ID ? `?teamId=${TEAM_ID}` : ''}`,
+                        {
+                            headers: {
+                                Authorization: `Bearer ${VERCEL_TOKEN}`,
+                            },
+                        }
+                    );
+
+                    if (checkResponse.ok) {
+                        const domainInfo = await checkResponse.json();
+                        // It exists and is linked to this project. Return success.
+                        return res.status(200).json(domainInfo);
+                    }
+                } catch (checkErr) {
+                    console.error('Error checking existing domain:', checkErr);
+                }
+            }
+
             console.error('Vercel API Error:', data);
             return res.status(response.status).json({ error: data.error?.message || 'Failed to add domain to Vercel' });
         }
