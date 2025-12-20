@@ -28,6 +28,22 @@ const SUPABASE_KEY = (typeof window === 'undefined' && SUPABASE_SERVICE_KEY)
   ? SUPABASE_SERVICE_KEY
   : SUPABASE_ANON_KEY;
 
+// Custom storage adapter to bypass navigator.locks which causes deadlocks in some environments
+const customStorage = {
+  getItem: (key: string): string | null => {
+    if (typeof window === 'undefined') return null;
+    return window.localStorage.getItem(key);
+  },
+  setItem: (key: string, value: string): void => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem(key, value);
+  },
+  removeItem: (key: string): void => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.removeItem(key);
+  },
+};
+
 // Configure client based on environment
 const clientOptions = typeof window === 'undefined'
   ? {
@@ -40,7 +56,9 @@ const clientOptions = typeof window === 'undefined'
   : {
     auth: {
       persistSession: true,
+      storage: customStorage, // Use custom storage to avoid locking
       autoRefreshToken: true,
+      detectSessionInUrl: true,
     },
     // Explicitly set realtime options to fallback to polling if websockets fail
     realtime: {
@@ -50,7 +68,7 @@ const clientOptions = typeof window === 'undefined'
     },
     // Force Fetch implementation to ensure proper header handling on Vercel/proxies
     global: {
-      fetch: (...args) => fetch(...args)
+      fetch: (...args: any[]) => fetch(...args as any)
     }
   };
 
