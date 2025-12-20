@@ -102,7 +102,6 @@ export const Domains = () => {
         domain: formData.domain,
         type: formData.type,
         checkout_id: null,
-        slug: null,
         usage: formData.usage
       };
 
@@ -402,7 +401,7 @@ export const Domains = () => {
                       {getStatusBadge(domain.status)}
                     </div>
                     <div className="flex items-center gap-3 mt-1">
-                      {getUsageBadge(domain.usage || DomainUsage.GENERAL)}
+                      {getUsageBadge(domain.usage || DomainUsage.SYSTEM)}
                       <span className="text-sm text-gray-500">Adicionado em {new Date(domain.created_at).toLocaleDateString()}</span>
                     </div>
                   </div>

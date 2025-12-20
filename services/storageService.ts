@@ -935,7 +935,6 @@ class StorageService {
       status: domain.status,
       type: domain.type,
       checkout_id: domain.checkout_id,
-      slug: domain.slug,
       usage: domain.usage || 'system' // Default to system if not specified
     };
 

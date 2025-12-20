@@ -101,7 +101,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       storage.setUser(session?.user ?? null);
       if (session?.user) {
         // Await profile fetch to prevent "Access Denied" flash on admin routes
-        fetchProfile(session.user.id);
+        await fetchProfile(session.user.id);
       } else {
         setProfile(null);
       }
