@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Check, ChevronRight, Database, Key, Server, AlertCircle, ExternalLink, Github, Globe, Copy, Info, X, ShieldCheck, Mail, Settings } from 'lucide-react';
+import { Check, ChevronRight, Database, Key, Server, AlertCircle, ExternalLink, Github, Globe, Copy, Info, X, ShieldCheck, Mail, Settings, Loader2, Sparkles, ArrowRight } from 'lucide-react';
 import { AlertModal } from '../../components/ui/Modal';
 
 const SQL_SCHEMA = `-- Super Checkout - Definitive Fail-Proof Schema
@@ -757,6 +757,10 @@ export default function InstallerWizard() {
     const [copiedId, setCopiedId] = useState<string | null>(null);
     const [alertModal, setAlertModal] = useState({ isOpen: false, title: '', message: '', variant: 'success' as const });
 
+    // UI States
+    const [isConnectingSupabase, setIsConnectingSupabase] = useState(false);
+    const [successAnim, setSuccessAnim] = useState<{ show: boolean; msg: string }>({ show: false, msg: '' });
+
     const addLog = (msg: string) => setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
 
     const showAlert = (title: string, message: string, variant: 'success' | 'error' = 'success') => {
@@ -765,15 +769,21 @@ export default function InstallerWizard() {
 
     const copyToClipboard = (text: string, id?: string) => {
         navigator.clipboard.writeText(text);
-        addLog('Copiado para a área de transferência!');
         if (id) {
             setCopiedId(id);
             setTimeout(() => setCopiedId(null), 2000);
         } else {
-            // Fallback for generic copy
             setCopiedId('generic');
             setTimeout(() => setCopiedId(null), 2000);
         }
+    };
+
+    const runSuccessAnim = (msg: string, callback: () => void) => {
+        setSuccessAnim({ show: true, msg });
+        setTimeout(() => {
+            setSuccessAnim({ show: false, msg: '' });
+            callback();
+        }, 2000);
     };
 
     // --- LOGIC: License ---
@@ -812,11 +822,13 @@ export default function InstallerWizard() {
                 addLog('Licença validada com sucesso!');
                 setTimeout(() => {
                     setLoading(false);
-                    setCurrentStep('supabase_setup');
-                    if (currentStep === 'license') {
-                        localStorage.setItem('installer_license_key', licenseKey);
-                    }
-                }, 1000);
+                    runSuccessAnim('Licença Validada!', () => {
+                        setCurrentStep('supabase_setup');
+                        if (currentStep === 'license') {
+                            localStorage.setItem('installer_license_key', licenseKey);
+                        }
+                    });
+                }, 500);
             } else {
                 throw new Error(data.message || 'Licença inválida');
             }
@@ -856,7 +868,7 @@ export default function InstallerWizard() {
     };
 
     const handleSupabaseCallback = async (code: string) => {
-        setLoading(true);
+        // setLoading(true); // Handled by isConnectingSupabase
         try {
             const res = await fetch('/api/installer/supabase', {
                 method: 'POST',
@@ -886,13 +898,18 @@ export default function InstallerWizard() {
             localStorage.setItem('installer_supabase_dbpass', data.dbPass);
 
             addLog('✅ Projeto Supabase criado com sucesso!');
-            setCurrentStep('supabase_migrations'); // Go to migrations
+            setIsConnectingSupabase(false);
+            runSuccessAnim('Conexão Estabelecida!', () => {
+                setCurrentStep('supabase_migrations');
+            });
+            // Go to migrations
         } catch (error: any) {
             console.error(error);
             addLog(`Erro: ${error.message}`);
             showAlert('Erro Supabase', error.message, 'error');
         } finally {
             setLoading(false);
+            setIsConnectingSupabase(false);
         }
     };
 
@@ -906,7 +923,9 @@ export default function InstallerWizard() {
         localStorage.setItem('installer_supabase_service_key', serviceKey);
 
         addLog('Chaves de API salvas com sucesso!');
-        setCurrentStep('deploy'); // Go to Deploy Step
+        runSuccessAnim('Chaves Configuradas!', () => {
+            setCurrentStep('deploy'); // Go to Deploy Step
+        });
     };
 
     // --- LOGIC: Deploy (New Unified Step) ---
@@ -918,7 +937,9 @@ export default function InstallerWizard() {
         }
         let cleanDomain = vercelDomain.replace('https://', '').replace('http://', '').split('/')[0];
         localStorage.setItem('installer_vercel_domain', cleanDomain);
-        setCurrentStep('success');
+        runSuccessAnim('Domínio Configurado!', () => {
+            setCurrentStep('success');
+        });
     }
 
     // --- EFFECTS ---
@@ -955,7 +976,10 @@ export default function InstallerWizard() {
                 const stateObj = JSON.parse(atob(stateRaw));
                 if (stateObj.key) setLicenseKey(stateObj.key);
                 window.history.replaceState({}, '', '/installer');
-                if (stateObj.step === 'supabase') handleSupabaseCallback(code);
+                if (stateObj.step === 'supabase') {
+                    setIsConnectingSupabase(true);
+                    handleSupabaseCallback(code);
+                }
             } catch (e) {
                 // Ignore errors
             }
@@ -996,6 +1020,28 @@ export default function InstallerWizard() {
             {/* Background Effects */}
             <div className="fixed top-0 left-0 w-[500px] h-[500px] bg-[#3ECF8E]/10 rounded-full blur-[128px] pointer-events-none -translate-x-1/2 -translate-y-1/2 mix-blend-screen" />
             <div className="fixed bottom-0 right-0 w-[500px] h-[500px] bg-purple-500/10 rounded-full blur-[128px] pointer-events-none translate-x-1/2 translate-y-1/2 mix-blend-screen" />
+
+            {/* --- SUCCESS ANIMATION OVERLAY --- */}
+            {successAnim.show && (
+                <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
+                    <div className="relative">
+                        <div className="w-24 h-24 bg-[#3ECF8E] rounded-full flex items-center justify-center mb-6 shadow-[0_0_50px_rgba(62,207,142,0.5)] animate-in zoom-in-50 duration-500">
+                            <Check className="w-12 h-12 text-black animate-in spin-in-90 duration-700" strokeWidth={3} />
+                        </div>
+                        <div className="absolute inset-0 rounded-full border-2 border-[#3ECF8E] animate-ping opacity-20"></div>
+                    </div>
+                    <h2 className="text-3xl font-bold text-white animate-in slide-in-from-bottom-5 duration-500">{successAnim.msg}</h2>
+                </div>
+            )}
+
+            {/* --- CONNECTING SUPABASE OVERLAY --- */}
+            {isConnectingSupabase && (
+                <div className="fixed inset-0 z-[90] flex flex-col items-center justify-center bg-[#05050A] animate-in fade-in">
+                    <div className="w-20 h-20 border-4 border-[#3ECF8E]/30 border-t-[#3ECF8E] rounded-full animate-spin mb-8 shadow-[0_0_30px_rgba(62,207,142,0.2)]"></div>
+                    <h2 className="text-2xl font-bold text-white mb-2">Conectando ao Supabase...</h2>
+                    <p className="text-gray-400">Estamos configurando seu projeto e banco de dados.</p>
+                </div>
+            )}
 
 
             <div className="container mx-auto px-4 py-12 relative z-10 max-w-4xl">
@@ -1290,73 +1336,90 @@ export default function InstallerWizard() {
                                 <Settings className="w-6 h-6" />
                             </div>
                             <h1 className="text-2xl font-bold mb-2 text-white">Configuração Pós-Deploy</h1>
-                            <p className="text-gray-400 mb-6">Adicione estas variáveis na Vercel para ativar os domínios.</p>
+                            <p className="text-gray-400 mb-6">Adicione estas variáveis no painel da Vercel para ativar o sistema.</p>
 
-                            <div className="mb-6 rounded-xl overflow-hidden border border-white/10 shadow-lg">
-                                <img src="/vercel-env-info.png" alt="Onde encontrar as variáveis na Vercel" className="w-full h-auto object-cover" />
+                            <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl mb-8 flex items-start gap-3">
+                                <Info className="w-5 h-5 text-yellow-500 shrink-0 mt-0.5" />
+                                <p className="text-sm text-yellow-200">
+                                    Após adicionar as variáveis abaixo no seu projeto Vercel, você precisará fazer um <strong>Redeploy</strong> para que elas tenham efeito.
+                                </p>
                             </div>
 
                             <div className="space-y-6">
-                                <div className="grid grid-cols-1 gap-4">
-                                    {/* Token */}
-                                    <div className="bg-black/40 p-4 rounded-xl border border-white/5 flex flex-col gap-2">
-                                        <div className="flex justify-between items-start">
-                                            <div>
-                                                <h3 className="text-white font-bold text-sm">1. Token de Acesso</h3>
-                                                <p className="text-xs text-gray-400">Settings {'>'} Tokens</p>
-                                            </div>
-                                            <button onClick={() => copyToClipboard('VERCEL_TOKEN')} className="text-xs bg-white/10 hover:bg-white/20 px-2 py-1 rounded text-white flex gap-1 items-center transition-all">
-                                                {copiedId === 'VERCEL_TOKEN' ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
-                                                {copiedId === 'VERCEL_TOKEN' ? 'Copiado!' : 'Copiar Nome'}
-                                            </button>
+                                {/* Token Section */}
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <h3 className="text-white font-bold flex items-center gap-2">
+                                                1. VERCEL_TOKEN
+                                                <a href="https://vercel.com/account/settings/tokens" target="_blank" className="text-xs font-normal text-purple-400 hover:text-purple-300 bg-purple-500/10 px-2 py-1 rounded-full flex items-center gap-1 transition-colors">
+                                                    Gerar Token <ExternalLink className="w-3 h-3" />
+                                                </a>
+                                            </h3>
                                         </div>
-                                        <div className="flex items-center gap-2 p-2 bg-black/60 rounded border border-white/5">
-                                            <code className="text-xs text-purple-400 font-mono flex-1">VERCEL_TOKEN</code>
-                                        </div>
-                                        <a href="https://vercel.com/account/settings/tokens" target="_blank" className="text-xs text-primary hover:underline flex items-center gap-1 mt-1">
-                                            Gerar Token Aqui <ExternalLink className="w-3 h-3" />
-                                        </a>
                                     </div>
-
-                                    {/* Project ID */}
-                                    <div className="bg-black/40 p-4 rounded-xl border border-white/5 flex flex-col gap-2">
-                                        <div className="flex justify-between items-start">
-                                            <div>
-                                                <h3 className="text-white font-bold text-sm">2. ID do Projeto</h3>
-                                                <p className="text-xs text-gray-400">Project Settings {'>'} General</p>
-                                            </div>
-                                            <button onClick={() => copyToClipboard('VERCEL_PROJECT_ID')} className="text-xs bg-white/10 hover:bg-white/20 px-2 py-1 rounded text-white flex gap-1 items-center transition-all">
-                                                {copiedId === 'VERCEL_PROJECT_ID' ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
-                                                {copiedId === 'VERCEL_PROJECT_ID' ? 'Copiado!' : 'Copiar Nome'}
-                                            </button>
+                                    <div className="flex gap-3">
+                                        <div className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-gray-400 font-mono text-sm flex items-center">
+                                            VERCEL_TOKEN
                                         </div>
-                                        <div className="flex items-center gap-2 p-2 bg-black/60 rounded border border-white/5">
-                                            <code className="text-xs text-purple-400 font-mono flex-1">VERCEL_PROJECT_ID</code>
-                                        </div>
+                                        <button
+                                            onClick={() => copyToClipboard('VERCEL_TOKEN')}
+                                            className={`px-6 rounded-xl font-bold transition-all flex items-center gap-2 ${copiedId === 'VERCEL_TOKEN' ? 'bg-green-500 text-black' : 'bg-white/10 hover:bg-white/20 text-white'}`}
+                                        >
+                                            {copiedId === 'VERCEL_TOKEN' ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+                                            {copiedId === 'VERCEL_TOKEN' ? 'Copiado!' : 'Copiar'}
+                                        </button>
                                     </div>
                                 </div>
 
-                                <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
-                                    <p className="text-xs text-yellow-500">
-                                        <strong>⚠️ Importante:</strong> Adicione estas variáveis e faça um <strong>Redeploy</strong> na Vercel para aplicar.
-                                    </p>
+                                <div className="h-px bg-white/5" />
+
+                                {/* Project ID Section */}
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <h3 className="text-white font-bold flex items-center gap-2">
+                                                2. VERCEL_PROJECT_ID
+                                                <a href="https://vercel.com/account/settings" target="_blank" className="text-xs font-normal text-purple-400 hover:text-purple-300 bg-purple-500/10 px-2 py-1 rounded-full flex items-center gap-1 transition-colors">
+                                                    Ver Configurações <ExternalLink className="w-3 h-3" />
+                                                </a>
+                                            </h3>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-3">
+                                        <div className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-gray-400 font-mono text-sm flex items-center">
+                                            VERCEL_PROJECT_ID
+                                        </div>
+                                        <button
+                                            onClick={() => copyToClipboard('VERCEL_PROJECT_ID')}
+                                            className={`px-6 rounded-xl font-bold transition-all flex items-center gap-2 ${copiedId === 'VERCEL_PROJECT_ID' ? 'bg-green-500 text-black' : 'bg-white/10 hover:bg-white/20 text-white'}`}
+                                        >
+                                            {copiedId === 'VERCEL_PROJECT_ID' ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+                                            {copiedId === 'VERCEL_PROJECT_ID' ? 'Copiado!' : 'Copiar'}
+                                        </button>
+                                    </div>
                                 </div>
 
-                                <form onSubmit={handleDeploySubmit} className="pt-4">
-                                    <label className="block text-sm font-medium text-gray-300 mb-1.5">
-                                        URL do seu site (sem https://)
+                                <div className="h-8" />
+
+                                <form onSubmit={handleDeploySubmit} className="pt-4 border-t border-white/10">
+                                    <label className="block text-sm font-medium text-gray-300 mb-3">
+                                        Cole a URL do seu site para finalizar (Ex: minhaloja.vercel.app)
                                     </label>
-                                    <div className="flex gap-2">
-                                        <input
-                                            type="text"
-                                            value={vercelDomain}
-                                            onChange={e => setVercelDomain(e.target.value)}
-                                            placeholder="minha-loja.vercel.app"
-                                            className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:border-white/30 outline-none"
-                                            required
-                                        />
-                                        <button type="submit" className="bg-primary hover:bg-primary/90 text-white px-6 rounded-xl font-bold">
-                                            <Check className="w-5 h-5" />
+                                    <div className="flex gap-3">
+                                        <div className="relative flex-1">
+                                            <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                                            <input
+                                                type="text"
+                                                value={vercelDomain}
+                                                onChange={e => setVercelDomain(e.target.value)}
+                                                placeholder="minhaloja.vercel.app"
+                                                className="w-full bg-black/40 border border-white/10 rounded-xl py-4 pl-12 pr-4 text-white focus:border-white/30 outline-none transition-all"
+                                                required
+                                            />
+                                        </div>
+                                        <button type="submit" className="bg-[#3ECF8E] hover:bg-[#3ECF8E]/90 text-black px-8 rounded-xl font-bold transition-all flex items-center gap-2 shadow-lg shadow-[#3ECF8E]/20">
+                                            Concluir <ArrowRight className="w-5 h-5" />
                                         </button>
                                     </div>
                                 </form>
@@ -1413,7 +1476,7 @@ export default function InstallerWizard() {
                             {/* Header */}
                             <div className="flex items-center justify-between p-6 border-b border-white/10">
                                 <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                                    <Database className="w-5 h-5 text-primary" />
+                                    <Database className="w-5 h-5 text-[#3ECF8E]" />
                                     SQL de Migração (Supabase)
                                 </h2>
                                 <button
