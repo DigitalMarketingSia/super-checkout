@@ -10,27 +10,48 @@ export const AuthDebug = () => {
     const [productsError, setProductsError] = useState<string | null>(null);
     const [rawSession, setRawSession] = useState<any>(null);
 
+    const [localStorageDump, setLocalStorageDump] = useState<string>('');
+
+    const refreshDebug = async () => {
+        const sUser = await storage.getUser();
+        setStorageUser(sUser);
+
+        const sess = await supabase.auth.getSession();
+        setRawSession(sess);
+
+        // Dump localStorage keys related to supabase
+        const dump = Object.keys(localStorage)
+            .filter(k => k.startsWith('sb-') || k.includes('supabase'))
+            .reduce((acc, k) => ({ ...acc, [k]: localStorage.getItem(k) }), {});
+        setLocalStorageDump(JSON.stringify(dump, null, 2));
+
+        try {
+            const prods = await storage.getProducts();
+            setProducts(prods);
+        } catch (e: any) {
+            setProductsError(e.message);
+        }
+    };
+
+    const handleHardReset = async () => {
+        await supabase.auth.signOut();
+        localStorage.clear();
+        window.location.reload();
+    };
+
     useEffect(() => {
-        const check = async () => {
-            const sUser = await storage.getUser();
-            setStorageUser(sUser);
-
-            const sess = await supabase.auth.getSession();
-            setRawSession(sess);
-
-            try {
-                const prods = await storage.getProducts();
-                setProducts(prods);
-            } catch (e: any) {
-                setProductsError(e.message);
-            }
-        };
-        check();
+        refreshDebug();
     }, [authUser]);
 
     return (
         <div className="min-h-screen bg-black text-white p-8 font-mono text-sm overflow-auto">
-            <h1 className="text-2xl text-red-500 font-bold mb-4">SYSTEM DIAGNOSTIC</h1>
+            <div className="flex justify-between items-center mb-8">
+                <h1 className="text-2xl text-red-500 font-bold">SYSTEM DIAGNOSTIC (STRICT MODE)</h1>
+                <div className="flex gap-4">
+                    <button onClick={refreshDebug} className="bg-blue-600 px-4 py-2 rounded">Refresh Data</button>
+                    <button onClick={handleHardReset} className="bg-red-700 px-4 py-2 rounded border border-red-500 hover:bg-red-600">HARD RESET SESSION</button>
+                </div>
+            </div>
 
             <div className="grid grid-cols-2 gap-4">
                 <div className="border border-gray-800 p-4 rounded">
@@ -53,6 +74,11 @@ export const AuthDebug = () => {
                     {productsError && <div className="text-red-500">Error: {productsError}</div>}
                     <div className="text-gray-400">Count: {products.length}</div>
                     <pre>{JSON.stringify(products.slice(0, 2), null, 2)}</pre>
+                </div>
+
+                <div className="border border-gray-800 p-4 rounded col-span-2">
+                    <h2 className="text-orange-400 font-bold mb-2">LocalStorage (Supabase Keys)</h2>
+                    <pre className="whitespace-pre-wrap word-break text-xs">{localStorageDump}</pre>
                 </div>
             </div>
         </div>

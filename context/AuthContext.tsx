@@ -26,22 +26,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const init = async () => {
       console.log('AuthContext: init started');
       try {
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        // 1. Get local session data (fast, but might be stale)
+        const { data: { session: localSession } } = await supabase.auth.getSession();
 
-        if (currentSession) {
-          console.log('AuthContext: session retrieved', currentSession.user.id);
-          setSession(currentSession);
-          setUser(currentSession.user);
-          storage.setUser(currentSession.user);
-          await fetchProfile(currentSession.user.id);
+        // 2. If we have a local session, VERIFY it with the server (slower, but accurate)
+        if (localSession?.user) {
+          console.log('AuthContext: verifying session with server...');
+          const { data: { user: validatedUser }, error: userError } = await supabase.auth.getUser();
+
+          if (validatedUser && !userError) {
+            console.log('AuthContext: session verified', validatedUser.id);
+            setSession(localSession); // Keep original session for tokens
+            setUser(validatedUser);
+            storage.setUser(validatedUser);
+            await fetchProfile(validatedUser.id);
+          } else {
+            console.warn('AuthContext: session invalid or expired on server', userError);
+            await supabase.auth.signOut(); // Force cleanup
+            setSession(null);
+            setUser(null);
+            storage.setUser(null);
+          }
         } else {
-          console.log('AuthContext: no session found during init');
+          console.log('AuthContext: no local session found');
           setSession(null);
           setUser(null);
           storage.setUser(null);
         }
       } catch (err) {
         console.error('Auth initialization error:', err);
+        setSession(null);
+        setUser(null);
       } finally {
         setLoading(false);
       }
