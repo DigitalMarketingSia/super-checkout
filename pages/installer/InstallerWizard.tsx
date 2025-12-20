@@ -33,6 +33,7 @@ BEGIN
     ALTER TABLE domains ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id);
     ALTER TABLE domains ADD COLUMN IF NOT EXISTS usage TEXT DEFAULT 'checkout';
     ALTER TABLE domains ADD COLUMN IF NOT EXISTS verified_at TIMESTAMP WITH TIME ZONE;
+    ALTER TABLE domains ADD COLUMN IF NOT EXISTS checkout_id UUID;
 EXCEPTION
     WHEN duplicate_column THEN RAISE NOTICE 'Column already exists in domains.';
 END $$;

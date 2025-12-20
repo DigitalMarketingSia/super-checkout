@@ -92,10 +92,20 @@ export const Login = () => {
       }
     } catch (err: any) {
       console.error(err);
-      setError(err.message || 'Ocorreu um erro. Tente novamente.');
+      setError(translateAuthError(err.message));
     } finally {
       setLoading(false);
     }
+  };
+
+  const translateAuthError = (msg: string) => {
+    if (!msg) return 'Ocorreu um erro. Tente novamente.';
+    const m = msg.toLowerCase();
+    if (m.includes('invalid login credentials')) return 'E-mail ou senha inválidos.';
+    if (m.includes('email not confirmed')) return 'E-mail não confirmado. Verifique sua caixa de entrada.';
+    if (m.includes('user not found')) return 'Usuário não encontrado.';
+    if (m.includes('too many requests')) return 'Muitas tentativas. Aguarde um pouco.';
+    return 'Erro ao acessar: ' + msg;
   };
 
   return (
