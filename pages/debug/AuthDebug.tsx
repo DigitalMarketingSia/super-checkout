@@ -34,9 +34,26 @@ export const AuthDebug = () => {
     };
 
     const handleHardReset = async () => {
-        await supabase.auth.signOut();
+        if (!confirm('Tem certeza? Isso vai limpar todos os dados locais.')) return;
+
+        try {
+            console.log('Attempting sign out...');
+            await supabase.auth.signOut();
+        } catch (e) {
+            console.error('SignOut failed, ignoring:', e);
+        }
+
+        console.log('Clearing storage...');
         localStorage.clear();
-        window.location.reload();
+        sessionStorage.clear();
+
+        // Clear cookies manually if possible (simple attempt)
+        document.cookie.split(";").forEach((c) => {
+            document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+        });
+
+        alert('Sessão limpa. Recarregando...');
+        window.location.href = '/login';
     };
 
     useEffect(() => {
