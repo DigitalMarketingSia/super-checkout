@@ -41,8 +41,6 @@ const clientOptions = typeof window === 'undefined'
     auth: {
       persistSession: true,
       autoRefreshToken: true,
-      detectSessionInUrl: true,
-      storage: window.localStorage
     },
     // Explicitly set realtime options to fallback to polling if websockets fail
     realtime: {

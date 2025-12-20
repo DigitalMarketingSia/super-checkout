@@ -27,19 +27,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('AuthContext: init started');
       try {
         const { data: { session: currentSession } } = await supabase.auth.getSession();
-        console.log('AuthContext: session retrieved', currentSession?.user?.id);
-        setSession(currentSession);
-        setUser(currentSession?.user ?? null);
-        storage.setUser(currentSession?.user ?? null);
-        if (currentSession?.user) {
-          console.log('AuthContext: fetching profile...');
+
+        if (currentSession) {
+          console.log('AuthContext: session retrieved', currentSession.user.id);
+          setSession(currentSession);
+          setUser(currentSession.user);
+          storage.setUser(currentSession.user);
           await fetchProfile(currentSession.user.id);
-          console.log('AuthContext: profile fetched');
+        } else {
+          console.log('AuthContext: no session found during init');
+          setSession(null);
+          setUser(null);
+          storage.setUser(null);
         }
       } catch (err) {
         console.error('Auth initialization error:', err);
       } finally {
-        console.log('AuthContext: init finally - setting loading false');
         setLoading(false);
       }
     };
@@ -76,27 +79,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (loading) {
         console.warn('AuthContext: Safety net triggered after 4s');
 
-        // Try to recover the user one last time
-        const { data: { user: recoveredUser } } = await supabase.auth.getUser();
+        // Final attempt to get a session
+        const { data: { session: finalSession } } = await supabase.auth.getSession();
 
-        if (recoveredUser) {
-          console.log('AuthContext: User recovered via safety net');
-          setUser(recoveredUser);
-          storage.setUser(recoveredUser);
-          // If profile is still missing, set a temporary one to avoid crashes
-          if (!profile) {
-            setProfile({
-              id: recoveredUser.id,
-              role: 'admin',
-              email: recoveredUser.email || '',
-              status: 'active'
-            });
-          }
+        if (finalSession) {
+          console.log('AuthContext: Session recovered via safety net');
+          setSession(finalSession);
+          setUser(finalSession.user);
+          storage.setUser(finalSession.user);
+          if (!profile) await fetchProfile(finalSession.user.id);
         } else {
-          console.warn('AuthContext: No user found in safety net. Allowing public access logic.');
-          // If no user, we just stop loading. Protected routes will redirect to login.
+          console.warn('AuthContext: No session found. Setting all states to null.');
+          setSession(null);
+          setUser(null);
+          storage.setUser(null);
+          setProfile(null);
         }
-
         setLoading(false);
       }
     }, 4000);
