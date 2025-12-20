@@ -20,34 +20,39 @@ class StorageService {
   }
 
   async getUser() {
-    // 0. Use explicit cache if available (synced from AuthContext)
-    if (this._cachedUser) return this._cachedUser;
+    // CRITICAL FIX: Always check the underlying Supabase session.
+    // Relying on _cachedUser (from AuthContext) is dangerous because if the Supabase client 
+    // loses its session (e.g. storage sync fail), we might have a user ID but no Auth Token.
+    // Without an Auth Token, RLS policies will block all queries, returning empty arrays.
 
     try {
-      // 1. Try local session first (Fastest)
+      // 1. Try local session first (Fastest & standard way)
       const { data: { session }, error } = await supabase.auth.getSession();
-      if (session?.user) return session.user;
+
+      // If we have a valid session with a user, return it.
+      // This ensures the supabase client actually has the token needed for RLS.
+      if (session?.user) {
+        // Update cache just in case, but don't rely on it as primary source of truth for auth state
+        this._cachedUser = session.user;
+        return session.user;
+      }
 
       if (error) console.warn('storageService: getSession warning', error.message);
 
-      // 2. If no local session or error, force a server check (Robust)
-      // This is needed because sometimes the local session might be effectively invalid 
-      // but the refresh token is still good, or getSession() just flaked.
-      // We add a timeout specifically for this calling to avoid indefinite hanging.
+      // 2. If locally missing, try server-side check (slower but robust for edge cases)
+      // This helps if the local token is potentially stale but refreshable.
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
 
-      const userPromise = supabase.auth.getUser().then(({ data }) => data.user);
+      if (user) {
+        this._cachedUser = user;
+        return user;
+      }
 
-      // Create a timeout promise that rejects after 5 seconds
-      const timeoutPromise = new Promise<null>((resolve) => {
-        setTimeout(() => {
-          console.warn('storageService: getUser timed out after 5s');
-          resolve(null);
-        }, 5000);
-      });
+      if (userError) {
+        // console.warn('storageService: getUser server check failed', userError.message);
+      }
 
-      // Race them
-      const user = await Promise.race([userPromise, timeoutPromise]);
-      return user;
+      return null;
 
     } catch (e) {
       console.error('storageService: getUser exception', e);
