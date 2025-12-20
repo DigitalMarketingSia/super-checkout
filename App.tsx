@@ -37,9 +37,10 @@ import { MemberProducts } from './pages/member/MemberProducts';
 import { MyProducts } from './pages/member/MyProducts';
 import { MemberFAQ } from './pages/member/MemberFAQ';
 import { MemberProfile } from './pages/member/MemberProfile';
-import { ThemeProvider } from './context/ThemeContext';
 import { LicenseGuard } from './components/LicenseGuard';
+import { Loading } from './components/ui/Loading';
 import InstallerWizard from './pages/installer/InstallerWizard';
+import { ThemeProvider } from './context/ThemeContext';
 
 import { storage } from './services/storageService';
 import { DomainUsage } from './types';
@@ -171,19 +172,7 @@ const DomainDispatcher = () => {
   }, []);
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-[#0F0F13] flex flex-col items-center justify-center text-white">
-        <div className="relative flex items-center justify-center">
-          {/* Spinner */}
-          <div className="w-16 h-16 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
-          {/* Centered Logo */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain opacity-90" />
-          </div>
-        </div>
-        <p className="mt-4 text-gray-400 animate-pulse text-sm font-medium">Carregando Sistema...</p>
-      </div>
-    );
+    return <Loading />;
   }
 
   if (error) {

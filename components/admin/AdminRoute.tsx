@@ -1,12 +1,13 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { Loading } from '../../components/ui/Loading';
 
 export const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { user, profile, loading } = useAuth();
 
     if (loading) {
-        return <div className="h-screen w-screen flex items-center justify-center bg-[#05050A] text-white">Carregando...</div>;
+        return <Loading />;
     }
 
     // Debugging logs to help troubleshoot role issues

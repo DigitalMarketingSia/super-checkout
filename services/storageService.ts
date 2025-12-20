@@ -21,40 +21,40 @@ class StorageService {
 
   async getUser() {
     // CRITICAL FIX: Robust session retrieval.
-    // We try to get the session from Supabase. If it fails or times out, we check if we have a cached user.
-    // We want to avoid returning null (which breaks the UI) if the session actually exists but just timed out.
+    // 1. Priority: Check cached user from AuthContext (Source of Truth)
+    if (this._cachedUser) {
+      console.log('[StorageService] getUser: Returning cached user', this._cachedUser.id);
+      return this._cachedUser;
+    }
 
     try {
-      // 1. Try local session first (Fastest & standard way) - WITH TIMEOUT FIX
+      console.log('[StorageService] getUser: No cache, fetching session...');
+      // 2. Try local session (Standard)
       const sessionPromise = supabase.auth.getSession();
       const timeoutPromise = new Promise<{ data: { session: null }, error: any }>((resolve) =>
-        setTimeout(() => resolve({ data: { session: null }, error: { message: 'Timeout getting session' } }), 5000)
+        setTimeout(() => resolve({ data: { session: null }, error: { message: 'Timeout getting session' } }), 2000) // Reduced to 2s
       );
 
       const { data: { session }, error } = await Promise.race([sessionPromise, timeoutPromise]);
 
       if (session?.user) {
+        console.log('[StorageService] getUser: Session found', session.user.id);
         this._cachedUser = session.user;
         return session.user;
       }
 
       if (error) console.warn('storageService: getSession warning/timeout', error.message || error);
 
-      // 2. Fallback: If local session is empty/timed out, check server side
+      // 3. Fallback: If local session is empty/timed out, check server side
       const { data: { user }, error: userError } = await supabase.auth.getUser();
 
       if (user) {
+        console.log('[StorageService] getUser: Server user found', user.id);
         this._cachedUser = user;
         return user;
       }
 
-      // 3. LAST RESORT: If everything failed but we have a cached user (from AuthContext), use it.
-      // This bridges the gap during "Soft Fail" states in AuthContext.
-      if (this._cachedUser) {
-        console.warn('storageService: returning cached user as fallback (Supabase session retrieval failed)');
-        return this._cachedUser;
-      }
-
+      console.warn('[StorageService] getUser: NO USER FOUND ANYWHERE');
       return null;
 
     } catch (e) {
@@ -994,7 +994,12 @@ class StorageService {
 
   async getGateways(): Promise<Gateway[]> {
     const user = await this.getUser();
-    if (!user) return [];
+    console.log('[StorageService] getGateways called. User:', user?.id || 'NO USER');
+
+    if (!user) {
+      console.warn('[StorageService] getGateways: No user, returning empty array');
+      return [];
+    }
 
     const { data, error } = await supabase
       .from('gateways')
@@ -1002,9 +1007,11 @@ class StorageService {
       .eq('user_id', user.id);
 
     if (error) {
-      console.error('Error fetching gateways:', error.message);
+      console.error('[StorageService] Error fetching gateways:', error.message);
       return [];
     }
+
+    console.log('[StorageService] getGateways: Found', data?.length || 0, 'gateways');
     return data as Gateway[];
   }
 
