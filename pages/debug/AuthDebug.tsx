@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { storage } from '../../services/storageService';
-import { supabase } from '../../services/supabase';
+import { supabase, CLIENT_INSTANCE_ID } from '../../services/supabase';
 
 export const AuthDebug = () => {
-    const { user: authUser, session: authSession, loading: authLoading } = useAuth();
+    const { user: authUser, session: authSession, loading: authLoading, instanceId: ctxInstanceId } = useAuth();
     const [storageUser, setStorageUser] = useState<any>(null);
     const [products, setProducts] = useState<any[]>([]);
     const [productsError, setProductsError] = useState<string | null>(null);
@@ -54,6 +54,25 @@ export const AuthDebug = () => {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
+                <div className="border border-gray-800 p-4 rounded col-span-2">
+                    <h2 className="text-pink-400 font-bold mb-2">Supabase Singleton Check</h2>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <p className="text-gray-500">AuthContext Instance:</p>
+                            <p className="font-mono text-lg">{ctxInstanceId || 'Unknown'}</p>
+                        </div>
+                        <div>
+                            <p className="text-gray-500">Direct Import Instance:</p>
+                            <p className="font-mono text-lg">{CLIENT_INSTANCE_ID}</p>
+                        </div>
+                    </div>
+                    {ctxInstanceId !== CLIENT_INSTANCE_ID && (
+                        <div className="text-red-500 font-bold mt-2 animate-pulse">
+                            CRITICAL ERROR: DUPLICATE SUPABASE INSTANCES DETECTED
+                        </div>
+                    )}
+                </div>
+
                 <div className="border border-gray-800 p-4 rounded">
                     <h2 className="text-blue-400 font-bold mb-2">AuthContext State</h2>
                     <pre>{JSON.stringify({ authLoading, userId: authUser?.id, hasSession: !!authSession }, null, 2)}</pre>

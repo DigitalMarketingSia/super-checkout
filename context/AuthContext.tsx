@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '../services/supabase';
+import { supabase, CLIENT_INSTANCE_ID } from '../services/supabase';
 import { memberService } from '../services/memberService';
 import { storage } from '../services/storageService';
 import { Session, User } from '@supabase/supabase-js';
@@ -12,6 +12,7 @@ interface AuthContextType {
   loading: boolean;
   profile: any | null; // TODO: Type this properly
   signOut: () => Promise<void>;
+  instanceId: string;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -165,7 +166,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }
 
   return (
-    <AuthContext.Provider value={{ session, user, profile, signOut, loading }}>
+    <AuthContext.Provider value={{ session, user, profile, signOut, loading, instanceId: CLIENT_INSTANCE_ID }}>
       {children}
     </AuthContext.Provider>
   );

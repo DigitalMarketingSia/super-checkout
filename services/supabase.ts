@@ -55,3 +55,5 @@ const clientOptions = typeof window === 'undefined'
   };
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, clientOptions);
+export const CLIENT_INSTANCE_ID = `instance_${Math.random().toString(36).slice(2, 9)}`;
+console.log('[Supabase Service] Initialized client:', CLIENT_INSTANCE_ID);
