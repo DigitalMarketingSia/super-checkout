@@ -17,6 +17,20 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+declare global {
+  interface Window {
+    _authLogs: string[];
+  }
+}
+window._authLogs = window._authLogs || [];
+
+const log = (msg: string, data?: any) => {
+  const timestamp = new Date().toISOString().split('T')[1].slice(0, 8);
+  const line = `[${timestamp}] ${msg} ${data ? JSON.stringify(data) : ''}`;
+  console.log(line);
+  window._authLogs.push(line);
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -25,37 +39,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     const init = async () => {
-      console.log('AuthContext: init started');
+      log('AuthContext: init started', { clientInstance: CLIENT_INSTANCE_ID });
       try {
         // 1. Get local session data (fast, but might be stale)
-        const { data: { session: localSession } } = await supabase.auth.getSession();
+        const { data: { session: localSession }, error: sessionError } = await supabase.auth.getSession();
+        log('AuthContext: getSession result', { hasSession: !!localSession, error: sessionError });
 
         // 2. If we have a local session, VERIFY it with the server (slower, but accurate)
         if (localSession?.user) {
-          console.log('AuthContext: verifying session with server...');
+          log('AuthContext: verifying session with server...');
           const { data: { user: validatedUser }, error: userError } = await supabase.auth.getUser();
 
           if (validatedUser && !userError) {
-            console.log('AuthContext: session verified', validatedUser.id);
+            log('AuthContext: session verified', validatedUser.id);
             setSession(localSession); // Keep original session for tokens
             setUser(validatedUser);
             storage.setUser(validatedUser);
             await fetchProfile(validatedUser.id);
           } else {
-            console.warn('AuthContext: session invalid or expired on server', userError);
+            log('AuthContext: session invalid/expired on server', userError);
             await supabase.auth.signOut(); // Force cleanup
             setSession(null);
             setUser(null);
             storage.setUser(null);
           }
         } else {
-          console.log('AuthContext: no local session found');
+          log('AuthContext: no local session found');
           setSession(null);
           setUser(null);
           storage.setUser(null);
         }
       } catch (err) {
-        console.error('Auth initialization error:', err);
+        log('Auth initialization error', err);
         setSession(null);
         setUser(null);
       } finally {
@@ -68,13 +83,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Safety timeout
     const timeout = setTimeout(() => {
       setLoading(current => {
-        if (current) console.warn("AuthContext: Force stopping loading after timeout");
+        if (current) log("AuthContext: Force stopping loading after timeout");
         return false;
       });
     }, 5000);
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('AuthContext: onAuthStateChange', event);
+      log('AuthContext: onAuthStateChange', { event, userId: session?.user?.id });
       setSession(session);
       setUser(session?.user ?? null);
       storage.setUser(session?.user ?? null);
@@ -93,19 +108,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // This runs if init() hangs or fails silently.
     const safetyNet = setTimeout(async () => {
       if (loading) {
-        console.warn('AuthContext: Safety net triggered after 4s');
+        log('AuthContext: Safety net triggered');
 
         // Final attempt to get a session
         const { data: { session: finalSession } } = await supabase.auth.getSession();
 
         if (finalSession) {
-          console.log('AuthContext: Session recovered via safety net');
+          log('AuthContext: Session recovered via safety net');
           setSession(finalSession);
           setUser(finalSession.user);
           storage.setUser(finalSession.user);
           if (!profile) await fetchProfile(finalSession.user.id);
         } else {
-          console.warn('AuthContext: No session found. Setting all states to null.');
+          log('AuthContext: No session in safety net. Nullifying.');
           setSession(null);
           setUser(null);
           storage.setUser(null);
@@ -118,6 +133,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => {
       subscription.unsubscribe();
       clearTimeout(safetyNet);
+      clearTimeout(timeout);
     };
   }, []);
 

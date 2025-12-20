@@ -116,6 +116,16 @@ export const AuthDebug = () => {
                     <h2 className="text-orange-400 font-bold mb-2">LocalStorage (Supabase Keys)</h2>
                     <pre className="whitespace-pre-wrap word-break text-xs">{localStorageDump}</pre>
                 </div>
+
+                <div className="border border-gray-800 p-4 rounded col-span-2">
+                    <h2 className="text-cyan-400 font-bold mb-2">Boot Sequence Logs</h2>
+                    <div className="bg-[#111] p-2 rounded max-h-60 overflow-y-auto text-xs font-mono text-gray-300">
+                        {/* @ts-ignore */}
+                        {(window._authLogs || []).map((log, i) => (
+                            <div key={i} className="border-b border-gray-800 pb-1 mb-1 last:border-0">{log}</div>
+                        ))}
+                    </div>
+                </div>
             </div>
         </div>
     );
