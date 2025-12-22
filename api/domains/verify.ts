@@ -170,6 +170,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             );
         }
 
+        // NEW: If Verified, Update Supabase!
+        if (domainData.verified && !isMisconfigured) {
+            const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+            const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+            if (supabaseUrl && supabaseKey) {
+                try {
+                    await fetch(`${supabaseUrl}/rest/v1/domains?domain=eq.${domain}`, {
+                        method: 'PATCH',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'apikey': supabaseKey,
+                            'Authorization': `Bearer ${supabaseKey}`,
+                            'Prefer': 'return=minimal'
+                        },
+                        body: JSON.stringify({
+                            status: 'active',
+                            verified_at: new Date().toISOString()
+                        })
+                    });
+                    console.log(`[Auto-Verify] Updated ${domain} to active`);
+                } catch (dbErr) {
+                    console.error('[Auto-Verify] Failed to update DB:', dbErr);
+                }
+            }
+        }
+
         return res.status(200).json({
             configured: !isMisconfigured,
             verified: domainData.verified,

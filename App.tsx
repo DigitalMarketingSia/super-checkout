@@ -91,8 +91,23 @@ const DomainDispatcher = () => {
         console.log('Domain found:', domain);
 
         if (domain) {
-          // 1. Check Status
+          // 1. Check Status and Auto-Verify
           if (domain.status !== 'active') {
+            console.log('Domain pending. Attempting auto-verification...');
+            // Try to auto-verify
+            try {
+              const verifyRes = await fetch(`/api/domains/verify?domain=${hostname}`);
+              const verifyData = await verifyRes.json();
+
+              if (verifyData.verified && verifyData.status === 'active') {
+                console.log('Auto-verification successful! Reloading...');
+                window.location.reload();
+                return;
+              }
+            } catch (vErr) {
+              console.error('Auto-verification failed:', vErr);
+            }
+
             setError('Domínio ainda em verificação. Aguarde a propagação do DNS.');
             setLoading(false);
             return;

@@ -13,6 +13,7 @@ export default function Setup() {
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
 
     useEffect(() => {
         const checkSetup = async () => {
@@ -60,10 +61,8 @@ export default function Setup() {
             if (signUpError) throw signUpError;
 
             if (data.user) {
-                // Wait a moment for trigger to run
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                await fetchProfile(data.user.id); // Refresh context
-                navigate('/admin');
+                // Show email confirmation message instead of redirecting
+                setShowEmailConfirmation(true);
             }
 
         } catch (err: any) {
@@ -81,6 +80,77 @@ export default function Setup() {
         }
     };
 
+    // Show email confirmation screen after successful signup
+    if (showEmailConfirmation) {
+        return (
+            <div className="min-h-screen bg-[#05050A] text-white selection:bg-primary/30 font-sans relative overflow-hidden flex items-center justify-center">
+                {/* Background Effects */}
+                <div className="fixed top-0 left-0 w-[500px] h-[500px] bg-[#3ECF8E]/10 rounded-full blur-[128px] pointer-events-none -translate-x-1/2 -translate-y-1/2 mix-blend-screen" />
+                <div className="fixed bottom-0 right-0 w-[500px] h-[500px] bg-purple-500/10 rounded-full blur-[128px] pointer-events-none translate-x-1/2 translate-y-1/2 mix-blend-screen" />
+
+                <div className="w-full max-w-md p-8 relative z-10">
+                    <div className="text-center mb-8">
+                        <div className="inline-flex items-center justify-center p-3 mb-6 rounded-2xl bg-[#3ECF8E]/10 border border-[#3ECF8E]/20 shadow-2xl backdrop-blur-sm animate-in zoom-in duration-500">
+                            <Check className="w-8 h-8 text-[#3ECF8E]" />
+                        </div>
+                        <h1 className="text-3xl font-extrabold tracking-tight mb-2 bg-clip-text text-transparent bg-gradient-to-r from-white via-gray-200 to-gray-400">
+                            Conta Criada com Sucesso!
+                        </h1>
+                        <p className="text-gray-400">
+                            Sua conta de administrador foi criada.
+                        </p>
+                    </div>
+
+                    <div className="glass-panel border border-white/10 bg-white/5 backdrop-blur-xl rounded-2xl p-8 shadow-2xl animate-in fade-in slide-in-from-bottom-4">
+                        <div className="space-y-4">
+                            <div className="p-4 bg-[#3ECF8E]/10 border border-[#3ECF8E]/20 rounded-xl">
+                                <div className="flex items-start gap-3">
+                                    <Mail className="w-5 h-5 text-[#3ECF8E] shrink-0 mt-0.5" />
+                                    <div className="flex-1">
+                                        <h3 className="font-semibold text-white mb-1">Confirme seu e-mail</h3>
+                                        <p className="text-sm text-gray-300 mb-2">
+                                            Enviamos um link de confirmação para:
+                                        </p>
+                                        <p className="text-sm font-mono bg-black/40 px-3 py-2 rounded-lg text-[#3ECF8E] break-all">
+                                            {email}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-2 text-sm text-gray-400">
+                                <p className="flex items-start gap-2">
+                                    <span className="text-[#3ECF8E] font-bold mt-0.5">1.</span>
+                                    <span>Verifique sua caixa de entrada e também a pasta de <strong className="text-white">spam/lixo eletrônico</strong></span>
+                                </p>
+                                <p className="flex items-start gap-2">
+                                    <span className="text-[#3ECF8E] font-bold mt-0.5">2.</span>
+                                    <span>Clique no link de confirmação no e-mail</span>
+                                </p>
+                                <p className="flex items-start gap-2">
+                                    <span className="text-[#3ECF8E] font-bold mt-0.5">3.</span>
+                                    <span>Após confirmar, faça login com suas credenciais</span>
+                                </p>
+                            </div>
+
+                            <button
+                                onClick={() => navigate('/login')}
+                                className="w-full bg-[#3ECF8E] hover:bg-[#3ECF8E]/90 text-black font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#3ECF8E]/20 hover:shadow-[#3ECF8E]/40 hover:-translate-y-1 mt-6"
+                            >
+                                Ir para Login <ChevronRight className="w-4 h-4" />
+                            </button>
+                        </div>
+                    </div>
+
+                    <p className="text-center text-gray-600 text-xs mt-8">
+                        &copy; Super Checkout System
+                    </p>
+                </div>
+            </div>
+        );
+    }
+
+    // Show setup form
     return (
         <div className="min-h-screen bg-[#05050A] text-white selection:bg-primary/30 font-sans relative overflow-hidden flex items-center justify-center">
             {/* Background Effects */}

@@ -544,7 +544,7 @@ export const Domains = () => {
               </p>
             </div>
 
-            <div className="bg-black/30 border border-white/10 rounded-xl p-4 space-y-4">
+            <div className="bg-black/30 border border-white/10 rounded-xl p-4 space-y-4 max-h-[60vh] overflow-y-auto custom-scrollbar">
               <div className="flex justify-between items-center">
                 <p className="text-sm text-gray-300">
                   Registros DNS necessários:

@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS domains (
   user_id UUID REFERENCES auth.users(id) NOT NULL,
   domain TEXT NOT NULL UNIQUE,
   status TEXT DEFAULT 'pending_verification', -- pending_verification, active, invalid
+  type TEXT DEFAULT 'cname', -- cname, redirect
   usage TEXT DEFAULT 'checkout', -- checkout, member_area, system
   verified_at TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
@@ -27,6 +28,7 @@ DO $$
 BEGIN
     ALTER TABLE domains ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id);
     ALTER TABLE domains ADD COLUMN IF NOT EXISTS usage TEXT DEFAULT 'checkout';
+    ALTER TABLE domains ADD COLUMN IF NOT EXISTS type TEXT DEFAULT 'cname';
     ALTER TABLE domains ADD COLUMN IF NOT EXISTS verified_at TIMESTAMP WITH TIME ZONE;
     ALTER TABLE domains ADD COLUMN IF NOT EXISTS checkout_id UUID; -- Circular dependency with checkouts, FK added later if needed
 EXCEPTION
