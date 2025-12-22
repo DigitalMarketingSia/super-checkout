@@ -97,10 +97,15 @@ CREATE TABLE IF NOT EXISTS contents (
   title TEXT NOT NULL,
   description TEXT,
   thumbnail_url TEXT,
+  type TEXT DEFAULT 'course',
+  author_id UUID REFERENCES auth.users(id),
+  position INTEGER NOT NULL DEFAULT 0,
+  is_visible BOOLEAN DEFAULT true,
   image_vertical_url TEXT,
   image_horizontal_url TEXT,
   modules_layout TEXT DEFAULT 'horizontal',
-  is_published BOOLEAN DEFAULT false,
+  card_style TEXT DEFAULT 'horizontal',
+  is_published BOOLEAN DEFAULT true,
   is_free BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
@@ -207,6 +212,18 @@ BEGIN
     ALTER TABLE checkouts ADD COLUMN IF NOT EXISTS upsell_product_id UUID;
     ALTER TABLE checkouts ADD COLUMN IF NOT EXISTS custom_url_slug TEXT;
     ALTER TABLE checkouts ADD COLUMN IF NOT EXISTS config JSONB;
+END $$;
+
+-- Fix FK for products AFTER checkouts exists (Explicit naming for PostgREST)
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'products_member_area_checkout_fk') THEN
+        ALTER TABLE products
+        ADD CONSTRAINT products_member_area_checkout_fk
+        FOREIGN KEY (member_area_checkout_id)
+        REFERENCES checkouts(id)
+        ON DELETE SET NULL;
+    END IF;
 END $$;
 
 -- 2.10 Orders

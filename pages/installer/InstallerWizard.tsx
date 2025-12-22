@@ -297,13 +297,22 @@ END $$;
 
 --2.12 Tracks & Items
 CREATE TABLE IF NOT EXISTS tracks(
+CREATE TABLE IF NOT EXISTS contents(
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     member_area_id UUID REFERENCES member_areas(id) ON DELETE CASCADE NOT NULL,
     title TEXT NOT NULL,
-    type TEXT NOT NULL CHECK(type IN('products', 'contents', 'modules', 'lessons')),
+    description TEXT,
+    thumbnail_url TEXT,
+    type TEXT DEFAULT 'course',
+    author_id UUID REFERENCES auth.users(id),
     position INTEGER NOT NULL DEFAULT 0,
     is_visible BOOLEAN DEFAULT true,
+    is_published BOOLEAN DEFAULT true,
+    is_free BOOLEAN DEFAULT false,
     card_style TEXT DEFAULT 'horizontal',
+    modules_layout TEXT DEFAULT 'horizontal',
+    image_vertical_url TEXT,
+    image_horizontal_url TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc':: text, now()) NOT NULL
 );
 
