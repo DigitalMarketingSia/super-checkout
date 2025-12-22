@@ -301,7 +301,8 @@ CREATE TABLE IF NOT EXISTS contents(
     modules_layout TEXT DEFAULT 'horizontal',
     image_vertical_url TEXT,
     image_horizontal_url TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc':: text, now()) NOT NULL
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc':: text, now()) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc':: text, now()) NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS track_items(
