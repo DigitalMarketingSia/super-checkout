@@ -187,10 +187,11 @@ CREATE TABLE IF NOT EXISTS modules(
     content_id UUID REFERENCES contents(id) ON DELETE CASCADE NOT NULL,
     title TEXT NOT NULL,
     description TEXT,
-    position INTEGER NOT NULL DEFAULT 0,
+    order_index INTEGER NOT NULL DEFAULT 0,
     is_published BOOLEAN DEFAULT false,
     image_vertical_url TEXT,
     image_horizontal_url TEXT,
+    is_free BOOLEAN DEFAULT false,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
@@ -198,6 +199,8 @@ DO $$
 BEGIN
     ALTER TABLE modules ADD COLUMN IF NOT EXISTS image_vertical_url TEXT;
     ALTER TABLE modules ADD COLUMN IF NOT EXISTS image_horizontal_url TEXT;
+    ALTER TABLE modules ADD COLUMN IF NOT EXISTS is_free BOOLEAN DEFAULT false;
+    ALTER TABLE modules ADD COLUMN IF NOT EXISTS order_index INTEGER DEFAULT 0;
 END $$;
 
 -- 2.9 Lessons (AFTER modules)
