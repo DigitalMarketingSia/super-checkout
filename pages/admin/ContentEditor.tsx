@@ -122,7 +122,7 @@ export const ContentEditor = () => {
             showAlert('Sucesso', 'Conteúdo salvo com sucesso!', 'success');
         } catch (error) {
             console.error('Error saving content:', error);
-            showAlert('Erro', 'Erro ao salvar conteúdo.', 'error');
+            showAlert('Erro', `Erro ao salvar conteúdo: ${error.message || error}`, 'error');
         } finally {
             setSaving(false);
         }

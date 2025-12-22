@@ -1468,6 +1468,29 @@ class StorageService {
     return data;
   }
 
+  async setContentProduct(contentId: string, productId: string | null) {
+    // 1. Remove existing links
+    // Note: Using delete() on the junction table is safer than relying on conflicts if we want to support unlinking
+    const { error: deleteError } = await supabase
+      .from('product_contents')
+      .delete()
+      .eq('content_id', contentId);
+
+    if (deleteError) throw deleteError;
+
+    // 2. Add new link if productId is provided
+    if (productId) {
+      const { error: insertError } = await supabase
+        .from('product_contents')
+        .insert({
+          content_id: contentId,
+          product_id: productId
+        });
+
+      if (insertError) throw insertError;
+    }
+  }
+
   async updateContent(content: Content, productId?: string) {
     const record = {
       title: content.title,
