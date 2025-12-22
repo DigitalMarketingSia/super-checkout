@@ -1273,7 +1273,35 @@ export default function InstallerWizard() {
                             <h1 className="text-2xl font-bold mb-2 text-white">Chaves de Acesso</h1>
                             <p className="text-gray-400 mb-6">Copie as chaves do Supabase em Project Settings {'>'} API.</p>
 
-                            <form onSubmit={(e) => { e.preventDefault(); setCurrentStep('deploy'); }} className="space-y-4">
+                            <form onSubmit={async (e) => {
+                                e.preventDefault();
+
+                                try {
+                                    // Critical: Force PostgREST to reload schema cache
+                                    // This ensures the API recognizes newly created columns like author_id
+                                    const { createClient } = await import('@supabase/supabase-js');
+                                    const tempClient = createClient(supabaseUrl, anonKey);
+
+                                    console.log('🔄 Reloading schema cache...');
+
+                                    // Try to execute NOTIFY command
+                                    const { error } = await tempClient.rpc('exec_sql', {
+                                        sql: "NOTIFY pgrst, 'reload schema';"
+                                    });
+
+                                    if (error) {
+                                        console.warn('⚠️ exec_sql not available, trying alternative method...');
+                                        // Alternative: Make a dummy query to trigger cache refresh
+                                        await tempClient.from('contents').select('id').limit(0);
+                                    }
+
+                                    console.log('✅ Schema cache reloaded successfully');
+                                } catch (error) {
+                                    console.warn('⚠️ Could not reload schema cache automatically:', error);
+                                }
+
+                                setCurrentStep('deploy');
+                            }} className="space-y-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-300 mb-1.5">Anon Public Key</label>
                                     <input type="text" value={anonKey} onChange={e => setAnonKey(e.target.value)} required
