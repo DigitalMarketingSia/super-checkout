@@ -297,6 +297,16 @@ END $$;
 
 --2.12 Tracks & Items
 CREATE TABLE IF NOT EXISTS tracks(
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    member_area_id UUID REFERENCES member_areas(id) ON DELETE CASCADE NOT NULL,
+    title TEXT NOT NULL,
+    type TEXT NOT NULL CHECK(type IN('products', 'contents', 'modules', 'lessons')),
+    position INTEGER NOT NULL DEFAULT 0,
+    is_visible BOOLEAN DEFAULT true,
+    card_style TEXT DEFAULT 'horizontal',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc':: text, now()) NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS contents(
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     member_area_id UUID REFERENCES member_areas(id) ON DELETE CASCADE NOT NULL,
