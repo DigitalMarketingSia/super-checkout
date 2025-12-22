@@ -637,6 +637,9 @@ CREATE POLICY "Users can manage their own payments" ON payments FOR ALL USING(au
 CREATE POLICY "Public can create payments" ON payments FOR INSERT WITH CHECK(true);
 CREATE POLICY "Public can view payments" ON payments FOR SELECT USING(true);
 
+-- 6. CACHE RELOAD (Critical for API to see new columns immediately)
+NOTIFY pgrst, 'reload schema';
+
 
 --Contents
 CREATE POLICY "Users can manage their own contents" ON contents FOR ALL USING(
