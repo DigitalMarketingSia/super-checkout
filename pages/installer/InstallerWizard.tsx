@@ -95,29 +95,7 @@ BEGIN
     ALTER TABLE products ADD COLUMN IF NOT EXISTS currency TEXT DEFAULT 'BRL';
 END $$;
 
---2.4 Contents
-CREATE TABLE IF NOT EXISTS contents(
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    member_area_id UUID REFERENCES member_areas(id) ON DELETE CASCADE NOT NULL,
-    title TEXT NOT NULL,
-    description TEXT,
-    thumbnail_url TEXT,
-    image_vertical_url TEXT,
-    image_horizontal_url TEXT,
-    modules_layout TEXT DEFAULT 'horizontal',
-    is_published BOOLEAN DEFAULT false,
-    is_free BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc':: text, now()) NOT NULL
-);
 
-DO $$
-BEGIN
-    ALTER TABLE contents ADD COLUMN IF NOT EXISTS thumbnail_url TEXT;
-    ALTER TABLE contents ADD COLUMN IF NOT EXISTS image_vertical_url TEXT;
-    ALTER TABLE contents ADD COLUMN IF NOT EXISTS image_horizontal_url TEXT;
-    ALTER TABLE contents ADD COLUMN IF NOT EXISTS modules_layout TEXT DEFAULT 'horizontal';
-    ALTER TABLE contents ADD COLUMN IF NOT EXISTS is_free BOOLEAN DEFAULT FALSE;
-END $$;
 
 --2.5 Modules
 CREATE TABLE IF NOT EXISTS modules(
