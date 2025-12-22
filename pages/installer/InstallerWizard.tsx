@@ -124,12 +124,16 @@ CREATE TABLE IF NOT EXISTS lessons(
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     module_id UUID REFERENCES modules(id) ON DELETE CASCADE NOT NULL,
     title TEXT NOT NULL,
-    description TEXT,
+    content_type TEXT,
     video_url TEXT,
+    content_text TEXT,
+    file_url TEXT,
+    order_index INTEGER DEFAULT 0,
     duration INTEGER,
-    position INTEGER NOT NULL DEFAULT 0,
-    is_published BOOLEAN DEFAULT false,
+    is_free BOOLEAN DEFAULT false,
     image_url TEXT,
+    gallery JSONB,
+    content_order JSONB DEFAULT '["video", "text", "file", "gallery"]':: jsonb,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc':: text, now()) NOT NULL
 );
 
@@ -138,6 +142,13 @@ BEGIN
     ALTER TABLE lessons ADD COLUMN IF NOT EXISTS video_url TEXT;
     ALTER TABLE lessons ADD COLUMN IF NOT EXISTS duration INTEGER;
     ALTER TABLE lessons ADD COLUMN IF NOT EXISTS image_url TEXT;
+    ALTER TABLE lessons ADD COLUMN IF NOT EXISTS order_index INTEGER DEFAULT 0;
+    ALTER TABLE lessons ADD COLUMN IF NOT EXISTS content_type TEXT;
+    ALTER TABLE lessons ADD COLUMN IF NOT EXISTS content_text TEXT;
+    ALTER TABLE lessons ADD COLUMN IF NOT EXISTS file_url TEXT;
+    ALTER TABLE lessons ADD COLUMN IF NOT EXISTS is_free BOOLEAN DEFAULT false;
+    ALTER TABLE lessons ADD COLUMN IF NOT EXISTS gallery JSONB;
+    ALTER TABLE lessons ADD COLUMN IF NOT EXISTS content_order JSONB DEFAULT '["video", "text", "file", "gallery"]':: jsonb;
 END $$;
 
 --2.7 Product Contents
