@@ -1663,7 +1663,6 @@ class StorageService {
         is_free: lesson.is_free,
         duration: lesson.duration,
         image_url: lesson.image_url,
-        image_url: lesson.image_url,
         gallery: lesson.gallery,
         content_order: lesson.content_order,
         is_published: lesson.is_published
