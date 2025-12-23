@@ -72,6 +72,8 @@ export default function Setup() {
                 // it means we have a dirty state (Auth exists, Profile missing).
                 // We show a specific help message.
                 setError('Este e-mail já está cadastrado. Verifique se recebeu o link de confirmação ou execute o script de correção de perfis no banco de dados.');
+            } else if (err.message && err.message.includes('Error sending confirmation email')) {
+                setError('Erro ao enviar e-mail de confirmação pelo Supabase. Verifique se o limite de emails foi atingido ou configure um SMTP customizado no painel do Supabase (Project Settings > Auth > SMTP).');
             } else {
                 setError(err.message || 'Erro ao criar conta de administrador.');
             }
