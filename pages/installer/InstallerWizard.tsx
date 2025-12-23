@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS domains(
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
-DO $
+DO 
 BEGIN
     ALTER TABLE domains ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id);
     ALTER TABLE domains ADD COLUMN IF NOT EXISTS usage TEXT DEFAULT 'checkout';
@@ -37,7 +37,7 @@ BEGIN
     ALTER TABLE domains ADD COLUMN IF NOT EXISTS checkout_id UUID;
 EXCEPTION
     WHEN duplicate_column THEN RAISE NOTICE 'Column already exists in domains.';
-END $;
+END ;
 
 -- 2.2 Member Areas
 CREATE TABLE IF NOT EXISTS member_areas(
@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS member_areas(
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
-DO $
+DO 
 BEGIN
     ALTER TABLE member_areas ADD COLUMN IF NOT EXISTS domain_id UUID REFERENCES domains(id);
     ALTER TABLE member_areas ADD COLUMN IF NOT EXISTS favicon_url TEXT;
@@ -63,7 +63,7 @@ BEGIN
     ALTER TABLE member_areas ADD COLUMN IF NOT EXISTS banner_url TEXT;
     ALTER TABLE member_areas ADD COLUMN IF NOT EXISTS login_image_url TEXT;
     ALTER TABLE member_areas ADD COLUMN IF NOT EXISTS allow_free_signup BOOLEAN DEFAULT TRUE;
-END $;
+END ;
 
 -- 2.3 Products
 CREATE TABLE IF NOT EXISTS products(
@@ -78,7 +78,7 @@ CREATE TABLE IF NOT EXISTS products(
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
-DO $
+DO 
 BEGIN
     ALTER TABLE products ADD COLUMN IF NOT EXISTS price_real DECIMAL(10, 2);
     ALTER TABLE products ADD COLUMN IF NOT EXISTS price_fake DECIMAL(10, 2);
@@ -92,7 +92,7 @@ BEGIN
     ALTER TABLE products ADD COLUMN IF NOT EXISTS member_area_action TEXT DEFAULT 'none';
     ALTER TABLE products ADD COLUMN IF NOT EXISTS member_area_checkout_id UUID;
     ALTER TABLE products ADD COLUMN IF NOT EXISTS currency TEXT DEFAULT 'BRL';
-END $;
+END ;
 
 -- 2.4 Gateways (Essential for checkout)
 CREATE TABLE IF NOT EXISTS gateways(
@@ -109,13 +109,13 @@ CREATE TABLE IF NOT EXISTS gateways(
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
-DO $
+DO 
 BEGIN
     ALTER TABLE gateways ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;
     ALTER TABLE gateways ADD COLUMN IF NOT EXISTS public_key TEXT;
     ALTER TABLE gateways ADD COLUMN IF NOT EXISTS private_key TEXT;
     ALTER TABLE gateways ADD COLUMN IF NOT EXISTS webhook_secret TEXT;
-END $;
+END ;
 
 -- 2.5 Checkouts
 CREATE TABLE IF NOT EXISTS checkouts(
@@ -130,7 +130,7 @@ CREATE TABLE IF NOT EXISTS checkouts(
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
-DO $
+DO 
 BEGIN
     ALTER TABLE checkouts ADD COLUMN IF NOT EXISTS offer_id UUID;
     ALTER TABLE checkouts ADD COLUMN IF NOT EXISTS gateway_id UUID REFERENCES gateways(id);
@@ -139,10 +139,10 @@ BEGIN
     ALTER TABLE checkouts ADD COLUMN IF NOT EXISTS upsell_product_id UUID;
     ALTER TABLE checkouts ADD COLUMN IF NOT EXISTS custom_url_slug TEXT;
     ALTER TABLE checkouts ADD COLUMN IF NOT EXISTS config JSONB;
-END $;
+END ;
 
 -- Fix FK for products AFTER checkouts exists
-DO $
+DO 
 BEGIN
     IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conname = 'products_member_area_checkout_fk') THEN
         ALTER TABLE products
@@ -151,7 +151,7 @@ BEGIN
         REFERENCES checkouts(id)
         ON DELETE SET NULL;
     END IF;
-END $;
+END ;
 
 -- 2.6 Tracks (BEFORE contents because contents references member_areas)
 CREATE TABLE IF NOT EXISTS tracks(
@@ -200,13 +200,13 @@ CREATE TABLE IF NOT EXISTS modules(
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
-DO $
+DO 
 BEGIN
     ALTER TABLE modules ADD COLUMN IF NOT EXISTS image_vertical_url TEXT;
     ALTER TABLE modules ADD COLUMN IF NOT EXISTS image_horizontal_url TEXT;
     ALTER TABLE modules ADD COLUMN IF NOT EXISTS is_free BOOLEAN DEFAULT false;
     ALTER TABLE modules ADD COLUMN IF NOT EXISTS order_index INTEGER DEFAULT 0;
-END $;
+END ;
 
 -- 2.9 Lessons (AFTER modules)
 CREATE TABLE IF NOT EXISTS lessons(
@@ -226,7 +226,7 @@ CREATE TABLE IF NOT EXISTS lessons(
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
-DO $
+DO 
 BEGIN
     ALTER TABLE lessons ADD COLUMN IF NOT EXISTS video_url TEXT;
     ALTER TABLE lessons ADD COLUMN IF NOT EXISTS duration INTEGER;
@@ -238,7 +238,7 @@ BEGIN
     ALTER TABLE lessons ADD COLUMN IF NOT EXISTS is_free BOOLEAN DEFAULT false;
     ALTER TABLE lessons ADD COLUMN IF NOT EXISTS gallery JSONB;
     ALTER TABLE lessons ADD COLUMN IF NOT EXISTS content_order JSONB DEFAULT '["video", "text", "file", "gallery"]'::jsonb;
-END $;
+END ;
 
 -- 2.10 Track Items (AFTER tracks)
 CREATE TABLE IF NOT EXISTS track_items(
@@ -274,7 +274,7 @@ CREATE TABLE IF NOT EXISTS orders(
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
-DO $
+DO 
 BEGIN
     ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_user_id UUID REFERENCES auth.users(id);
     ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_cpf TEXT;
@@ -286,7 +286,7 @@ BEGIN
     ALTER TABLE orders ADD COLUMN IF NOT EXISTS utm_campaign TEXT;
     ALTER TABLE orders ADD COLUMN IF NOT EXISTS items JSONB;
     ALTER TABLE orders ADD COLUMN IF NOT EXISTS total DECIMAL(10, 2);
-END $;
+END ;
 
 -- 2.13 Payments
 CREATE TABLE IF NOT EXISTS payments(
@@ -316,12 +316,12 @@ CREATE TABLE IF NOT EXISTS access_grants(
     UNIQUE(user_id, product_id)
 );
 
-DO $
+DO 
 BEGIN
     ALTER TABLE access_grants ADD COLUMN IF NOT EXISTS is_subscription BOOLEAN DEFAULT false;
     ALTER TABLE access_grants ADD COLUMN IF NOT EXISTS subscription_provider_id TEXT;
     ALTER TABLE access_grants ADD COLUMN IF NOT EXISTS subscription_status TEXT DEFAULT 'active';
-END $;
+END ;
 
 -- 2.15 Licenses (Installer logic)
 CREATE TABLE IF NOT EXISTS licenses(
@@ -567,14 +567,14 @@ ALTER TABLE public.activity_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE payments ENABLE ROW LEVEL SECURITY;
 
 -- Drop all existing policies to avoid conflicts
-DO $
+DO 
 DECLARE
   r RECORD;
 BEGIN
   FOR r IN SELECT policyname, tablename FROM pg_policies WHERE schemaname = 'public' LOOP
     EXECUTE 'DROP POLICY IF EXISTS "' || r.policyname || '" ON "' || r.tablename || '";';
   END LOOP;
-END $;
+END ;
 
 -- Domains
 CREATE POLICY "Users can manage their own domains" ON domains FOR ALL USING(auth.uid() = user_id);
