@@ -721,7 +721,7 @@ CREATE POLICY "Authenticated Upload Avatars" ON storage.objects FOR INSERT WITH 
 -- 8. CACHE RELOAD (Critical for API to see new columns immediately)
 -- ==========================================
 NOTIFY pgrst, 'reload schema';
-;
+`;
 
 // Define the steps for the guided flow
 type Step = 'license' | 'supabase' | 'supabase_migrations' | 'supabase_keys' | 'deploy' | 'success' | 'check_subscription' | 'supabase_setup' | 'vercel_config';
