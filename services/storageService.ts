@@ -1585,7 +1585,8 @@ class StorageService {
       order_index: module.order_index,
       image_vertical_url: module.image_vertical_url,
       image_horizontal_url: module.image_horizontal_url,
-      is_free: module.is_free
+      is_free: module.is_free,
+      is_published: module.is_published
     };
 
     const { data, error } = await supabase
@@ -1607,7 +1608,8 @@ class StorageService {
         order_index: module.order_index,
         image_vertical_url: module.image_vertical_url,
         image_horizontal_url: module.image_horizontal_url,
-        is_free: module.is_free
+        is_free: module.is_free,
+        is_published: module.is_published
       })
       .eq('id', module.id)
       .select()
@@ -1640,7 +1642,7 @@ class StorageService {
   async createLesson(lesson: Omit<Lesson, 'id' | 'created_at'>) {
     const { data, error } = await supabase
       .from('lessons')
-      .insert(lesson)
+      .insert({ ...lesson, is_published: lesson.is_published !== undefined ? lesson.is_published : true }) // Default true if undefined via API
       .select()
       .single();
 
@@ -1661,8 +1663,10 @@ class StorageService {
         is_free: lesson.is_free,
         duration: lesson.duration,
         image_url: lesson.image_url,
+        image_url: lesson.image_url,
         gallery: lesson.gallery,
-        content_order: lesson.content_order
+        content_order: lesson.content_order,
+        is_published: lesson.is_published
       })
       .eq('id', lesson.id)
       .select()
