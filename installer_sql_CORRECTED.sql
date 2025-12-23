@@ -576,11 +576,10 @@ CREATE POLICY "Users can manage their own domains" ON domains FOR ALL USING(auth
 CREATE POLICY "Public can view active domains" ON domains FOR SELECT USING(true);
 
 -- Member Areas
-CREATE POLICY "Users can view their own member areas" ON member_areas FOR SELECT USING(auth.uid() = owner_id);
-CREATE POLICY "Users can insert their own member areas" ON member_areas FOR INSERT WITH CHECK(auth.uid() = owner_id);
-CREATE POLICY "Users can update their own member areas" ON member_areas FOR UPDATE USING(auth.uid() = owner_id);
-CREATE POLICY "Users can delete their own member areas" ON member_areas FOR DELETE USING(auth.uid() = owner_id);
-CREATE POLICY "Public can view member areas" ON member_areas FOR SELECT USING(true);
+CREATE POLICY "Users and public can view member areas" ON member_areas FOR SELECT USING(auth.uid() = owner_id OR true);
+CREATE POLICY "Users can create member areas" ON member_areas FOR INSERT WITH CHECK(auth.uid() = owner_id);
+CREATE POLICY "Users can update own member areas" ON member_areas FOR UPDATE USING(auth.uid() = owner_id);
+CREATE POLICY "Users can delete own member areas" ON member_areas FOR DELETE USING(auth.uid() = owner_id);
 
 -- Products
 CREATE POLICY "Users can manage their own products" ON products FOR ALL USING(auth.uid() = user_id);
