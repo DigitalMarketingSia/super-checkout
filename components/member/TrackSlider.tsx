@@ -176,18 +176,18 @@ const TrackItemCard: React.FC<TrackItemCardProps> = ({ item, onClick, accessGran
         isFree = item.content.is_free || false;
         // Choose image based on style
         if (isVertical) {
-            imageUrl = item.content.image_vertical_url || item.content.thumbnail_url || '';
+            imageUrl = item.content.image_vertical_url || item.content.image_horizontal_url || item.content.thumbnail_url || '';
         } else {
-            imageUrl = item.content.image_horizontal_url || item.content.thumbnail_url || '';
+            imageUrl = item.content.image_horizontal_url || item.content.image_vertical_url || item.content.thumbnail_url || '';
         }
         Icon = BookOpen;
     } else if (item.module) {
         title = item.module.title;
         isFree = item.module.is_free || false;
         if (isVertical) {
-            imageUrl = item.module.image_vertical_url || '';
+            imageUrl = item.module.image_vertical_url || item.module.image_horizontal_url || '';
         } else {
-            imageUrl = item.module.image_horizontal_url || '';
+            imageUrl = item.module.image_horizontal_url || item.module.image_vertical_url || '';
         }
         Icon = FileText;
     } else if (item.lesson) {
