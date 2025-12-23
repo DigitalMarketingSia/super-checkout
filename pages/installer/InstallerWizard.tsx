@@ -206,6 +206,7 @@ BEGIN
     ALTER TABLE modules ADD COLUMN IF NOT EXISTS image_horizontal_url TEXT;
     ALTER TABLE modules ADD COLUMN IF NOT EXISTS is_free BOOLEAN DEFAULT false;
     ALTER TABLE modules ADD COLUMN IF NOT EXISTS order_index INTEGER DEFAULT 0;
+    ALTER TABLE modules ADD COLUMN IF NOT EXISTS is_published BOOLEAN DEFAULT false;
 END $$;
 
 -- 2.9 Lessons (AFTER modules)
@@ -238,6 +239,7 @@ BEGIN
     ALTER TABLE lessons ADD COLUMN IF NOT EXISTS is_free BOOLEAN DEFAULT false;
     ALTER TABLE lessons ADD COLUMN IF NOT EXISTS gallery JSONB;
     ALTER TABLE lessons ADD COLUMN IF NOT EXISTS content_order JSONB DEFAULT '["video", "text", "file", "gallery"]'::jsonb;
+    ALTER TABLE lessons ADD COLUMN IF NOT EXISTS is_published BOOLEAN DEFAULT false;
 END $$;
 
 -- 2.10 Track Items (AFTER tracks)
@@ -722,564 +724,564 @@ CREATE POLICY "Authenticated Upload Avatars" ON storage.objects FOR INSERT WITH 
 NOTIFY pgrst, 'reload schema';
 `;
 
-    // Navigation Helper
-    const stepsOrder = ['check_subscription', 'supabase_setup', 'supabase_migrations', 'supabase_keys', 'deploy', 'vercel_config', 'success'];
-    const currentStepIndex = stepsOrder.indexOf(currentStep);
+// Navigation Helper
+const stepsOrder = ['check_subscription', 'supabase_setup', 'supabase_migrations', 'supabase_keys', 'deploy', 'vercel_config', 'success'];
+const currentStepIndex = stepsOrder.indexOf(currentStep);
 
-    const goBack = () => {
-        if (currentStepIndex > 0) {
-            setCurrentStep(stepsOrder[currentStepIndex - 1] as any);
-        }
-    };
+const goBack = () => {
+    if (currentStepIndex > 0) {
+        setCurrentStep(stepsOrder[currentStepIndex - 1] as any);
+    }
+};
 
-    const goNext = () => {
-        if (currentStepIndex < stepsOrder.length - 1) {
-            setCurrentStep(stepsOrder[currentStepIndex + 1] as any);
-        }
-    };
+const goNext = () => {
+    if (currentStepIndex < stepsOrder.length - 1) {
+        setCurrentStep(stepsOrder[currentStepIndex + 1] as any);
+    }
+};
 
-    return (
+return (
 
-        <div className="min-h-screen bg-[#05050A] text-white selection:bg-primary/30 font-sans relative overflow-hidden">
-            {/* Background Effects */}
-            <div className="fixed top-0 left-0 w-[500px] h-[500px] bg-[#3ECF8E]/10 rounded-full blur-[128px] pointer-events-none -translate-x-1/2 -translate-y-1/2 mix-blend-screen" />
-            <div className="fixed bottom-0 right-0 w-[500px] h-[500px] bg-purple-500/10 rounded-full blur-[128px] pointer-events-none translate-x-1/2 translate-y-1/2 mix-blend-screen" />
+    <div className="min-h-screen bg-[#05050A] text-white selection:bg-primary/30 font-sans relative overflow-hidden">
+        {/* Background Effects */}
+        <div className="fixed top-0 left-0 w-[500px] h-[500px] bg-[#3ECF8E]/10 rounded-full blur-[128px] pointer-events-none -translate-x-1/2 -translate-y-1/2 mix-blend-screen" />
+        <div className="fixed bottom-0 right-0 w-[500px] h-[500px] bg-purple-500/10 rounded-full blur-[128px] pointer-events-none translate-x-1/2 translate-y-1/2 mix-blend-screen" />
 
-            {/* --- SUCCESS ANIMATION OVERLAY --- */}
-            {successAnim.show && (
-                <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
-                    <div className="relative">
-                        <div className="w-24 h-24 bg-[#3ECF8E] rounded-full flex items-center justify-center mb-6 shadow-[0_0_50px_rgba(62,207,142,0.5)] animate-in zoom-in-50 duration-500">
-                            <Check className="w-12 h-12 text-black animate-in spin-in-90 duration-700" strokeWidth={3} />
+        {/* --- SUCCESS ANIMATION OVERLAY --- */}
+        {successAnim.show && (
+            <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
+                <div className="relative">
+                    <div className="w-24 h-24 bg-[#3ECF8E] rounded-full flex items-center justify-center mb-6 shadow-[0_0_50px_rgba(62,207,142,0.5)] animate-in zoom-in-50 duration-500">
+                        <Check className="w-12 h-12 text-black animate-in spin-in-90 duration-700" strokeWidth={3} />
+                    </div>
+                    <div className="absolute inset-0 rounded-full border-2 border-[#3ECF8E] animate-ping opacity-20"></div>
+                </div>
+                <h2 className="text-3xl font-bold text-white animate-in slide-in-from-bottom-5 duration-500">{successAnim.msg}</h2>
+            </div>
+        )}
+
+        {/* --- CONNECTING SUPABASE OVERLAY --- */}
+        {isConnectingSupabase && (
+            <div className="fixed inset-0 z-[90] flex flex-col items-center justify-center bg-[#05050A] animate-in fade-in">
+                <div className="w-20 h-20 border-4 border-[#3ECF8E]/30 border-t-[#3ECF8E] rounded-full animate-spin mb-8 shadow-[0_0_30px_rgba(62,207,142,0.2)]"></div>
+                <h2 className="text-2xl font-bold text-white mb-2">Conectando ao Supabase...</h2>
+                <p className="text-gray-400">Estamos configurando seu projeto e banco de dados.</p>
+            </div>
+        )}
+
+
+        <div className="container mx-auto px-4 py-12 relative z-10 max-w-4xl">
+            {/* Header */}
+            <div className="text-center mb-16">
+                <div className="inline-flex items-center justify-center p-3 mb-6 rounded-2xl bg-white/5 border border-white/10 shadow-2xl backdrop-blur-sm">
+                    <img src="/logo.png" alt="Logo" className="w-12 h-12 object-contain" onError={(e) => e.currentTarget.src = 'https://via.placeholder.com/48'} />
+                </div>
+                <h1 className="text-5xl font-extrabold tracking-tight mb-4 bg-clip-text text-transparent bg-gradient-to-r from-white via-gray-200 to-gray-400">
+                    Instalação Super Checkout
+                </h1>
+                <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+                    Configure seu sistema de pagamentos em poucos minutos.
+                </p>
+            </div>
+
+            {/* Progress Bar */}
+            <div className="max-w-xl mx-auto mb-16 relative">
+                <div className="h-1 bg-white/10 rounded-full overflow-hidden backdrop-blur-sm">
+                    <div
+                        className="h-full bg-gradient-to-r from-[#3ECF8E] to-emerald-400 transition-all duration-700 ease-out relative"
+                        style={{ width: `${((currentStepIndex) / (stepsOrder.length - 1)) * 100}%` }}
+                    >
+                        <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,0.8)]" />
+                    </div>
+                </div>
+                <div className="flex justify-between mt-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <span>Licença</span>
+                    <span>Banco de Dados</span>
+                    <span>Configuração</span>
+                    <span>Conclusão</span>
+                </div>
+            </div>
+
+            {/* Step Content */}
+            <div className="max-w-2xl mx-auto">
+
+                {/* --- STEP 1: LICENSE CHECK --- */}
+                {currentStep === 'check_subscription' && (
+                    <div className="glass-panel border border-white/10 bg-white/5 backdrop-blur-xl rounded-2xl p-8 shadow-2xl animate-in fade-in slide-in-from-bottom-4">
+                        <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center mb-6 text-white shadow-lg">
+                            <ShieldCheck className="w-6 h-6" />
                         </div>
-                        <div className="absolute inset-0 rounded-full border-2 border-[#3ECF8E] animate-ping opacity-20"></div>
-                    </div>
-                    <h2 className="text-3xl font-bold text-white animate-in slide-in-from-bottom-5 duration-500">{successAnim.msg}</h2>
-                </div>
-            )}
+                        <h1 className="text-2xl font-bold mb-2 text-white">Validar Licença</h1>
+                        <p className="text-gray-400 mb-6">Digite sua chave de licença para validar o uso.</p>
 
-            {/* --- CONNECTING SUPABASE OVERLAY --- */}
-            {isConnectingSupabase && (
-                <div className="fixed inset-0 z-[90] flex flex-col items-center justify-center bg-[#05050A] animate-in fade-in">
-                    <div className="w-20 h-20 border-4 border-[#3ECF8E]/30 border-t-[#3ECF8E] rounded-full animate-spin mb-8 shadow-[0_0_30px_rgba(62,207,142,0.2)]"></div>
-                    <h2 className="text-2xl font-bold text-white mb-2">Conectando ao Supabase...</h2>
-                    <p className="text-gray-400">Estamos configurando seu projeto e banco de dados.</p>
-                </div>
-            )}
-
-
-            <div className="container mx-auto px-4 py-12 relative z-10 max-w-4xl">
-                {/* Header */}
-                <div className="text-center mb-16">
-                    <div className="inline-flex items-center justify-center p-3 mb-6 rounded-2xl bg-white/5 border border-white/10 shadow-2xl backdrop-blur-sm">
-                        <img src="/logo.png" alt="Logo" className="w-12 h-12 object-contain" onError={(e) => e.currentTarget.src = 'https://via.placeholder.com/48'} />
-                    </div>
-                    <h1 className="text-5xl font-extrabold tracking-tight mb-4 bg-clip-text text-transparent bg-gradient-to-r from-white via-gray-200 to-gray-400">
-                        Instalação Super Checkout
-                    </h1>
-                    <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-                        Configure seu sistema de pagamentos em poucos minutos.
-                    </p>
-                </div>
-
-                {/* Progress Bar */}
-                <div className="max-w-xl mx-auto mb-16 relative">
-                    <div className="h-1 bg-white/10 rounded-full overflow-hidden backdrop-blur-sm">
-                        <div
-                            className="h-full bg-gradient-to-r from-[#3ECF8E] to-emerald-400 transition-all duration-700 ease-out relative"
-                            style={{ width: `${((currentStepIndex) / (stepsOrder.length - 1)) * 100}%` }}
-                        >
-                            <div className="absolute right-0 top-1/2 -translate-y-1/2 w-2 h-2 bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,0.8)]" />
-                        </div>
-                    </div>
-                    <div className="flex justify-between mt-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        <span>Licença</span>
-                        <span>Banco de Dados</span>
-                        <span>Configuração</span>
-                        <span>Conclusão</span>
-                    </div>
-                </div>
-
-                {/* Step Content */}
-                <div className="max-w-2xl mx-auto">
-
-                    {/* --- STEP 1: LICENSE CHECK --- */}
-                    {currentStep === 'check_subscription' && (
-                        <div className="glass-panel border border-white/10 bg-white/5 backdrop-blur-xl rounded-2xl p-8 shadow-2xl animate-in fade-in slide-in-from-bottom-4">
-                            <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center mb-6 text-white shadow-lg">
-                                <ShieldCheck className="w-6 h-6" />
-                            </div>
-                            <h1 className="text-2xl font-bold mb-2 text-white">Validar Licença</h1>
-                            <p className="text-gray-400 mb-6">Digite sua chave de licença para validar o uso.</p>
-
-                            <form onSubmit={handleLicenseSubmit} className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-1.5">Chave da Licença</label>
-                                    <div className="relative group">
-                                        <Key className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within:text-white transition-colors" />
-                                        <input
-                                            type="text"
-                                            value={licenseKey}
-                                            onChange={(e) => setLicenseKey(e.target.value)}
-                                            className="w-full bg-black/40 border border-white/10 rounded-xl py-3.5 pl-12 pr-4 text-white placeholder-gray-600 focus:border-white/30 focus:ring-1 focus:ring-white/30 outline-none transition-all font-mono"
-                                            placeholder="XXXX-XXXX-XXXX-XXXX"
-                                            required
-                                        />
-                                    </div>
+                        <form onSubmit={handleLicenseSubmit} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-1.5">Chave da Licença</label>
+                                <div className="relative group">
+                                    <Key className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within:text-white transition-colors" />
+                                    <input
+                                        type="text"
+                                        value={licenseKey}
+                                        onChange={(e) => setLicenseKey(e.target.value)}
+                                        className="w-full bg-black/40 border border-white/10 rounded-xl py-3.5 pl-12 pr-4 text-white placeholder-gray-600 focus:border-white/30 focus:ring-1 focus:ring-white/30 outline-none transition-all font-mono"
+                                        placeholder="XXXX-XXXX-XXXX-XXXX"
+                                        required
+                                    />
                                 </div>
+                            </div>
 
-                                {error && (
-                                    <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm flex items-center gap-2">
-                                        <AlertCircle className="w-4 h-4 shrink-0" />
-                                        {error}
-                                    </div>
+                            {error && (
+                                <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm flex items-center gap-2">
+                                    <AlertCircle className="w-4 h-4 shrink-0" />
+                                    {error}
+                                </div>
+                            )}
+
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="w-full bg-white text-black font-bold py-3.5 rounded-xl hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-xl shadow-white/5 flex items-center justify-center gap-2 mt-2"
+                            >
+                                {loading ? (
+                                    <>
+                                        <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                                        Verificando...
+                                    </>
+                                ) : (
+                                    <>
+                                        Continuar <ChevronRight className="w-4 h-4" />
+                                    </>
                                 )}
+                            </button>
+                        </form>
+                    </div>
+                )}
 
+                {/* --- STEP 2: SUPABASE SETUP --- */}
+                {currentStep === 'supabase_setup' && (
+                    <div className="glass-panel border border-white/10 bg-white/5 backdrop-blur-xl rounded-2xl p-8 shadow-2xl animate-in fade-in slide-in-from-bottom-4">
+                        <div className="w-12 h-12 bg-[#3ECF8E]/20 rounded-xl flex items-center justify-center mb-6 text-[#3ECF8E] shadow-lg shadow-[#3ECF8E]/10">
+                            <Database className="w-6 h-6" />
+                        </div>
+                        <h1 className="text-2xl font-bold mb-2 text-white">Criar Banco de Dados</h1>
+                        <p className="text-gray-400 mb-6">Escolha como deseja conectar seu Supabase.</p>
+
+                        {/* Tabs */}
+                        <div className="flex p-1 bg-black/40 rounded-xl mb-6 border border-white/10">
+                            <button
+                                onClick={() => setSupabaseMode('auto')}
+                                className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${supabaseMode === 'auto' ? 'bg-[#3ECF8E] text-black shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                            >
+                                Automático
+                            </button>
+                            <button
+                                onClick={() => setSupabaseMode('manual')}
+                                className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${supabaseMode === 'manual' ? 'bg-white text-black shadow-lg' : 'text-gray-400 hover:text-white'}`}
+                            >
+                                Manual
+                            </button>
+                        </div>
+
+                        {supabaseMode === 'auto' ? (
+                            <div className="space-y-4 animate-in fade-in">
+                                <div className="p-4 bg-[#3ECF8E]/10 border border-[#3ECF8E]/20 rounded-xl">
+                                    <p className="text-sm text-[#3ECF8E] mb-2 font-bold">Recomendado</p>
+                                    <p className="text-sm text-gray-300">
+                                        Vamos criar o projeto e configurar tudo para você automaticamente.
+                                    </p>
+                                </div>
                                 <button
-                                    type="submit"
+                                    onClick={handleSupabaseAutoConnect}
                                     disabled={loading}
-                                    className="w-full bg-white text-black font-bold py-3.5 rounded-xl hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-xl shadow-white/5 flex items-center justify-center gap-2 mt-2"
+                                    className="w-full bg-[#3ECF8E] hover:bg-[#3ECF8E]/90 text-black font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#3ECF8E]/20"
                                 >
                                     {loading ? (
                                         <>
                                             <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
-                                            Verificando...
+                                            Conectando...
                                         </>
                                     ) : (
                                         <>
-                                            Continuar <ChevronRight className="w-4 h-4" />
+                                            Conectar com Supabase <ExternalLink className="w-4 h-4" />
                                         </>
                                     )}
                                 </button>
-                            </form>
-                        </div>
-                    )}
-
-                    {/* --- STEP 2: SUPABASE SETUP --- */}
-                    {currentStep === 'supabase_setup' && (
-                        <div className="glass-panel border border-white/10 bg-white/5 backdrop-blur-xl rounded-2xl p-8 shadow-2xl animate-in fade-in slide-in-from-bottom-4">
-                            <div className="w-12 h-12 bg-[#3ECF8E]/20 rounded-xl flex items-center justify-center mb-6 text-[#3ECF8E] shadow-lg shadow-[#3ECF8E]/10">
-                                <Database className="w-6 h-6" />
                             </div>
-                            <h1 className="text-2xl font-bold mb-2 text-white">Criar Banco de Dados</h1>
-                            <p className="text-gray-400 mb-6">Escolha como deseja conectar seu Supabase.</p>
-
-                            {/* Tabs */}
-                            <div className="flex p-1 bg-black/40 rounded-xl mb-6 border border-white/10">
-                                <button
-                                    onClick={() => setSupabaseMode('auto')}
-                                    className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${supabaseMode === 'auto' ? 'bg-[#3ECF8E] text-black shadow-lg' : 'text-gray-400 hover:text-white'}`}
-                                >
-                                    Automático
-                                </button>
-                                <button
-                                    onClick={() => setSupabaseMode('manual')}
-                                    className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${supabaseMode === 'manual' ? 'bg-white text-black shadow-lg' : 'text-gray-400 hover:text-white'}`}
-                                >
-                                    Manual
-                                </button>
-                            </div>
-
-                            {supabaseMode === 'auto' ? (
-                                <div className="space-y-4 animate-in fade-in">
-                                    <div className="p-4 bg-[#3ECF8E]/10 border border-[#3ECF8E]/20 rounded-xl">
-                                        <p className="text-sm text-[#3ECF8E] mb-2 font-bold">Recomendado</p>
-                                        <p className="text-sm text-gray-300">
-                                            Vamos criar o projeto e configurar tudo para você automaticamente.
-                                        </p>
-                                    </div>
-                                    <button
-                                        onClick={handleSupabaseAutoConnect}
-                                        disabled={loading}
-                                        className="w-full bg-[#3ECF8E] hover:bg-[#3ECF8E]/90 text-black font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#3ECF8E]/20"
-                                    >
-                                        {loading ? (
-                                            <>
-                                                <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
-                                                Conectando...
-                                            </>
-                                        ) : (
-                                            <>
-                                                Conectar com Supabase <ExternalLink className="w-4 h-4" />
-                                            </>
-                                        )}
-                                    </button>
-                                </div>
-                            ) : (
-                                <div className="space-y-4 animate-in fade-in">
-                                    <a
-                                        href="https://database.new"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="block p-4 bg-black/40 border border-white/10 rounded-xl hover:border-[#3ECF8E]/50 transition-all group"
-                                    >
-                                        <div className="flex items-center justify-between mb-2">
-                                            <span className="font-bold text-white group-hover:text-[#3ECF8E] transition-colors">1. Criar Projeto Supabase</span>
-                                            <ExternalLink className="w-4 h-4 text-gray-500" />
-                                        </div>
-                                        <p className="text-sm text-gray-400">Clique para abrir o Supabase e criar um novo projeto.</p>
-                                    </a>
-
-                                    <div className="p-4 bg-black/40 border border-white/10 rounded-xl">
-                                        <p className="text-sm font-medium text-gray-300 mb-3">2. Cole a URL do Projeto:</p>
-                                        <input
-                                            type="text"
-                                            value={supabaseUrl}
-                                            onChange={(e) => setSupabaseUrl(e.target.value)}
-                                            placeholder="https://xxx.supabase.co"
-                                            className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white mb-2"
-                                        />
-                                        <p className="text-xs text-gray-500">
-                                            Encontre em: Settings {'>'} API {'>'} Project URL
-                                        </p>
-                                    </div>
-
-                                    <button
-                                        onClick={handleSupabaseManualSubmit}
-                                        className="w-full bg-white hover:bg-gray-100 text-black font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2"
-                                    >
-                                        <Database className="w-5 h-5" />
-                                        Continuar
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {/* --- STEP 2.5: MIGRATIONS --- */}
-                    {currentStep === 'supabase_migrations' && (
-                        <div className="glass-panel border border-white/10 bg-white/5 backdrop-blur-xl rounded-2xl p-8 shadow-2xl animate-in fade-in slide-in-from-bottom-4">
-                            <div className="w-12 h-12 bg-[#3ECF8E]/20 rounded-xl flex items-center justify-center mb-6 text-[#3ECF8E] shadow-lg shadow-[#3ECF8E]/10">
-                                <Database className="w-6 h-6" />
-                            </div>
-                            <h1 className="text-2xl font-bold mb-2 text-white">Criar Tabelas</h1>
-                            <p className="text-gray-400 mb-6">Execute o script SQL para estruturar seu banco.</p>
-
-                            <div className="space-y-4">
-                                <button
-                                    onClick={() => setShowSqlModal(true)}
-                                    className="w-full bg-white/10 hover:bg-white/20 text-white font-medium py-4 rounded-xl transition-all flex items-center justify-center gap-2 border border-white/10"
-                                >
-                                    <Copy className="w-4 h-4" />
-                                    Ver e Copiar SQL
-                                </button>
-
-                                <div className="text-center text-sm text-gray-500">
-                                    Cole no SQL Editor do Supabase e execute.
-                                </div>
-
-                                <button
-                                    onClick={() => setCurrentStep('supabase_keys')}
-                                    className="w-full bg-[#3ECF8E] hover:bg-[#3ECF8E]/90 text-black font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2 mt-4"
-                                >
-                                    Já executei o SQL <ChevronRight className="w-4 h-4" />
-                                </button>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* --- STEP 2.75: KEYS --- */}
-                    {currentStep === 'supabase_keys' && (
-                        <div className="glass-panel border border-white/10 bg-white/5 backdrop-blur-xl rounded-2xl p-8 shadow-2xl animate-in fade-in slide-in-from-bottom-4">
-                            <div className="w-12 h-12 bg-[#3ECF8E]/20 rounded-xl flex items-center justify-center mb-6 text-[#3ECF8E] shadow-lg shadow-[#3ECF8E]/10">
-                                <Key className="w-6 h-6" />
-                            </div>
-                            <h1 className="text-2xl font-bold mb-2 text-white">Chaves de Acesso</h1>
-                            <p className="text-gray-400 mb-6">Copie as chaves do Supabase em Project Settings {'>'} API.</p>
-
-                            <form onSubmit={async (e) => {
-                                e.preventDefault();
-
-                                try {
-                                    // Critical: Force PostgREST to reload schema cache
-                                    // This ensures the API recognizes newly created columns like author_id
-                                    const { createClient } = await import('@supabase/supabase-js');
-                                    const tempClient = createClient(supabaseUrl, anonKey);
-
-                                    console.log('🔄 Reloading schema cache...');
-
-                                    // Try to execute NOTIFY command
-                                    const { error } = await tempClient.rpc('exec_sql', {
-                                        sql: "NOTIFY pgrst, 'reload schema';"
-                                    });
-
-                                    if (error) {
-                                        console.warn('⚠️ exec_sql not available, trying alternative method...');
-                                        // Alternative: Make a dummy query to trigger cache refresh
-                                        await tempClient.from('contents').select('id').limit(0);
-                                    }
-
-                                    console.log('✅ Schema cache reloaded successfully');
-                                } catch (error) {
-                                    console.warn('⚠️ Could not reload schema cache automatically:', error);
-                                }
-
-                                setCurrentStep('deploy');
-                            }} className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-1.5">Anon Public Key</label>
-                                    <input type="text" value={anonKey} onChange={e => setAnonKey(e.target.value)} required
-                                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-xs font-mono" />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-1.5">Service Role Key (Secret)</label>
-                                    <input type="text" value={serviceKey} onChange={e => setServiceKey(e.target.value)} required
-                                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-xs font-mono" />
-                                </div>
-                                <button type="submit" className="w-full bg-[#3ECF8E] text-black font-bold py-3 rounded-xl mt-2 hover:bg-[#3ECF8E]/90 flex justify-center items-center gap-2">
-                                    Salvar e Continuar <ChevronRight className="w-4 h-4" />
-                                </button>
-                            </form>
-                        </div>
-                    )}
-
-                    {/* --- STEP 3: DEPLOY --- */}
-                    {currentStep === 'deploy' && (
-                        <div className="glass-panel border border-white/10 bg-white/5 backdrop-blur-xl rounded-2xl p-8 shadow-2xl animate-in fade-in slide-in-from-bottom-4">
-                            <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center mb-6 text-white shadow-lg">
-                                <Globe className="w-6 h-6" />
-                            </div>
-                            <h1 className="text-2xl font-bold mb-2 text-white">Publicar na Vercel</h1>
-                            <p className="text-gray-400 mb-6">
-                                Crie seu site automaticamente na Vercel.
-                            </p>
-
-                            <div className="space-y-6">
-                                <div className="bg-black/40 rounded-xl p-6 border border-white/10">
-                                    <p className="text-sm text-gray-300 mb-4 font-bold">
-                                        1. Copie e cole estas chaves ao fazer o deploy:
-                                    </p>
-                                    <div className="bg-black/50 rounded-xl p-4 border border-white/10 space-y-3 mb-6">
-                                        {[
-                                            { k: 'NEXT_PUBLIC_SUPABASE_URL', v: supabaseUrl },
-                                            { k: 'NEXT_PUBLIC_SUPABASE_ANON_KEY', v: anonKey },
-                                            { k: 'SUPABASE_SERVICE_ROLE_KEY', v: serviceKey }
-                                        ].map((env, i) => (
-                                            <div key={i} className="flex items-center justify-between gap-3 bg-white/5 p-3 rounded-xl cursor-pointer hover:bg-white/10" onClick={() => copyToClipboard(env.v, env.k)}>
-                                                <div className="overflow-hidden flex-1">
-                                                    <div className="text-xs text-gray-400 font-mono mb-1">{env.k}</div>
-                                                    <div className="text-xs text-green-400 font-mono truncate">{env.v || '...'}</div>
-                                                </div>
-                                                <Copy className="w-4 h-4 text-gray-500" />
-                                            </div>
-                                        ))}
-                                    </div>
-
-                                    <a href={deployUrl} target="_blank" rel="noopener noreferrer"
-                                        className="w-full bg-white text-black font-bold py-4 rounded-xl flex items-center justify-center gap-3 hover:bg-gray-100 transition-all shadow-xl shadow-white/10 group"
-                                    >
-                                        <svg className="w-5 h-5" viewBox="0 0 1155 1000" fill="black"><path d="M577.344 0L1154.69 1000H0L577.344 0Z" /></svg>
-                                        Deploy to Vercel
-                                        <ExternalLink className="w-4 h-4 opacity-50 group-hover:opacity-100" />
-                                    </a>
-                                </div>
-
-                                <button onClick={() => setCurrentStep('vercel_config')} className="w-full bg-gray-800 hover:bg-gray-700 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2">
-                                    Já fiz o Deploy, quero configurar <ChevronRight className="w-4 h-4" />
-                                </button>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* --- STEP 4: VERCEL CONFIG (NEW) --- */}
-                    {currentStep === 'vercel_config' && (
-                        <div className="glass-panel border border-white/10 bg-white/5 backdrop-blur-xl rounded-2xl p-8 shadow-2xl animate-in fade-in slide-in-from-bottom-4">
-                            <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center mb-6 text-purple-400 shadow-lg shadow-purple-500/10">
-                                <Settings className="w-6 h-6" />
-                            </div>
-                            <h1 className="text-2xl font-bold mb-2 text-white">Configuração Pós-Deploy</h1>
-                            <p className="text-gray-400 mb-6">Adicione estas variáveis no painel da Vercel para ativar o sistema.</p>
-
-                            <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl mb-8 flex items-start gap-3">
-                                <Info className="w-5 h-5 text-yellow-500 shrink-0 mt-0.5" />
-                                <p className="text-sm text-yellow-200">
-                                    Após adicionar as variáveis abaixo no seu projeto Vercel, você precisará fazer um <strong>Redeploy</strong> para que elas tenham efeito.
-                                </p>
-                            </div>
-
-                            <div className="space-y-6">
-                                {/* Token Section */}
-                                <div className="space-y-3">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <h3 className="text-white font-bold flex items-center gap-2">
-                                                1. VERCEL_TOKEN
-                                                <a href="https://vercel.com/account/settings/tokens" target="_blank" className="text-xs font-normal text-purple-400 hover:text-purple-300 bg-purple-500/10 px-2 py-1 rounded-full flex items-center gap-1 transition-colors">
-                                                    Gerar Token <ExternalLink className="w-3 h-3" />
-                                                </a>
-                                            </h3>
-                                        </div>
-                                    </div>
-                                    <div className="flex gap-3">
-                                        <div className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-gray-400 font-mono text-sm flex items-center">
-                                            VERCEL_TOKEN
-                                        </div>
-                                        <button
-                                            onClick={() => copyToClipboard('VERCEL_TOKEN')}
-                                            className={`px-6 rounded-xl font-bold transition-all flex items-center gap-2 ${copiedId === 'VERCEL_TOKEN' ? 'bg-green-500 text-black' : 'bg-white/10 hover:bg-white/20 text-white'}`}
-                                        >
-                                            {copiedId === 'VERCEL_TOKEN' ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
-                                            {copiedId === 'VERCEL_TOKEN' ? 'Copiado!' : 'Copiar'}
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div className="h-px bg-white/5" />
-
-                                {/* Project ID Section */}
-                                <div className="space-y-3">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <h3 className="text-white font-bold flex items-center gap-2">
-                                                2. VERCEL_PROJECT_ID
-                                                <a href="https://vercel.com/account/settings" target="_blank" className="text-xs font-normal text-purple-400 hover:text-purple-300 bg-purple-500/10 px-2 py-1 rounded-full flex items-center gap-1 transition-colors">
-                                                    Ver Configurações <ExternalLink className="w-3 h-3" />
-                                                </a>
-                                            </h3>
-                                        </div>
-                                    </div>
-                                    <div className="flex gap-3">
-                                        <div className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-gray-400 font-mono text-sm flex items-center">
-                                            VERCEL_PROJECT_ID
-                                        </div>
-                                        <button
-                                            onClick={() => copyToClipboard('VERCEL_PROJECT_ID')}
-                                            className={`px-6 rounded-xl font-bold transition-all flex items-center gap-2 ${copiedId === 'VERCEL_PROJECT_ID' ? 'bg-green-500 text-black' : 'bg-white/10 hover:bg-white/20 text-white'}`}
-                                        >
-                                            {copiedId === 'VERCEL_PROJECT_ID' ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
-                                            {copiedId === 'VERCEL_PROJECT_ID' ? 'Copiado!' : 'Copiar'}
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div className="h-8" />
-
-                                <form onSubmit={handleDeploySubmit} className="pt-4 border-t border-white/10">
-                                    <label className="block text-sm font-medium text-gray-300 mb-3">
-                                        Cole a URL do seu site para finalizar (Ex: minhaloja.vercel.app)
-                                    </label>
-                                    <div className="flex gap-3">
-                                        <div className="relative flex-1">
-                                            <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-                                            <input
-                                                type="text"
-                                                value={vercelDomain}
-                                                onChange={e => setVercelDomain(e.target.value)}
-                                                placeholder="minhaloja.vercel.app"
-                                                className="w-full bg-black/40 border border-white/10 rounded-xl py-4 pl-12 pr-4 text-white focus:border-white/30 outline-none transition-all"
-                                                required
-                                            />
-                                        </div>
-                                        <button type="submit" className="bg-[#3ECF8E] hover:bg-[#3ECF8E]/90 text-black px-8 rounded-xl font-bold transition-all flex items-center gap-2 shadow-lg shadow-[#3ECF8E]/20">
-                                            Concluir <ArrowRight className="w-5 h-5" />
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    )}
-
-
-                    {/* --- STEP 5: SUCCESS --- */}
-                    {currentStep === 'success' && (
-                        <div className="glass-panel border border-green-500/20 bg-green-500/5 backdrop-blur-xl rounded-2xl p-8 shadow-2xl animate-in fade-in slide-in-from-bottom-4 text-center">
-                            <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mb-6 text-green-500 shadow-lg shadow-green-500/20 mx-auto animate-in zoom-in duration-300">
-                                <Check className="w-10 h-10" />
-                            </div>
-                            <h1 className="text-3xl font-bold mb-4 text-white">Instalação Concluída!</h1>
-                            <p className="text-gray-400 mb-8 max-w-md mx-auto">
-                                Parabéns! Seu Super Checkout está configurado.
-                            </p>
-
-                            <div className="bg-black/40 rounded-xl p-6 mb-6 border border-white/5 text-center">
-                                <p className="text-sm text-gray-400 mb-2">Painel Administrativo:</p>
+                        ) : (
+                            <div className="space-y-4 animate-in fade-in">
                                 <a
-                                    href={`https://${localStorage.getItem('installer_vercel_domain') || vercelDomain}`}
+                                    href="https://database.new"
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-xl font-bold text-primary hover:underline font-mono"
+                                    className="block p-4 bg-black/40 border border-white/10 rounded-xl hover:border-[#3ECF8E]/50 transition-all group"
                                 >
-                                    {localStorage.getItem('installer_vercel_domain') || vercelDomain}
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="font-bold text-white group-hover:text-[#3ECF8E] transition-colors">1. Criar Projeto Supabase</span>
+                                        <ExternalLink className="w-4 h-4 text-gray-500" />
+                                    </div>
+                                    <p className="text-sm text-gray-400">Clique para abrir o Supabase e criar um novo projeto.</p>
+                                </a>
+
+                                <div className="p-4 bg-black/40 border border-white/10 rounded-xl">
+                                    <p className="text-sm font-medium text-gray-300 mb-3">2. Cole a URL do Projeto:</p>
+                                    <input
+                                        type="text"
+                                        value={supabaseUrl}
+                                        onChange={(e) => setSupabaseUrl(e.target.value)}
+                                        placeholder="https://xxx.supabase.co"
+                                        className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white mb-2"
+                                    />
+                                    <p className="text-xs text-gray-500">
+                                        Encontre em: Settings {'>'} API {'>'} Project URL
+                                    </p>
+                                </div>
+
+                                <button
+                                    onClick={handleSupabaseManualSubmit}
+                                    className="w-full bg-white hover:bg-gray-100 text-black font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2"
+                                >
+                                    <Database className="w-5 h-5" />
+                                    Continuar
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* --- STEP 2.5: MIGRATIONS --- */}
+                {currentStep === 'supabase_migrations' && (
+                    <div className="glass-panel border border-white/10 bg-white/5 backdrop-blur-xl rounded-2xl p-8 shadow-2xl animate-in fade-in slide-in-from-bottom-4">
+                        <div className="w-12 h-12 bg-[#3ECF8E]/20 rounded-xl flex items-center justify-center mb-6 text-[#3ECF8E] shadow-lg shadow-[#3ECF8E]/10">
+                            <Database className="w-6 h-6" />
+                        </div>
+                        <h1 className="text-2xl font-bold mb-2 text-white">Criar Tabelas</h1>
+                        <p className="text-gray-400 mb-6">Execute o script SQL para estruturar seu banco.</p>
+
+                        <div className="space-y-4">
+                            <button
+                                onClick={() => setShowSqlModal(true)}
+                                className="w-full bg-white/10 hover:bg-white/20 text-white font-medium py-4 rounded-xl transition-all flex items-center justify-center gap-2 border border-white/10"
+                            >
+                                <Copy className="w-4 h-4" />
+                                Ver e Copiar SQL
+                            </button>
+
+                            <div className="text-center text-sm text-gray-500">
+                                Cole no SQL Editor do Supabase e execute.
+                            </div>
+
+                            <button
+                                onClick={() => setCurrentStep('supabase_keys')}
+                                className="w-full bg-[#3ECF8E] hover:bg-[#3ECF8E]/90 text-black font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2 mt-4"
+                            >
+                                Já executei o SQL <ChevronRight className="w-4 h-4" />
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* --- STEP 2.75: KEYS --- */}
+                {currentStep === 'supabase_keys' && (
+                    <div className="glass-panel border border-white/10 bg-white/5 backdrop-blur-xl rounded-2xl p-8 shadow-2xl animate-in fade-in slide-in-from-bottom-4">
+                        <div className="w-12 h-12 bg-[#3ECF8E]/20 rounded-xl flex items-center justify-center mb-6 text-[#3ECF8E] shadow-lg shadow-[#3ECF8E]/10">
+                            <Key className="w-6 h-6" />
+                        </div>
+                        <h1 className="text-2xl font-bold mb-2 text-white">Chaves de Acesso</h1>
+                        <p className="text-gray-400 mb-6">Copie as chaves do Supabase em Project Settings {'>'} API.</p>
+
+                        <form onSubmit={async (e) => {
+                            e.preventDefault();
+
+                            try {
+                                // Critical: Force PostgREST to reload schema cache
+                                // This ensures the API recognizes newly created columns like author_id
+                                const { createClient } = await import('@supabase/supabase-js');
+                                const tempClient = createClient(supabaseUrl, anonKey);
+
+                                console.log('🔄 Reloading schema cache...');
+
+                                // Try to execute NOTIFY command
+                                const { error } = await tempClient.rpc('exec_sql', {
+                                    sql: "NOTIFY pgrst, 'reload schema';"
+                                });
+
+                                if (error) {
+                                    console.warn('⚠️ exec_sql not available, trying alternative method...');
+                                    // Alternative: Make a dummy query to trigger cache refresh
+                                    await tempClient.from('contents').select('id').limit(0);
+                                }
+
+                                console.log('✅ Schema cache reloaded successfully');
+                            } catch (error) {
+                                console.warn('⚠️ Could not reload schema cache automatically:', error);
+                            }
+
+                            setCurrentStep('deploy');
+                        }} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-1.5">Anon Public Key</label>
+                                <input type="text" value={anonKey} onChange={e => setAnonKey(e.target.value)} required
+                                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-xs font-mono" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-1.5">Service Role Key (Secret)</label>
+                                <input type="text" value={serviceKey} onChange={e => setServiceKey(e.target.value)} required
+                                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-xs font-mono" />
+                            </div>
+                            <button type="submit" className="w-full bg-[#3ECF8E] text-black font-bold py-3 rounded-xl mt-2 hover:bg-[#3ECF8E]/90 flex justify-center items-center gap-2">
+                                Salvar e Continuar <ChevronRight className="w-4 h-4" />
+                            </button>
+                        </form>
+                    </div>
+                )}
+
+                {/* --- STEP 3: DEPLOY --- */}
+                {currentStep === 'deploy' && (
+                    <div className="glass-panel border border-white/10 bg-white/5 backdrop-blur-xl rounded-2xl p-8 shadow-2xl animate-in fade-in slide-in-from-bottom-4">
+                        <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center mb-6 text-white shadow-lg">
+                            <Globe className="w-6 h-6" />
+                        </div>
+                        <h1 className="text-2xl font-bold mb-2 text-white">Publicar na Vercel</h1>
+                        <p className="text-gray-400 mb-6">
+                            Crie seu site automaticamente na Vercel.
+                        </p>
+
+                        <div className="space-y-6">
+                            <div className="bg-black/40 rounded-xl p-6 border border-white/10">
+                                <p className="text-sm text-gray-300 mb-4 font-bold">
+                                    1. Copie e cole estas chaves ao fazer o deploy:
+                                </p>
+                                <div className="bg-black/50 rounded-xl p-4 border border-white/10 space-y-3 mb-6">
+                                    {[
+                                        { k: 'NEXT_PUBLIC_SUPABASE_URL', v: supabaseUrl },
+                                        { k: 'NEXT_PUBLIC_SUPABASE_ANON_KEY', v: anonKey },
+                                        { k: 'SUPABASE_SERVICE_ROLE_KEY', v: serviceKey }
+                                    ].map((env, i) => (
+                                        <div key={i} className="flex items-center justify-between gap-3 bg-white/5 p-3 rounded-xl cursor-pointer hover:bg-white/10" onClick={() => copyToClipboard(env.v, env.k)}>
+                                            <div className="overflow-hidden flex-1">
+                                                <div className="text-xs text-gray-400 font-mono mb-1">{env.k}</div>
+                                                <div className="text-xs text-green-400 font-mono truncate">{env.v || '...'}</div>
+                                            </div>
+                                            <Copy className="w-4 h-4 text-gray-500" />
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <a href={deployUrl} target="_blank" rel="noopener noreferrer"
+                                    className="w-full bg-white text-black font-bold py-4 rounded-xl flex items-center justify-center gap-3 hover:bg-gray-100 transition-all shadow-xl shadow-white/10 group"
+                                >
+                                    <svg className="w-5 h-5" viewBox="0 0 1155 1000" fill="black"><path d="M577.344 0L1154.69 1000H0L577.344 0Z" /></svg>
+                                    Deploy to Vercel
+                                    <ExternalLink className="w-4 h-4 opacity-50 group-hover:opacity-100" />
                                 </a>
                             </div>
 
+                            <button onClick={() => setCurrentStep('vercel_config')} className="w-full bg-gray-800 hover:bg-gray-700 text-white font-bold py-3 rounded-xl flex items-center justify-center gap-2">
+                                Já fiz o Deploy, quero configurar <ChevronRight className="w-4 h-4" />
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* --- STEP 4: VERCEL CONFIG (NEW) --- */}
+                {currentStep === 'vercel_config' && (
+                    <div className="glass-panel border border-white/10 bg-white/5 backdrop-blur-xl rounded-2xl p-8 shadow-2xl animate-in fade-in slide-in-from-bottom-4">
+                        <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center mb-6 text-purple-400 shadow-lg shadow-purple-500/10">
+                            <Settings className="w-6 h-6" />
+                        </div>
+                        <h1 className="text-2xl font-bold mb-2 text-white">Configuração Pós-Deploy</h1>
+                        <p className="text-gray-400 mb-6">Adicione estas variáveis no painel da Vercel para ativar o sistema.</p>
+
+                        <div className="p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl mb-8 flex items-start gap-3">
+                            <Info className="w-5 h-5 text-yellow-500 shrink-0 mt-0.5" />
+                            <p className="text-sm text-yellow-200">
+                                Após adicionar as variáveis abaixo no seu projeto Vercel, você precisará fazer um <strong>Redeploy</strong> para que elas tenham efeito.
+                            </p>
+                        </div>
+
+                        <div className="space-y-6">
+                            {/* Token Section */}
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <h3 className="text-white font-bold flex items-center gap-2">
+                                            1. VERCEL_TOKEN
+                                            <a href="https://vercel.com/account/settings/tokens" target="_blank" className="text-xs font-normal text-purple-400 hover:text-purple-300 bg-purple-500/10 px-2 py-1 rounded-full flex items-center gap-1 transition-colors">
+                                                Gerar Token <ExternalLink className="w-3 h-3" />
+                                            </a>
+                                        </h3>
+                                    </div>
+                                </div>
+                                <div className="flex gap-3">
+                                    <div className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-gray-400 font-mono text-sm flex items-center">
+                                        VERCEL_TOKEN
+                                    </div>
+                                    <button
+                                        onClick={() => copyToClipboard('VERCEL_TOKEN')}
+                                        className={`px-6 rounded-xl font-bold transition-all flex items-center gap-2 ${copiedId === 'VERCEL_TOKEN' ? 'bg-green-500 text-black' : 'bg-white/10 hover:bg-white/20 text-white'}`}
+                                    >
+                                        {copiedId === 'VERCEL_TOKEN' ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+                                        {copiedId === 'VERCEL_TOKEN' ? 'Copiado!' : 'Copiar'}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="h-px bg-white/5" />
+
+                            {/* Project ID Section */}
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <h3 className="text-white font-bold flex items-center gap-2">
+                                            2. VERCEL_PROJECT_ID
+                                            <a href="https://vercel.com/account/settings" target="_blank" className="text-xs font-normal text-purple-400 hover:text-purple-300 bg-purple-500/10 px-2 py-1 rounded-full flex items-center gap-1 transition-colors">
+                                                Ver Configurações <ExternalLink className="w-3 h-3" />
+                                            </a>
+                                        </h3>
+                                    </div>
+                                </div>
+                                <div className="flex gap-3">
+                                    <div className="flex-1 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-gray-400 font-mono text-sm flex items-center">
+                                        VERCEL_PROJECT_ID
+                                    </div>
+                                    <button
+                                        onClick={() => copyToClipboard('VERCEL_PROJECT_ID')}
+                                        className={`px-6 rounded-xl font-bold transition-all flex items-center gap-2 ${copiedId === 'VERCEL_PROJECT_ID' ? 'bg-green-500 text-black' : 'bg-white/10 hover:bg-white/20 text-white'}`}
+                                    >
+                                        {copiedId === 'VERCEL_PROJECT_ID' ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+                                        {copiedId === 'VERCEL_PROJECT_ID' ? 'Copiado!' : 'Copiar'}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="h-8" />
+
+                            <form onSubmit={handleDeploySubmit} className="pt-4 border-t border-white/10">
+                                <label className="block text-sm font-medium text-gray-300 mb-3">
+                                    Cole a URL do seu site para finalizar (Ex: minhaloja.vercel.app)
+                                </label>
+                                <div className="flex gap-3">
+                                    <div className="relative flex-1">
+                                        <Globe className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
+                                        <input
+                                            type="text"
+                                            value={vercelDomain}
+                                            onChange={e => setVercelDomain(e.target.value)}
+                                            placeholder="minhaloja.vercel.app"
+                                            className="w-full bg-black/40 border border-white/10 rounded-xl py-4 pl-12 pr-4 text-white focus:border-white/30 outline-none transition-all"
+                                            required
+                                        />
+                                    </div>
+                                    <button type="submit" className="bg-[#3ECF8E] hover:bg-[#3ECF8E]/90 text-black px-8 rounded-xl font-bold transition-all flex items-center gap-2 shadow-lg shadow-[#3ECF8E]/20">
+                                        Concluir <ArrowRight className="w-5 h-5" />
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                )}
+
+
+                {/* --- STEP 5: SUCCESS --- */}
+                {currentStep === 'success' && (
+                    <div className="glass-panel border border-green-500/20 bg-green-500/5 backdrop-blur-xl rounded-2xl p-8 shadow-2xl animate-in fade-in slide-in-from-bottom-4 text-center">
+                        <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mb-6 text-green-500 shadow-lg shadow-green-500/20 mx-auto animate-in zoom-in duration-300">
+                            <Check className="w-10 h-10" />
+                        </div>
+                        <h1 className="text-3xl font-bold mb-4 text-white">Instalação Concluída!</h1>
+                        <p className="text-gray-400 mb-8 max-w-md mx-auto">
+                            Parabéns! Seu Super Checkout está configurado.
+                        </p>
+
+                        <div className="bg-black/40 rounded-xl p-6 mb-6 border border-white/5 text-center">
+                            <p className="text-sm text-gray-400 mb-2">Painel Administrativo:</p>
                             <a
                                 href={`https://${localStorage.getItem('installer_vercel_domain') || vercelDomain}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-1"
+                                className="text-xl font-bold text-primary hover:underline font-mono"
                             >
-                                Acessar meu Sistema
-                                <ChevronRight className="w-5 h-5" />
+                                {localStorage.getItem('installer_vercel_domain') || vercelDomain}
                             </a>
                         </div>
-                    )}
+
+                        <a
+                            href={`https://${localStorage.getItem('installer_vercel_domain') || vercelDomain}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-1"
+                        >
+                            Acessar meu Sistema
+                            <ChevronRight className="w-5 h-5" />
+                        </a>
+                    </div>
+                )}
 
 
-                </div>
             </div>
+        </div>
 
 
-            {/* --- SQL MODAL --- */}
-            {
-                showSqlModal && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
-                        <div className="w-full max-w-4xl bg-[#0F0F13] border border-white/10 rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
-                            {/* Header */}
-                            <div className="flex items-center justify-between p-6 border-b border-white/10">
-                                <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                                    <Database className="w-5 h-5 text-[#3ECF8E]" />
-                                    SQL de Migração (Supabase)
-                                </h2>
-                                <button
-                                    onClick={() => setShowSqlModal(false)}
-                                    className="text-gray-400 hover:text-white transition-colors"
-                                >
-                                    <X className="w-6 h-6" />
-                                </button>
-                            </div>
+        {/* --- SQL MODAL --- */}
+        {
+            showSqlModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
+                    <div className="w-full max-w-4xl bg-[#0F0F13] border border-white/10 rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
+                        {/* Header */}
+                        <div className="flex items-center justify-between p-6 border-b border-white/10">
+                            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                                <Database className="w-5 h-5 text-[#3ECF8E]" />
+                                SQL de Migração (Supabase)
+                            </h2>
+                            <button
+                                onClick={() => setShowSqlModal(false)}
+                                className="text-gray-400 hover:text-white transition-colors"
+                            >
+                                <X className="w-6 h-6" />
+                            </button>
+                        </div>
 
-                            {/* Content */}
-                            <div className="flex-1 overflow-auto p-6 bg-black/40">
-                                <div className="relative">
-                                    <pre className="text-xs font-mono text-gray-300 whitespace-pre-wrap break-all">
-                                        {SQL_SCHEMA}
-                                    </pre>
-                                </div>
-                            </div>
-
-                            {/* Footer */}
-                            <div className="p-6 border-t border-white/10 flex justify-end gap-3 bg-[#0F0F13] rounded-b-2xl">
-                                <button
-                                    onClick={() => setShowSqlModal(false)}
-                                    className="px-6 py-3 rounded-xl font-medium text-gray-400 hover:text-white hover:bg-white/5 transition-all"
-                                >
-                                    Fechar
-                                </button>
-                                <button
-                                    onClick={() => copyToClipboard(SQL_SCHEMA, 'sql_modal')}
-                                    className={`px-8 py-3 rounded-xl font-bold shadow-lg flex items-center gap-2 transition-all ${copiedId === 'sql_modal'
-                                        ? 'bg-green-500 text-white shadow-green-500/20 scale-105'
-                                        : 'bg-primary hover:bg-primary/90 text-white shadow-primary/20 hover:shadow-primary/40'
-                                        }`}
-                                >
-                                    {copiedId === 'sql_modal' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                                    {copiedId === 'sql_modal' ? 'Copiado!' : 'Copiar SQL Completo'}
-                                </button>
+                        {/* Content */}
+                        <div className="flex-1 overflow-auto p-6 bg-black/40">
+                            <div className="relative">
+                                <pre className="text-xs font-mono text-gray-300 whitespace-pre-wrap break-all">
+                                    {SQL_SCHEMA}
+                                </pre>
                             </div>
                         </div>
-                    </div>
-                )
-            }
 
-            <AlertModal
-                isOpen={alertModal.isOpen}
-                onClose={() => setAlertModal(prev => ({ ...prev, isOpen: false }))}
-                title={alertModal.title}
-                message={alertModal.message}
-                variant={alertModal.variant}
-                buttonText="Entendi"
-            />
-        </div >
-    );
+                        {/* Footer */}
+                        <div className="p-6 border-t border-white/10 flex justify-end gap-3 bg-[#0F0F13] rounded-b-2xl">
+                            <button
+                                onClick={() => setShowSqlModal(false)}
+                                className="px-6 py-3 rounded-xl font-medium text-gray-400 hover:text-white hover:bg-white/5 transition-all"
+                            >
+                                Fechar
+                            </button>
+                            <button
+                                onClick={() => copyToClipboard(SQL_SCHEMA, 'sql_modal')}
+                                className={`px-8 py-3 rounded-xl font-bold shadow-lg flex items-center gap-2 transition-all ${copiedId === 'sql_modal'
+                                    ? 'bg-green-500 text-white shadow-green-500/20 scale-105'
+                                    : 'bg-primary hover:bg-primary/90 text-white shadow-primary/20 hover:shadow-primary/40'
+                                    }`}
+                            >
+                                {copiedId === 'sql_modal' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                                {copiedId === 'sql_modal' ? 'Copiado!' : 'Copiar SQL Completo'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )
+        }
+
+        <AlertModal
+            isOpen={alertModal.isOpen}
+            onClose={() => setAlertModal(prev => ({ ...prev, isOpen: false }))}
+            title={alertModal.title}
+            message={alertModal.message}
+            variant={alertModal.variant}
+            buttonText="Entendi"
+        />
+    </div >
+);
 }
