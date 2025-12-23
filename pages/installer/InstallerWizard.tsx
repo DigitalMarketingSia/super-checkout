@@ -28,8 +28,7 @@ CREATE TABLE IF NOT EXISTS domains(
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
-DO 
-BEGIN
+DO  BEGIN
     ALTER TABLE domains ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id);
     ALTER TABLE domains ADD COLUMN IF NOT EXISTS usage TEXT DEFAULT 'checkout';
     ALTER TABLE domains ADD COLUMN IF NOT EXISTS type TEXT DEFAULT 'cname';
@@ -55,8 +54,7 @@ CREATE TABLE IF NOT EXISTS member_areas(
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
-DO 
-BEGIN
+DO  BEGIN
     ALTER TABLE member_areas ADD COLUMN IF NOT EXISTS domain_id UUID REFERENCES domains(id);
     ALTER TABLE member_areas ADD COLUMN IF NOT EXISTS favicon_url TEXT;
     ALTER TABLE member_areas ADD COLUMN IF NOT EXISTS primary_color TEXT DEFAULT '#E50914';
@@ -78,8 +76,7 @@ CREATE TABLE IF NOT EXISTS products(
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
-DO 
-BEGIN
+DO  BEGIN
     ALTER TABLE products ADD COLUMN IF NOT EXISTS price_real DECIMAL(10, 2);
     ALTER TABLE products ADD COLUMN IF NOT EXISTS price_fake DECIMAL(10, 2);
     ALTER TABLE products ADD COLUMN IF NOT EXISTS sku TEXT;
@@ -109,8 +106,7 @@ CREATE TABLE IF NOT EXISTS gateways(
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
-DO 
-BEGIN
+DO  BEGIN
     ALTER TABLE gateways ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;
     ALTER TABLE gateways ADD COLUMN IF NOT EXISTS public_key TEXT;
     ALTER TABLE gateways ADD COLUMN IF NOT EXISTS private_key TEXT;
@@ -130,8 +126,7 @@ CREATE TABLE IF NOT EXISTS checkouts(
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
-DO 
-BEGIN
+DO  BEGIN
     ALTER TABLE checkouts ADD COLUMN IF NOT EXISTS offer_id UUID;
     ALTER TABLE checkouts ADD COLUMN IF NOT EXISTS gateway_id UUID REFERENCES gateways(id);
     ALTER TABLE checkouts ADD COLUMN IF NOT EXISTS domain_id UUID REFERENCES domains(id);
@@ -142,8 +137,7 @@ BEGIN
 END ;
 
 -- Fix FK for products AFTER checkouts exists
-DO 
-BEGIN
+DO  BEGIN
     IF NOT EXISTS(SELECT 1 FROM pg_constraint WHERE conname = 'products_member_area_checkout_fk') THEN
         ALTER TABLE products
         ADD CONSTRAINT products_member_area_checkout_fk
@@ -200,8 +194,7 @@ CREATE TABLE IF NOT EXISTS modules(
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
-DO 
-BEGIN
+DO  BEGIN
     ALTER TABLE modules ADD COLUMN IF NOT EXISTS image_vertical_url TEXT;
     ALTER TABLE modules ADD COLUMN IF NOT EXISTS image_horizontal_url TEXT;
     ALTER TABLE modules ADD COLUMN IF NOT EXISTS is_free BOOLEAN DEFAULT false;
@@ -226,8 +219,7 @@ CREATE TABLE IF NOT EXISTS lessons(
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
-DO 
-BEGIN
+DO  BEGIN
     ALTER TABLE lessons ADD COLUMN IF NOT EXISTS video_url TEXT;
     ALTER TABLE lessons ADD COLUMN IF NOT EXISTS duration INTEGER;
     ALTER TABLE lessons ADD COLUMN IF NOT EXISTS image_url TEXT;
@@ -274,8 +266,7 @@ CREATE TABLE IF NOT EXISTS orders(
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
-DO 
-BEGIN
+DO  BEGIN
     ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_user_id UUID REFERENCES auth.users(id);
     ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_cpf TEXT;
     ALTER TABLE orders ADD COLUMN IF NOT EXISTS offer_id UUID;
@@ -316,8 +307,7 @@ CREATE TABLE IF NOT EXISTS access_grants(
     UNIQUE(user_id, product_id)
 );
 
-DO 
-BEGIN
+DO  BEGIN
     ALTER TABLE access_grants ADD COLUMN IF NOT EXISTS is_subscription BOOLEAN DEFAULT false;
     ALTER TABLE access_grants ADD COLUMN IF NOT EXISTS subscription_provider_id TEXT;
     ALTER TABLE access_grants ADD COLUMN IF NOT EXISTS subscription_status TEXT DEFAULT 'active';
