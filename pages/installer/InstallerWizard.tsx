@@ -206,7 +206,7 @@ BEGIN
     ALTER TABLE modules ADD COLUMN IF NOT EXISTS image_horizontal_url TEXT;
     ALTER TABLE modules ADD COLUMN IF NOT EXISTS is_free BOOLEAN DEFAULT false;
     ALTER TABLE modules ADD COLUMN IF NOT EXISTS order_index INTEGER DEFAULT 0;
-    ALTER TABLE modules ADD COLUMN IF NOT EXISTS is_published BOOLEAN DEFAULT false;
+    ALTER TABLE modules ADD COLUMN IF NOT EXISTS is_published BOOLEAN DEFAULT true;
 END $$;
 
 -- 2.9 Lessons (AFTER modules)
@@ -239,7 +239,7 @@ BEGIN
     ALTER TABLE lessons ADD COLUMN IF NOT EXISTS is_free BOOLEAN DEFAULT false;
     ALTER TABLE lessons ADD COLUMN IF NOT EXISTS gallery JSONB;
     ALTER TABLE lessons ADD COLUMN IF NOT EXISTS content_order JSONB DEFAULT '["video", "text", "file", "gallery"]'::jsonb;
-    ALTER TABLE lessons ADD COLUMN IF NOT EXISTS is_published BOOLEAN DEFAULT false;
+    ALTER TABLE lessons ADD COLUMN IF NOT EXISTS is_published BOOLEAN DEFAULT true;
 END $$;
 
 -- 2.10 Track Items (AFTER tracks)
