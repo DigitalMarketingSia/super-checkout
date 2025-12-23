@@ -393,18 +393,18 @@ CREATE TABLE IF NOT EXISTS public.integrations(
 
 -- 4.1 Admin Helper Function
 CREATE OR REPLACE FUNCTION public.is_admin()
-RETURNS BOOLEAN AS 
+ 
 BEGIN
   RETURN EXISTS(
     SELECT 1 FROM public.profiles
     WHERE id = auth.uid() AND role = 'admin'
   );
-END;
- LANGUAGE plpgsql SECURITY DEFINER;
+
+ plpgsql SECURITY DEFINER;
 
 -- 4.2 Handle New User
 CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER AS 
+ 
 DECLARE
   is_first_user BOOLEAN;
 BEGIN
@@ -422,19 +422,19 @@ BEGIN
   )
   ON CONFLICT(id) DO NOTHING;
   RETURN NEW;
-END;
- LANGUAGE plpgsql SECURITY DEFINER;
+
+ plpgsql SECURITY DEFINER;
 
 -- 4.3 Check if Setup is Required
 CREATE OR REPLACE FUNCTION public.is_setup_required()
-RETURNS BOOLEAN AS 
+ 
 DECLARE
   admin_count INTEGER;
 BEGIN
   SELECT COUNT(*) INTO admin_count FROM public.profiles WHERE role = 'admin';
   RETURN admin_count = 0;
-END;
- LANGUAGE plpgsql SECURITY DEFINER;
+
+ plpgsql SECURITY DEFINER;
 
 GRANT EXECUTE ON FUNCTION public.is_setup_required() TO anon;
 GRANT EXECUTE ON FUNCTION public.is_setup_required() TO authenticated;
@@ -447,7 +447,7 @@ CREATE TRIGGER on_auth_user_created
 
 -- 4.4 Handle Order Access
 CREATE OR REPLACE FUNCTION handle_new_order_access()
-RETURNS TRIGGER AS 
+ 
 DECLARE
   v_product_id UUID;
   v_user_id UUID;
@@ -474,8 +474,8 @@ BEGIN
     END IF;
   END IF;
   RETURN NEW;
-END;
- LANGUAGE plpgsql SECURITY DEFINER;
+
+ plpgsql SECURITY DEFINER;
 
 DROP TRIGGER IF EXISTS on_order_paid_grant_access ON orders;
 CREATE TRIGGER on_order_paid_grant_access
@@ -492,8 +492,7 @@ RETURNS TABLE(
     joined_at timestamptz,
     status text
 )
-SECURITY DEFINER
-AS 
+ 
 BEGIN
   RETURN QUERY
   SELECT DISTINCT
@@ -507,8 +506,8 @@ BEGIN
   JOIN contents c ON ag.content_id = c.id
   WHERE c.member_area_id = area_id
   GROUP BY u.id, u.email, u.raw_user_meta_data, ag.status;
-END;
- LANGUAGE plpgsql;
+
+ plpgsql;
 
 -- 4.6 Admin Members View
 CREATE OR REPLACE VIEW public.admin_members_view AS
