@@ -185,6 +185,7 @@ export const ContentEditor = () => {
             description: '',
             order_index: modules.length,
             created_at: new Date().toISOString(),
+            is_published: true,
             lessons: []
         };
 
@@ -645,6 +646,15 @@ export const ContentEditor = () => {
                                             onChange={e => setEditingModule({ ...editingModule, is_free: e.target.checked })}
                                         />
                                         <span className="text-sm text-white">Módulo Gratuito (Acesso liberado)</span>
+                                    </label>
+                                    <label className="flex items-center gap-3 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            className="w-5 h-5 rounded border-gray-600 text-primary bg-black/20"
+                                            checked={editingModule.is_published !== false} // Default to true if undefined
+                                            onChange={e => setEditingModule({ ...editingModule, is_published: e.target.checked })}
+                                        />
+                                        <span className="text-sm text-white">Publicado (Visível na vitrine/área de membros)</span>
                                     </label>
                                 </div>
                                 <div className="flex justify-end gap-3 mt-6">
