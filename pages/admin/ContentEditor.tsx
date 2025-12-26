@@ -6,7 +6,7 @@ import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { ConfirmModal, AlertModal } from '../../components/ui/Modal';
 import {
-    ArrowLeft, Save, Upload, Plus, Trash2, Edit2, GripVertical, Video, FileText, Link as LinkIcon, File as FileIcon, MoreVertical, ChevronDown, ChevronRight, Layers
+    ArrowLeft, Save, Upload, Plus, Trash2, Edit2, GripVertical, Video, FileText, Link as LinkIcon, File as FileIcon, MoreVertical, ChevronDown, ChevronRight, Layers, Lock
 } from 'lucide-react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { LessonEditorModal } from '../../components/admin/LessonEditorModal';
@@ -185,7 +185,6 @@ export const ContentEditor = () => {
             description: '',
             order_index: modules.length,
             created_at: new Date().toISOString(),
-            is_published: true,
             lessons: []
         };
 
@@ -345,133 +344,143 @@ export const ContentEditor = () => {
 
                 <div className="animate-in fade-in duration-300">
                     {/* Tab: Info */}
+                    {/* Tab: Info */}
                     {activeTab === 'info' && (
-                        <div className="max-w-3xl mx-auto">
-                            <Card>
-                                <h3 className="text-sm font-bold text-white mb-4">Informações Básicas</h3>
-
-                                {/* Images */}
-                                <div className="grid grid-cols-2 gap-4 mb-4">
-                                    {/* Vertical */}
-                                    <div>
-                                        <label className="block text-xs text-gray-400 mb-2">Capa Vertical (3:4)</label>
-                                        <div className="relative w-full aspect-[3/4] rounded-xl bg-black/20 border-2 border-dashed border-white/10 overflow-hidden group">
-                                            {content.image_vertical_url ? (
-                                                <>
-                                                    <img src={content.image_vertical_url} className="w-full h-full object-cover" />
-                                                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                                        <Button variant="secondary" size="xs" onClick={() => verticalInputRef.current?.click()}>
-                                                            <Upload className="w-3 h-3 mr-1" /> Trocar
-                                                        </Button>
-                                                    </div>
-                                                </>
-                                            ) : (
-                                                <div className="absolute inset-0 flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition-colors" onClick={() => verticalInputRef.current?.click()}>
-                                                    <Upload className="w-6 h-6 text-gray-400 mb-1" />
-                                                    <span className="text-[10px] text-gray-400">Upload</span>
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                            <div className="lg:col-span-1 space-y-6">
+                                <Card>
+                                    <h3 className="text-sm font-bold text-white mb-4">Imagem de Capa</h3>
+                                    <div className="relative w-full aspect-video rounded-xl bg-black/20 border-2 border-dashed border-white/10 overflow-hidden mb-4 group">
+                                        {content.image_horizontal_url ? (
+                                            <>
+                                                <img src={content.image_horizontal_url} className="w-full h-full object-cover" />
+                                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                                    <Button variant="secondary" size="sm" onClick={() => horizontalInputRef.current?.click()}>
+                                                        <Upload className="w-4 h-4 mr-2" /> Trocar
+                                                    </Button>
                                                 </div>
-                                            )}
-                                        </div>
-                                        <input type="file" ref={verticalInputRef} className="hidden" accept="image/*" onChange={(e) => handleContentImageUpload(e, 'vertical')} />
+                                            </>
+                                        ) : (
+                                            <div className="absolute inset-0 flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition-colors" onClick={() => horizontalInputRef.current?.click()}>
+                                                <Upload className="w-8 h-8 text-gray-400 mb-2" />
+                                                <span className="text-xs text-gray-400">Clique para upload (16:9)</span>
+                                            </div>
+                                        )}
                                     </div>
-
-                                    {/* Horizontal */}
+                                    <input
+                                        type="file"
+                                        ref={horizontalInputRef}
+                                        className="hidden"
+                                        accept="image/*"
+                                        onChange={(e) => handleContentImageUpload(e, 'horizontal')}
+                                    />
                                     <div>
-                                        <label className="block text-xs text-gray-400 mb-2">Capa Horizontal (16:9)</label>
-                                        <div className="relative w-full aspect-video rounded-xl bg-black/20 border-2 border-dashed border-white/10 overflow-hidden group">
-                                            {content.image_horizontal_url ? (
-                                                <>
-                                                    <img src={content.image_horizontal_url} className="w-full h-full object-cover" />
-                                                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                                        <Button variant="secondary" size="xs" onClick={() => horizontalInputRef.current?.click()}>
-                                                            <Upload className="w-3 h-3 mr-1" /> Trocar
-                                                        </Button>
-                                                    </div>
-                                                </>
-                                            ) : (
-                                                <div className="absolute inset-0 flex flex-col items-center justify-center cursor-pointer hover:bg-white/5 transition-colors" onClick={() => horizontalInputRef.current?.click()}>
-                                                    <Upload className="w-6 h-6 text-gray-400 mb-1" />
-                                                    <span className="text-[10px] text-gray-400">Upload</span>
-                                                </div>
-                                            )}
-                                        </div>
-                                        <input type="file" ref={horizontalInputRef} className="hidden" accept="image/*" onChange={(e) => handleContentImageUpload(e, 'horizontal')} />
-                                    </div>
-                                </div>
-
-                                <div className="space-y-4">
-                                    <div>
-                                        <label className="block text-xs text-gray-400 mb-1">Título</label>
+                                        <label className="text-xs text-gray-500 mb-1 block">Ou cole uma URL externa:</label>
                                         <input
                                             type="text"
-                                            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm"
-                                            value={content.title}
-                                            onChange={e => setContent({ ...content, title: e.target.value })}
+                                            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder:text-gray-500"
+                                            placeholder="https://..."
+                                            value={content.image_horizontal_url || ''}
+                                            onChange={e => setContent({ ...content, image_horizontal_url: e.target.value, thumbnail_url: e.target.value })}
                                         />
                                     </div>
-                                    <div>
-                                        <label className="block text-xs text-gray-400 mb-1">Descrição</label>
-                                        <textarea
-                                            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm"
-                                            rows={3}
-                                            value={content.description}
-                                            onChange={e => setContent({ ...content, description: e.target.value })}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs text-gray-400 mb-1">Tipo</label>
-                                        <select
-                                            className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm"
-                                        >
-                                            <option value="horizontal">Horizontal (Padrão)</option>
-                                            <option value="vertical">Vertical (Poster)</option>
-                                        </select>
-                                    </div>
+                                </Card>
+                            </div>
 
-                                    <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-white/5 rounded-xl border border-gray-200 dark:border-white/10">
+                            <div className="lg:col-span-2 space-y-6">
+                                <Card>
+                                    <div className="space-y-6">
                                         <div>
-                                            <h4 className="font-medium text-gray-900 dark:text-white">Conteúdo Gratuito</h4>
-                                            <p className="text-xs text-gray-500">Permitir acesso para contas gratuitas</p>
-                                        </div>
-                                        <label className="relative inline-flex items-center cursor-pointer">
+                                            <label className="block text-sm text-gray-300 mb-2">Título</label>
                                             <input
-                                                type="checkbox"
-                                                className="sr-only peer"
-                                                checked={content.is_free || false}
-                                                onChange={e => {
-                                                    const isFree = e.target.checked;
-                                                    setContent({ ...content, is_free: isFree });
-                                                    if (isFree) setSelectedProductId('');
-                                                }}
+                                                type="text"
+                                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-gray-500"
+                                                placeholder="Título do conteúdo"
+                                                value={content.title}
+                                                onChange={e => setContent({ ...content, title: e.target.value })}
                                             />
-                                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/30 dark:peer-focus:ring-primary/30 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
-                                        </label>
-                                    </div>
-
-                                    {!content.is_free && (
-                                        <div className="p-4 bg-gray-50 dark:bg-white/5 rounded-xl border border-gray-200 dark:border-white/10 animate-in fade-in slide-in-from-top-2">
-                                            <h4 className="font-medium text-gray-900 dark:text-white mb-2">Produto Vinculado</h4>
-                                            <p className="text-xs text-gray-500 mb-3">Selecione o produto que o aluno precisa comprar para acessar este conteúdo.</p>
-
-                                            <select
-                                                value={selectedProductId}
-                                                onChange={(e) => setSelectedProductId(e.target.value)}
-                                                className="w-full bg-white dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-2 text-gray-900 dark:text-white text-sm outline-none focus:ring-2 focus:ring-primary/50"
-                                            >
-                                                <option value="">Selecione um produto...</option>
-                                                {products.map(product => (
-                                                    <option key={product.id} value={product.id}>
-                                                        {product.name}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                            {products.length === 0 && (
-                                                <p className="text-xs text-yellow-500 mt-2">Nenhum produto encontrado. Crie um produto primeiro.</p>
-                                            )}
                                         </div>
-                                    )}
-                                </div>
-                            </Card>
+                                        <div>
+                                            <label className="block text-sm text-gray-300 mb-2">Descrição</label>
+                                            <textarea
+                                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder:text-gray-500"
+                                                rows={4}
+                                                placeholder="Descreva seu conteúdo..."
+                                                value={content.description}
+                                                onChange={e => setContent({ ...content, description: e.target.value })}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm text-gray-300 mb-2">Tipo de Layout dos Cards</label>
+                                            <select
+                                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:ring-2 focus:ring-primary/50"
+                                                value={content.modules_layout || 'horizontal'}
+                                                onChange={e => setContent({ ...content, modules_layout: e.target.value as any })}
+                                            >
+                                                <option value="horizontal">Horizontal (Padrão)</option>
+                                                <option value="vertical">Vertical (Poster)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </Card>
+
+                                <Card>
+                                    <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                                        <Layers className="w-5 h-5 text-primary" />
+                                        Configurações de Acesso
+                                    </h3>
+
+                                    <div className="space-y-6">
+                                        {/* Conteúdo Gratuito */}
+                                        <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/5">
+                                            <div>
+                                                <h4 className="font-medium text-white">Conteúdo Gratuito</h4>
+                                                <p className="text-xs text-gray-400">Permitir acesso para contas gratuitas/visitantes.</p>
+                                            </div>
+                                            <label className="relative inline-flex items-center cursor-pointer">
+                                                <input
+                                                    type="checkbox"
+                                                    className="sr-only peer"
+                                                    checked={content.is_free || false}
+                                                    onChange={e => {
+                                                        const isFree = e.target.checked;
+                                                        setContent({ ...content, is_free: isFree });
+                                                        if (isFree) setSelectedProductId('');
+                                                    }}
+                                                />
+                                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+                                            </label>
+                                        </div>
+
+                                        {/* Produto Vinculado */}
+                                        {!content.is_free && (
+                                            <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                                                <h4 className="font-medium text-white mb-2 flex items-center gap-2">
+                                                    <Lock className="w-4 h-4 text-gray-400" />
+                                                    Produto Vinculado
+                                                </h4>
+                                                <p className="text-xs text-gray-400 mb-2">Selecione o produto que o aluno precisa comprar para acessar este conteúdo.</p>
+
+                                                <select
+                                                    value={selectedProductId}
+                                                    onChange={(e) => setSelectedProductId(e.target.value)}
+                                                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:ring-2 focus:ring-primary/50"
+                                                >
+                                                    <option value="" className="bg-gray-900 text-gray-400">Selecione um produto...</option>
+                                                    {products.map(product => (
+                                                        <option key={product.id} value={product.id} className="bg-gray-900 text-white">
+                                                            {product.name}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                                {products.length === 0 && (
+                                                    <p className="text-xs text-yellow-500 mt-2">Nenhum produto encontrado. Crie um produto primeiro.</p>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                </Card>
+                            </div>
                         </div>
                     )}
 
@@ -492,13 +501,15 @@ export const ContentEditor = () => {
                             )}
 
                             {!isNew && modules.length === 0 && (
-                                <div className="p-12 border border-dashed border-white/10 rounded-xl text-center bg-white/5">
-                                    <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
-                                        <Plus className="w-6 h-6 text-gray-400" />
+                                <div className="p-12 border border-dashed border-white/10 rounded-xl text-center bg-white/5 flex flex-col items-center justify-center min-h-[300px]">
+                                    <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-6">
+                                        <Plus className="w-8 h-8 text-gray-400" />
                                     </div>
-                                    <h3 className="text-lg font-medium text-white mb-2">Comece criando um módulo</h3>
-                                    <p className="text-gray-400 text-sm mb-4">Organize seu conteúdo em módulos e aulas.</p>
-                                    <Button onClick={handleCreateModule}>Criar Primeiro Módulo</Button>
+                                    <h3 className="text-xl font-bold text-white mb-2">Comece criando um módulo</h3>
+                                    <p className="text-gray-400 text-sm mb-6 max-w-sm">Organize seu conteúdo em módulos e aulas para facilitar o aprendizado dos seus alunos.</p>
+                                    <Button onClick={handleCreateModule} size="lg" className="font-medium">
+                                        Criar Primeiro Módulo
+                                    </Button>
                                 </div>
                             )}
 
@@ -519,52 +530,54 @@ export const ContentEditor = () => {
                                                     <p className="text-xs text-gray-500">{module.lessons?.length || 0} aulas</p>
                                                 </div>
                                             </div>
-                                            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button onClick={() => { setEditingModule(module); setIsModuleModalOpen(true); }} className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg">
+                                            <div className="flex items-center gap-2">
+                                                <button onClick={() => { setEditingModule(module); setIsModuleModalOpen(true); }} className="p-2 text-gray-400 hover:text-white hover:bg-white/10 rounded-lg transition-colors" title="Editar módulo">
                                                     <Edit2 className="w-4 h-4" />
                                                 </button>
-                                                <button onClick={() => handleDeleteModule(module.id)} className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg">
+                                                <button onClick={() => handleDeleteModule(module.id)} className="p-2 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors" title="Excluir módulo">
                                                     <Trash2 className="w-4 h-4" />
                                                 </button>
-                                                <Button size="xs" variant="secondary" onClick={() => handleCreateLesson(module.id)}>
-                                                    <Plus className="w-3 h-3 mr-1" /> Aula
+                                                <Button size="xs" onClick={() => handleCreateLesson(module.id)} className="bg-primary hover:bg-primary/90 text-white border-0 px-3">
+                                                    <Plus className="w-3 h-3 mr-1" /> Criar Aula
                                                 </Button>
                                             </div>
                                         </div>
 
                                         {/* Lessons List */}
-                                        {expandedModules[module.id] && (
-                                            <div className="bg-black/20">
-                                                {module.lessons && module.lessons.length > 0 ? (
-                                                    <div className="divide-y divide-white/5">
-                                                        {module.lessons.map((lesson) => (
-                                                            <div key={lesson.id} className="flex items-center justify-between p-3 pl-10 hover:bg-white/5 group transition-colors">
-                                                                <div className="flex items-center gap-3">
-                                                                    {lesson.content_type === 'video' && <Video className="w-4 h-4 text-blue-400" />}
-                                                                    {lesson.content_type === 'text' && <FileText className="w-4 h-4 text-green-400" />}
-                                                                    {lesson.content_type === 'file' && <FileIcon className="w-4 h-4 text-orange-400" />}
-                                                                    {lesson.content_type === 'link' && <LinkIcon className="w-4 h-4 text-purple-400" />}
-                                                                    <span className="text-sm text-gray-300">{lesson.title}</span>
-                                                                    {lesson.is_free && <span className="text-[10px] bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded">Grátis</span>}
+                                        {
+                                            expandedModules[module.id] && (
+                                                <div className="bg-black/20">
+                                                    {module.lessons && module.lessons.length > 0 ? (
+                                                        <div className="divide-y divide-white/5">
+                                                            {module.lessons.map((lesson) => (
+                                                                <div key={lesson.id} className="flex items-center justify-between p-3 pl-10 hover:bg-white/5 group transition-colors">
+                                                                    <div className="flex items-center gap-3">
+                                                                        {lesson.content_type === 'video' && <Video className="w-4 h-4 text-blue-400" />}
+                                                                        {lesson.content_type === 'text' && <FileText className="w-4 h-4 text-green-400" />}
+                                                                        {lesson.content_type === 'file' && <FileIcon className="w-4 h-4 text-orange-400" />}
+                                                                        {lesson.content_type === 'link' && <LinkIcon className="w-4 h-4 text-purple-400" />}
+                                                                        <span className="text-sm text-gray-300">{lesson.title}</span>
+                                                                        {lesson.is_free && <span className="text-[10px] bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded">Grátis</span>}
+                                                                    </div>
+                                                                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                        <button onClick={() => { setEditingLesson({ lesson, moduleId: module.id }); setIsLessonModalOpen(true); }} className="p-1.5 text-gray-400 hover:text-white hover:bg-white/10 rounded">
+                                                                            <Edit2 className="w-3.5 h-3.5" />
+                                                                        </button>
+                                                                        <button onClick={() => handleDeleteLesson(lesson.id, module.id)} className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded">
+                                                                            <Trash2 className="w-3.5 h-3.5" />
+                                                                        </button>
+                                                                    </div>
                                                                 </div>
-                                                                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                    <button onClick={() => { setEditingLesson({ lesson, moduleId: module.id }); setIsLessonModalOpen(true); }} className="p-1.5 text-gray-400 hover:text-white hover:bg-white/10 rounded">
-                                                                        <Edit2 className="w-3.5 h-3.5" />
-                                                                    </button>
-                                                                    <button onClick={() => handleDeleteLesson(lesson.id, module.id)} className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-500/10 rounded">
-                                                                        <Trash2 className="w-3.5 h-3.5" />
-                                                                    </button>
-                                                                </div>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                ) : (
-                                                    <div className="p-6 text-center text-xs text-gray-500 italic">
-                                                        Nenhuma aula neste módulo.
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
+                                                            ))}
+                                                        </div>
+                                                    ) : (
+                                                        <div className="p-6 text-center text-xs text-gray-500 italic">
+                                                            Nenhuma aula neste módulo.
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )
+                                        }
                                     </div>
                                 ))}
                             </div>
@@ -685,6 +698,6 @@ export const ContentEditor = () => {
                     variant={alertState.variant}
                 />
             </div>
-        </Layout>
+        </Layout >
     );
 };

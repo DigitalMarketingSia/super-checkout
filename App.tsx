@@ -40,6 +40,7 @@ import { MemberProfile } from './pages/member/MemberProfile';
 import { LicenseGuard } from './components/LicenseGuard';
 import { Loading } from './components/ui/Loading';
 import InstallerWizard from './pages/installer/InstallerWizard';
+import { WebhookDocs } from './pages/docs/WebhookDocs'; // Import Docs
 import { ThemeProvider } from './context/ThemeContext';
 
 import { storage } from './services/storageService';
@@ -275,6 +276,9 @@ const DomainDispatcher = () => {
       <Route path="/admin/members" element={<AdminRoute><MemberAreas /></AdminRoute>} />
       <Route path="/admin/members/:id" element={<AdminRoute><MemberAreaDashboard /></AdminRoute>} />
       <Route path="/admin/contents/:id" element={<AdminRoute><ContentEditor /></AdminRoute>} />
+
+      {/* Documentation Routes */}
+      <Route path="/docs/webhooks" element={<AdminRoute><WebhookDocs /></AdminRoute>} />
 
 
       {/* Member Area Public Routes (Standard) */}

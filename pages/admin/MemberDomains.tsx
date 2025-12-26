@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { MemberArea, Domain, DomainUsage } from '../../types';
 import { storage } from '../../services/storageService';
 import { Card } from '../../components/ui/Card';
-import { Globe, Check, AlertCircle } from 'lucide-react';
+import { Globe, Check, AlertCircle, Lightbulb } from 'lucide-react';
 
 interface MemberDomainsProps {
     area: MemberArea;
@@ -73,9 +73,10 @@ export const MemberDomains: React.FC<MemberDomainsProps> = ({ area, onDomainChan
                                         </option>
                                     ))}
                                 </select>
-                                <p className="text-xs text-gray-500 mt-2">
-                                    💡 Após selecionar, clique em "Salvar Alterações" no topo da página
-                                </p>
+                                <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
+                                    <Lightbulb className="w-3.5 h-3.5 text-yellow-500" />
+                                    <span>Após selecionar, clique em "Salvar Alterações" no topo da página</span>
+                                </div>
                             </div>
 
                             {selectedDomainId && (

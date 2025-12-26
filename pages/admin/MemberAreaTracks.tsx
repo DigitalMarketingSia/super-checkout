@@ -200,10 +200,10 @@ export const MemberAreaTracks: React.FC<MemberAreaTracksProps> = ({ memberAreaId
                                 onChange={(e) => setNewTrackType(e.target.value as any)}
                                 className="w-full bg-white dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm"
                             >
-                                <option value="contents">Conteúdos</option>
-                                <option value="products">Produtos</option>
-                                <option value="modules">Módulos</option>
-                                <option value="lessons">Aulas</option>
+                                <option value="contents" className="bg-white dark:bg-[#0A0A0A]">Conteúdos</option>
+                                <option value="products" className="bg-white dark:bg-[#0A0A0A]">Produtos</option>
+                                <option value="modules" className="bg-white dark:bg-[#0A0A0A]">Módulos</option>
+                                <option value="lessons" className="bg-white dark:bg-[#0A0A0A]">Aulas</option>
                             </select>
                         </div>
                         <div>
@@ -213,8 +213,8 @@ export const MemberAreaTracks: React.FC<MemberAreaTracksProps> = ({ memberAreaId
                                 onChange={(e) => setNewTrackCardStyle(e.target.value as any)}
                                 className="w-full bg-white dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm"
                             >
-                                <option value="horizontal">Horizontal (Padrão)</option>
-                                <option value="vertical">Vertical (Poster)</option>
+                                <option value="horizontal" className="bg-white dark:bg-[#0A0A0A]">Horizontal (Padrão)</option>
+                                <option value="vertical" className="bg-white dark:bg-[#0A0A0A]">Vertical (Poster)</option>
                             </select>
                         </div>
                     </div>
@@ -256,8 +256,8 @@ export const MemberAreaTracks: React.FC<MemberAreaTracksProps> = ({ memberAreaId
                                             onChange={(e) => handleUpdateTrackStyle(track.id, e.target.value as any)}
                                             className="text-xs bg-transparent border-none text-gray-500 uppercase cursor-pointer focus:ring-0 p-0"
                                         >
-                                            <option value="horizontal">Horizontal</option>
-                                            <option value="vertical">Vertical</option>
+                                            <option value="horizontal" className="bg-white dark:bg-[#0A0A0A]">Horizontal</option>
+                                            <option value="vertical" className="bg-white dark:bg-[#0A0A0A]">Vertical</option>
                                         </select>
                                     </div>
                                 </div>
@@ -328,12 +328,11 @@ export const MemberAreaTracks: React.FC<MemberAreaTracksProps> = ({ memberAreaId
                                     onClick={() => handleAddItem(item)}
                                     className="p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-white/5 cursor-pointer flex items-center gap-3 transition-colors"
                                 >
-                                    {(item.imageUrl || item.thumbnail_url || item.image_url) && (
-                                        <img src={item.imageUrl || item.thumbnail_url || item.image_url} className="w-10 h-10 rounded object-cover" />
+                                    {(item.imageUrl || item.thumbnail_url || item.image_url || item.image_horizontal_url || item.image_vertical_url) && (
+                                        <img src={item.imageUrl || item.thumbnail_url || item.image_url || item.image_horizontal_url || item.image_vertical_url} className="w-10 h-10 rounded object-cover" />
                                     )}
                                     <div>
                                         <div className="font-medium">{item.name || item.title}</div>
-                                        <div className="text-xs text-gray-500">{item.id}</div>
                                     </div>
                                 </div>
                             ))}

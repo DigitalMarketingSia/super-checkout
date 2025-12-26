@@ -188,7 +188,7 @@ CREATE TABLE IF NOT EXISTS modules(
     title TEXT NOT NULL,
     description TEXT,
     order_index INTEGER NOT NULL DEFAULT 0,
-    is_published BOOLEAN DEFAULT false,
+    is_published BOOLEAN DEFAULT true,
     image_vertical_url TEXT,
     image_horizontal_url TEXT,
     is_free BOOLEAN DEFAULT false,
@@ -202,6 +202,8 @@ BEGIN
     ALTER TABLE modules ADD COLUMN IF NOT EXISTS is_free BOOLEAN DEFAULT false;
     ALTER TABLE modules ADD COLUMN IF NOT EXISTS order_index INTEGER DEFAULT 0;
     ALTER TABLE modules ADD COLUMN IF NOT EXISTS is_published BOOLEAN DEFAULT true;
+    -- Force default to true for existing tables
+    ALTER TABLE modules ALTER COLUMN is_published SET DEFAULT true;
 END $$;
 
 -- 2.9 Lessons (AFTER modules)
@@ -235,6 +237,8 @@ BEGIN
     ALTER TABLE lessons ADD COLUMN IF NOT EXISTS gallery JSONB;
     ALTER TABLE lessons ADD COLUMN IF NOT EXISTS content_order JSONB DEFAULT '["video", "text", "file", "gallery"]'::jsonb;
     ALTER TABLE lessons ADD COLUMN IF NOT EXISTS is_published BOOLEAN DEFAULT true;
+    -- Force default to true for existing tables
+    ALTER TABLE lessons ALTER COLUMN is_published SET DEFAULT true;
 END $$;
 
 -- 2.10 Track Items (AFTER tracks)
@@ -334,7 +338,7 @@ CREATE TABLE IF NOT EXISTS licenses(
 
 CREATE TABLE IF NOT EXISTS validation_logs(
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    license_key UUID REFERENCES licenses(key),
+    license_key UUID REFERENCES licenses(key) ON DELETE CASCADE,
     ip_address TEXT,
     domain TEXT,
     user_agent TEXT,

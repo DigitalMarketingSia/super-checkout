@@ -347,15 +347,21 @@ export const MemberSettings: React.FC<MemberSettingsProps> = ({ area, onSave, is
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Cor Primária</label>
                             <div className="flex items-center gap-3">
-                                <input
-                                    type="color"
-                                    className="w-12 h-12 rounded-xl cursor-pointer border-0 p-0 overflow-hidden"
-                                    value={settings.primary_color}
-                                    onChange={e => setSettings({ ...settings, primary_color: e.target.value })}
-                                />
+                                <div className="relative w-14 h-14 rounded-xl overflow-hidden border border-white/20 shadow-sm shrink-0">
+                                    <div
+                                        className="absolute inset-0"
+                                        style={{ backgroundColor: settings.primary_color }}
+                                    />
+                                    <input
+                                        type="color"
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                        value={settings.primary_color}
+                                        onChange={e => setSettings({ ...settings, primary_color: e.target.value })}
+                                    />
+                                </div>
                                 <input
                                     type="text"
-                                    className="flex-1 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary/50 uppercase"
+                                    className="flex-1 min-w-0 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl px-3 py-3 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-primary/50 uppercase"
                                     value={settings.primary_color}
                                     onChange={e => setSettings({ ...settings, primary_color: e.target.value })}
                                 />

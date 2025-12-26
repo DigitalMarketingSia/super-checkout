@@ -1585,8 +1585,7 @@ class StorageService {
       order_index: module.order_index,
       image_vertical_url: module.image_vertical_url,
       image_horizontal_url: module.image_horizontal_url,
-      is_free: module.is_free,
-      is_published: module.is_published
+      is_free: module.is_free
     };
 
     const { data, error } = await supabase
@@ -1608,8 +1607,7 @@ class StorageService {
         order_index: module.order_index,
         image_vertical_url: module.image_vertical_url,
         image_horizontal_url: module.image_horizontal_url,
-        is_free: module.is_free,
-        is_published: module.is_published
+        is_free: module.is_free
       })
       .eq('id', module.id)
       .select()
@@ -1642,7 +1640,7 @@ class StorageService {
   async createLesson(lesson: Omit<Lesson, 'id' | 'created_at'>) {
     const { data, error } = await supabase
       .from('lessons')
-      .insert({ ...lesson, is_published: lesson.is_published !== undefined ? lesson.is_published : true }) // Default true if undefined via API
+      .insert(lesson)
       .select()
       .single();
 
@@ -2079,7 +2077,7 @@ class StorageService {
       } else if (track.type === 'modules') {
         const { data } = await supabase
           .from('modules')
-          .select('id, title, description, order_index, is_published, is_free, image_vertical_url, image_horizontal_url, content_id, content:contents(*, product_contents(products(*, checkouts:member_area_checkout_id(id, custom_url_slug, domain_id, domains:domain_id(domain)))))')
+          .select('id, title, description, order_index, is_free, image_vertical_url, image_horizontal_url, content_id, content:contents(*, product_contents(products(*, checkouts:member_area_checkout_id(id, custom_url_slug, domain_id, domains:domain_id(domain)))))')
           .in('id', itemIds);
 
         relatedData = (data || []).map((m: any) => ({

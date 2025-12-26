@@ -98,7 +98,7 @@ export const Gateways = () => {
     }
   };
 
-  const IntegrationCard = ({ title, logo, status, onClick }: any) => (
+  const IntegrationCard = ({ title, logo, status, onClick, imgClassName = "max-w-full max-h-full" }: any) => (
     <Card
       className={`relative overflow-hidden group hover:border-primary/50 transition-all cursor-pointer h-40 flex items-center justify-center ${status === 'active' ? 'border-green-500/50 bg-green-500/5' : ''
         }`}
@@ -113,7 +113,7 @@ export const Gateways = () => {
       )}
 
       <div className="w-40 h-20 flex items-center justify-center opacity-70 group-hover:opacity-100 transition-opacity">
-        <img src={logo} alt={title} className="max-w-full max-h-full object-contain brightness-0 invert" />
+        <img src={logo} alt={title} className={`${imgClassName} object-contain brightness-0 invert`} />
       </div>
     </Card>
   );
@@ -161,21 +161,10 @@ export const Gateways = () => {
         </Card>
 
         <IntegrationCard
-          title="Lunoxpay"
-          logo="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath fill='%23FFD700' d='M20 20h20v60h-20z'/%3E%3Cpath fill='%23FFD700' d='M50 30l20 15-20 15z'/%3E%3C/svg%3E"
+          title="Stripe"
+          logo="/stripe-logo.png"
           status="soon"
-        />
-
-        <IntegrationCard
-          title="Sync Pay"
-          logo="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='30' cy='50' r='15' fill='%234F46E5'/%3E%3Ccircle cx='70' cy='50' r='15' fill='%234F46E5'/%3E%3Cpath d='M30 35Q50 20 70 35' stroke='%234F46E5' fill='none' stroke-width='4'/%3E%3C/svg%3E"
-          status="soon"
-        />
-
-        <IntegrationCard
-          title="Push-in Pay"
-          logo="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath fill='white' d='M30 30h40v40h-40z'/%3E%3Cpath fill='white' d='M50 20l15 10h-30z'/%3E%3C/svg%3E"
-          status="soon"
+          imgClassName="max-w-full max-h-12"
         />
       </div>
 

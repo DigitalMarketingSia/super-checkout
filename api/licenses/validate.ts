@@ -40,9 +40,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             return res.status(200).json({ valid: false, message: 'License is not active' });
         }
 
-        // Optional: Update license with domain if not set (bind on first use)
-        // Or check if domain matches if already set.
-        // For now, just valid.
+        // DOMAIN LOCKING LOGIC
+        if (license.allowed_domain) {
+            // Case 1: Domain is already locked -> Check match
+            // Remove protocol and www for comparison
+            const cleanDomain = domain?.replace(/^https?:\/\//, '').replace(/^www\./, '');
+            const cleanAllowed = license.allowed_domain.replace(/^https?:\/\//, '').replace(/^www\./, '');
+
+            if (cleanAllowed !== cleanDomain) {
+                return res.status(200).json({
+                    valid: false,
+                    message: `License locked to domain: ${license.allowed_domain}`
+                });
+            }
+        } else if (domain) {
+            // Case 2: No domain locked -> Lock to current domain (First Use)
+            const { error: updateError } = await supabase
+                .from('licenses')
+                .update({
+                    allowed_domain: domain,
+                    activated_at: new Date().toISOString()
+                })
+                .eq('key', key);
+
+            if (updateError) {
+                console.error('Failed to lock domain:', updateError);
+                // Fail safe: don't validate if we couldn't lock (prevents race condition)
+                return res.status(500).json({ valid: false, message: 'Activation failed' });
+            }
+        }
 
         return res.status(200).json({ valid: true });
 

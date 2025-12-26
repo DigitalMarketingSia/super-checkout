@@ -55,15 +55,15 @@ export const LinksManager: React.FC<LinksManagerProps> = ({ links, onChange }) =
                         value={newLink.url}
                         onChange={e => setNewLink({ ...newLink, url: e.target.value })}
                     />
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 min-w-0">
                         <select
-                            className="bg-white dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded px-3 py-2 text-sm flex-1"
+                            className="bg-white dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded px-3 py-2 text-sm flex-1 min-w-0"
                             value={newLink.icon}
                             onChange={e => setNewLink({ ...newLink, icon: e.target.value })}
                         >
                             {ICONS.map(icon => <option key={icon} value={icon}>{icon}</option>)}
                         </select>
-                        <Button onClick={handleAdd} size="sm" disabled={!newLink.title || !newLink.url}>
+                        <Button onClick={handleAdd} size="sm" disabled={!newLink.title || !newLink.url} className="shrink-0">
                             <Plus className="w-4 h-4" />
                         </Button>
                     </div>

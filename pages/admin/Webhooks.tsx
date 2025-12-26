@@ -81,6 +81,7 @@ export const Webhooks = () => {
    const [logs, setLogs] = useState<WebhookLog[]>([]);
    const [isModalOpen, setIsModalOpen] = useState(false);
    const [editingId, setEditingId] = useState<string | null>(null);
+   const [viewLog, setViewLog] = useState<WebhookLog | null>(null);
 
    // Pagination for history
    const [currentPage, setCurrentPage] = useState(1);
@@ -304,6 +305,14 @@ export const Webhooks = () => {
       a.click();
    };
 
+   const tryFormatJson = (str: string) => {
+      try {
+         return JSON.stringify(JSON.parse(str), null, 2);
+      } catch (e) {
+         return str;
+      }
+   };
+
    return (
       <Layout>
          {/* Header */}
@@ -461,9 +470,11 @@ export const Webhooks = () => {
                                  <td className="px-4 py-3">
                                     <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-bold border ${log.response_status && log.response_status >= 200 && log.response_status < 300
                                        ? 'bg-green-500/10 text-green-500 border-green-500/20'
-                                       : 'bg-red-500/10 text-red-500 border-red-500/20'
+                                       : log.response_status && log.response_status >= 400
+                                          ? 'bg-red-500/10 text-red-500 border-red-500/20'
+                                          : 'bg-blue-500/10 text-blue-500 border-blue-500/20' // Neutral/Recebido
                                        }`}>
-                                       {log.response_status || 'ERR'}
+                                       {log.response_status || 'OK'}
                                     </span>
                                  </td>
                                  <td className="px-4 py-3">
@@ -479,7 +490,7 @@ export const Webhooks = () => {
                                     {log.duration_ms ? `${log.duration_ms}ms` : '-'}
                                  </td>
                                  <td className="px-4 py-3">
-                                    <button className="text-primary hover:text-primary-hover dark:hover:text-white text-xs flex items-center gap-1" onClick={() => showAlert('Info', 'Visualizador de Payload em breve.', 'info')}>
+                                    <button className="text-primary hover:text-primary-hover dark:hover:text-white text-xs flex items-center gap-1" onClick={() => setViewLog(log)}>
                                        <Code className="w-3 h-3" /> Payload
                                     </button>
                                  </td>
@@ -590,7 +601,7 @@ export const Webhooks = () => {
                         <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 bg-gray-600 rounded-full"></div> assinatura.cancelar</li>
                         <li className="flex items-center gap-2"><div className="w-1.5 h-1.5 bg-gray-600 rounded-full"></div> cliente.bloquear</li>
                      </ul>
-                     <a href="#" className="text-primary text-xs mt-4 block hover:underline flex items-center gap-1">
+                     <a href="/docs/webhooks" target="_blank" className="text-primary text-xs mt-4 block hover:underline flex items-center gap-1">
                         Ver documentação completa da API <ExternalLink className="w-3 h-3" />
                      </a>
                   </Card>
@@ -797,6 +808,70 @@ export const Webhooks = () => {
             message={alertState.message}
             variant={alertState.variant}
          />
+
+         {/* MODAL: VIEW PAYLOAD */}
+         <Modal
+            isOpen={!!viewLog}
+            onClose={() => setViewLog(null)}
+            title="Detalhes do Disparo"
+            className="max-w-3xl"
+         >
+            {viewLog && (
+               <div className="space-y-6">
+                  {/* Status Banner */}
+                  <div className={`p-4 rounded-xl border flex items-center justify-between ${viewLog.response_status && viewLog.response_status >= 200 && viewLog.response_status < 300
+                     ? 'bg-green-500/10 border-green-500/20 text-green-400'
+                     : 'bg-red-500/10 border-red-500/20 text-red-400'
+                     }`}>
+                     <div className="flex items-center gap-3">
+                        {viewLog.response_status && viewLog.response_status >= 200 && viewLog.response_status < 300
+                           ? <CheckCircle className="w-5 h-5" />
+                           : <AlertTriangle className="w-5 h-5" />
+                        }
+                        <div>
+                           <p className="font-bold">Status: HTTP {viewLog.response_status || 'N/A'}</p>
+                           <p className="text-xs opacity-80">{new Date(viewLog.created_at).toLocaleString()}</p>
+                        </div>
+                     </div>
+                     <div className="text-right">
+                        <p className="text-xs uppercase tracking-wider opacity-70">Duração</p>
+                        <p className="font-mono font-bold">{viewLog.duration_ms}ms</p>
+                     </div>
+                  </div>
+
+                  {/* Request Payload */}
+                  <div>
+                     <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-2 flex items-center justify-between">
+                        <span>Payload Enviado (JSON)</span>
+                        <Button size="sm" variant="ghost" onClick={() => copyToClipboard(viewLog.payload)}>
+                           <Copy className="w-3 h-3 mr-2" /> Copiar
+                        </Button>
+                     </h4>
+                     <div className="bg-[#1E1E1E] rounded-xl border border-gray-200 dark:border-white/10 p-4 max-h-[300px] overflow-y-auto visible-scrollbar">
+                        <pre className="text-xs font-mono text-blue-300 whitespace-pre-wrap break-all">
+                           {tryFormatJson(viewLog.payload)}
+                        </pre>
+                     </div>
+                  </div>
+
+                  {/* Response Body */}
+                  {viewLog.response_body && (
+                     <div>
+                        <h4 className="text-sm font-bold text-gray-900 dark:text-white mb-2">Resposta do Servidor</h4>
+                        <div className="bg-[#1E1E1E] rounded-xl border border-gray-200 dark:border-white/10 p-4 max-h-[200px] overflow-y-auto visible-scrollbar">
+                           <pre className="text-xs font-mono text-gray-400 whitespace-pre-wrap break-all">
+                              {viewLog.response_body.substring(0, 1000) + (viewLog.response_body.length > 1000 ? '...' : '')}
+                           </pre>
+                        </div>
+                     </div>
+                  )}
+
+                  <div className="flex justify-end pt-4 border-t border-gray-200 dark:border-white/5">
+                     <Button onClick={() => setViewLog(null)}>Fechar</Button>
+                  </div>
+               </div>
+            )}
+         </Modal>
 
       </Layout>
    );

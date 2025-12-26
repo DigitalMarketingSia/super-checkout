@@ -247,11 +247,17 @@ export const Checkouts = () => {
                           <Copy className="w-4 h-4" />
                         </button>
 
-                        {/* Visualizar/Duplicar (Olho) */}
+                        {/* Visualizar (Olho) */}
                         <button
-                          onClick={() => navigate(`/c/${chk.id}`)}
+                          onClick={() => {
+                            const domain = domains.find(d => d.id === chk.domain_id);
+                            const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+                            const baseUrl = (domain && !isLocal) ? `https://${domain.domain}` : window.location.origin + '/c';
+                            const url = `${baseUrl}/${chk.custom_url_slug}`;
+                            window.open(url, '_blank');
+                          }}
                           className="p-2 bg-purple-500/10 hover:bg-purple-500/20 rounded-lg text-purple-400 border border-purple-500/10 transition-colors"
-                          title="Visualizar"
+                          title="Visualizar em nova aba"
                         >
                           <Eye className="w-4 h-4" />
                         </button>
